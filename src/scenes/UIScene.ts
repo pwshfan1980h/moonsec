@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { MinimapRenderer } from '../ui/MinimapRenderer';
+import type { GameScene } from './GameScene';
 
 const BAR_W = 140;
 const BAR_H = 10;
@@ -17,6 +19,8 @@ export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private turretBar!: Phaser.GameObjects.Rectangle;
   private turretLabel!: Phaser.GameObjects.Text;
+
+  private minimap!: MinimapRenderer;
 
   // Pause elements
   private pauseBg!: Phaser.GameObjects.Rectangle;
@@ -182,6 +186,16 @@ export class UIScene extends Phaser.Scene {
       gameScene.scene.restart();
       this.scene.restart();
     });
+
+    // ── Radar minimap ─────────────────────────────────────────────
+    this.minimap = new MinimapRenderer(this);
+  }
+
+  update(time: number, _delta: number): void {
+    // Re-fetch every frame — restart creates a new GameScene instance
+    const game = this.scene.get('Game') as GameScene;
+    if (!game || !game.sys.isActive()) return;
+    this.minimap.draw(time, game);
   }
 
   private togglePause(): void {
