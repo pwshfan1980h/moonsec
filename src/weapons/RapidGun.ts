@@ -19,12 +19,16 @@ export class RapidGun {
     this.lastFire = time;
 
     const player = this.scene.player;
-    const dir = facingRight ? 1 : -1;
-    const angle = (Math.random() - 0.5) * SPREAD;
-    const vx = Math.cos(angle) * SPEED * dir;
+    const pointer = this.scene.input.mousePointer;
+    const worldPt = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    const spawnX = player.x + (facingRight ? 45 : -45);
+    const spawnY = player.y - 78;
+    const baseAngle = Phaser.Math.Angle.Between(spawnX, spawnY, worldPt.x, worldPt.y);
+    const angle = baseAngle + (Math.random() - 0.5) * SPREAD;
+    const vx = Math.cos(angle) * SPEED;
     const vy = Math.sin(angle) * SPEED;
 
-    const b = this.scene.playerBullets.get(player.x + dir * 45, player.y - 78, 'bullet-rapid') as Phaser.Physics.Arcade.Image;
+    const b = this.scene.playerBullets.get(spawnX, spawnY, 'bullet-rapid') as Phaser.Physics.Arcade.Image;
     if (!b) return;
 
     b.setActive(true).setVisible(true).setDepth(15);
