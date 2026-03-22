@@ -73,10 +73,13 @@ export class MinimapRenderer {
       const dy = pp.y - RADAR_Y;
       if (Math.abs(dy) >= R) continue;
       const phw = chordHW(pp.y);
-      const half = Math.min((plat.w * scale) / 2, phw);
-      if (half <= 0) continue;
+      if (phw <= 0) continue;
+      // Clamp bar endpoints to the circle boundary (chord centered at RADAR_X)
+      const barLeft  = Math.max(pp.x - (plat.w * scale) / 2, RADAR_X - phw);
+      const barRight = Math.min(pp.x + (plat.w * scale) / 2, RADAR_X + phw);
+      if (barRight <= barLeft) continue;
       gfx.lineStyle(1, 0x5555dd, 0.6);
-      gfx.lineBetween(pp.x - half, pp.y, pp.x + half, pp.y);
+      gfx.lineBetween(barLeft, pp.y, barRight, pp.y);
     }
 
     // ── 4. Sweep line ─────────────────────────────────────────────

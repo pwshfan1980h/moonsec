@@ -192,6 +192,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   update(time: number, _delta: number): void {
+    if (this.gameOverActive) return;
     // Re-fetch every frame — restart creates a new GameScene instance
     const game = this.scene.get('Game') as GameScene;
     if (!game || !game.sys.isActive()) return;
