@@ -24,6 +24,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jetpackFuel = JETPACK_MAX_FUEL;
   private hurtLock = 0;
   private dead = false;
+  piloting = true;
 
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyA: Phaser.Input.Keyboard.Key;
@@ -59,7 +60,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Left-click: turret fire
     scene.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
-      if (this.dead) return;
+      if (this.dead || !this.piloting) return;
       if (ptr.leftButtonDown()) {
         const wp = scene.cameras.main.getWorldPoint(ptr.x, ptr.y);
         this.turret.fire(this.x, this.y, wp.x, wp.y, scene.time.now);
@@ -99,6 +100,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   update(time: number, delta: number): void {
     if (this.dead) return;
+    if (!this.piloting) return; // mech frozen while pilot is on foot
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     this.onGround = body.blocked.down;
@@ -196,6 +198,36 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   isDead(): boolean {
     return this.dead;
+  }
+
+  isHurtLocked(): boolean {
+    return this.hurtLock > 0;
+  }
+
+  eject(): { x: number; y: number } {
+    this.piloting = false;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setVelocity(0, 0);
+    body.setAcceleration(0, 0);
+    body.moves = false;                // freeze mech in place (even mid-air)
+    body.setCollideWorldBounds(false); // prevent spurious world-bounds events while frozen
+    this.setAlpha(0.45);               // dark/idle visual — mech "goes dark"
+    this.play({ key: 'idle', repeat: -1 }, true);
+    this.jetpackInner.emitting = false;
+    this.jetpackOuter.emitting = false;
+    // Spawn pilot 20px to the side and just above the mech top.
+    // displayHeight at scale 0.75 = 112.5px; +8px margin clears the sprite.
+    const spawnX = this.x + (this.flipX ? -20 : 20);
+    const spawnY = this.y - (this.displayHeight + 8);
+    return { x: spawnX, y: spawnY };
+  }
+
+  reenter(): void {
+    this.piloting = true;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.moves = true;
+    body.setCollideWorldBounds(true);
+    this.setAlpha(1);
   }
 
   takeDamage(amount: number): void {
