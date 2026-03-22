@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
 import type { GameScene } from './GameScene';
+import { PILOT_JETPACK_MAX_FUEL } from '../constants';
 
 const BAR_W = 140;
 const BAR_H = 10;
@@ -19,6 +20,12 @@ export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private turretBar!: Phaser.GameObjects.Rectangle;
   private turretLabel!: Phaser.GameObjects.Text;
+  private turretBg!: Phaser.GameObjects.Rectangle;
+  private suitLabel!: Phaser.GameObjects.Text;
+  private suitBg!: Phaser.GameObjects.Rectangle;
+  private suitBar!: Phaser.GameObjects.Rectangle;
+  private pilotPip!: Phaser.GameObjects.Rectangle;
+  private pilotPipLabel!: Phaser.GameObjects.Text;
 
   private minimap!: MinimapRenderer;
 
@@ -62,6 +69,23 @@ export class UIScene extends Phaser.Scene {
     this.add.rectangle(hx + BAR_W / 2 + 22, jy + 4, BAR_W, 6, 0x001133).setOrigin(0.5, 0.5);
     this.jetpackBar = this.add.rectangle(hx + 22, jy, BAR_W, 6, 0x2299ff).setOrigin(0, 0);
 
+    // ── SUIT jetpack bar (pilot; hidden until ejected) ────────────
+    const sy = jy + 14;
+    this.suitLabel = this.add.text(hx, sy, 'SUIT', {
+      fontFamily: 'monospace', fontSize: '10px', color: '#aaffaa',
+    }).setVisible(false);
+    this.suitBg = this.add.rectangle(hx + BAR_W / 2 + 22, sy + 4, BAR_W, 6, 0x001100)
+      .setOrigin(0.5, 0.5).setVisible(false);
+    this.suitBar = this.add.rectangle(hx + 22, sy, BAR_W, 6, 0x44ff44)
+      .setOrigin(0, 0).setVisible(false);
+
+    // ── Pilot pip (hidden until ejected) ──────────────────────────
+    this.pilotPip = this.add.rectangle(hx, sy + 12, 6, 6, 0xff4444)
+      .setOrigin(0, 0).setVisible(false);
+    this.pilotPipLabel = this.add.text(hx + 10, sy + 10, 'PILOT', {
+      fontFamily: 'monospace', fontSize: '9px', color: '#ff4444',
+    }).setVisible(false);
+
     // ── Missile cooldown bar (top-right) ──────────────────────────
     const mx = 800 - BAR_W - PAD - 22;
     const my = PAD;
@@ -81,7 +105,7 @@ export class UIScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '10px', color: '#ff8844',
       align: 'right',
     }).setOrigin(1, 0);
-    this.add.rectangle(mx + BAR_W / 2, ty + 4, BAR_W, 6, 0x331100).setOrigin(0.5, 0.5);
+    this.turretBg = this.add.rectangle(mx + BAR_W / 2, ty + 4, BAR_W, 6, 0x331100).setOrigin(0.5, 0.5);
     this.turretBar = this.add.rectangle(mx, ty, BAR_W, 6, 0xff6600).setOrigin(0, 0);
 
     // ── Score (top-center) ────────────────────────────────────────
@@ -197,6 +221,30 @@ export class UIScene extends Phaser.Scene {
     const game = this.scene.get('Game') as GameScene;
     if (!game || !game.sys.isActive()) return;
     this.minimap.draw(time, game);
+
+    // Pilot HUD — show/hide based on whether pilot is active
+    const pilotActive = !!game.pilot?.active;
+
+    this.suitLabel.setVisible(pilotActive);
+    this.suitBg.setVisible(pilotActive);
+    this.pilotPip.setVisible(pilotActive);
+    this.pilotPipLabel.setVisible(pilotActive);
+
+    if (pilotActive) {
+      this.suitBar.setVisible(true);
+      this.suitBar.setDisplaySize(BAR_W * (game.pilot!.jetpackFuel / PILOT_JETPACK_MAX_FUEL), 6);
+    } else {
+      this.suitBar.setVisible(false);
+    }
+
+    // Dim mech weapon bars while ejected
+    const weaponAlpha = pilotActive ? 0.3 : 1.0;
+    this.missileBar.setAlpha(weaponAlpha);
+    this.missileBg.setAlpha(weaponAlpha);
+    this.missileLabel.setAlpha(weaponAlpha);
+    this.turretBar.setAlpha(weaponAlpha);
+    this.turretBg.setAlpha(weaponAlpha);
+    this.turretLabel.setAlpha(weaponAlpha);
   }
 
   private togglePause(): void {
