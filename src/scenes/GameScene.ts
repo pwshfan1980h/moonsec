@@ -1,0 +1,201 @@
+import Phaser from 'phaser';
+import { Player } from '../entities/Player';
+import { DroneSpawner } from '../systems/DroneSpawner';
+import { AudioSystem } from '../systems/AudioSystem';
+import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT } from '../constants';
+
+export class GameScene extends Phaser.Scene {
+  player!: Player;
+  playerBullets!: Phaser.Physics.Arcade.Group;
+  droneBullets!: Phaser.Physics.Arcade.Group;
+  missiles!: Phaser.Physics.Arcade.Group;
+  drones!: Phaser.Physics.Arcade.Group;
+  audio!: AudioSystem;
+  score = 0;
+  private isGameOver = false;
+
+  private ground!: Phaser.Physics.Arcade.StaticGroup;
+  private spawner!: DroneSpawner;
+  private bgFar!: Phaser.GameObjects.TileSprite;
+  private bgNear!: Phaser.GameObjects.TileSprite;
+
+  constructor() {
+    super({ key: 'Game' });
+  }
+
+  create(): void {
+    this.audio = new AudioSystem();
+
+    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
+
+    // --- Background ---
+    this.makeBackground();
+
+    // --- Ground ---
+    this.ground = this.physics.add.staticGroup();
+    const groundRect = this.add.rectangle(
+      WORLD_WIDTH / 2,
+      GROUND_Y + GROUND_HEIGHT / 2,
+      WORLD_WIDTH,
+      GROUND_HEIGHT,
+      0x1a1a3a,
+    ).setDepth(4);
+    this.ground.add(groundRect);
+
+    // Ground surface glow line
+    this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x4444cc).setDepth(5);
+
+    // --- Physics groups ---
+    this.playerBullets = this.physics.add.group({
+      defaultKey: 'bullet-rapid',
+      maxSize: 120,
+      runChildUpdate: false,
+      allowGravity: false,
+    });
+
+    this.droneBullets = this.physics.add.group({
+      defaultKey: 'bullet-drone',
+      maxSize: 60,
+      runChildUpdate: false,
+      allowGravity: false,
+    });
+
+    this.missiles = this.physics.add.group({
+      defaultKey: 'bullet-missile',
+      maxSize: 6,
+      runChildUpdate: false,
+      allowGravity: false,
+    });
+
+    this.drones = this.physics.add.group({ runChildUpdate: true });
+
+    // --- Player ---
+    // Origin (0.5, 1) → feet at position y. Start 5px above ground.
+    this.player = new Player(this, 300, GROUND_Y - 5);
+    this.add.existing(this.player);
+    this.physics.add.existing(this.player);
+
+    // Body 100x150 source → 75x112.5 world at scale 0.75.
+    // Offset(62.5, 37.5) correctly places body with feet at player.y.
+    const pb = this.player.body as Phaser.Physics.Arcade.Body;
+    pb.setSize(100, 150, false);
+    pb.setOffset(37.5, 0);
+    pb.setCollideWorldBounds(true);
+    pb.setMaxVelocityX(400);
+
+    // Player lands on ground
+    this.physics.add.collider(this.player, this.ground);
+
+    // Drone bullets hit player
+    this.physics.add.overlap(
+      this.droneBullets,
+      this.player,
+      (playerObj, b) => {
+        const bullet = b as Phaser.Physics.Arcade.Image;
+        bullet.setActive(false).setVisible(false);
+        if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
+        (playerObj as Player).takeDamage(1);
+      },
+    );
+
+    // --- Camera ---
+    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.08);
+
+    // --- Spawner ---
+    this.spawner = new DroneSpawner(this);
+
+    // --- Score tracking ---
+    this.events.on('droneKilled', () => {
+      this.score += 100;
+      this.events.emit('scoreChange', this.score);
+    });
+
+    this.events.on('gameOver', () => {
+      this.isGameOver = true;
+    });
+
+    // --- Emit initial HUD state ---
+    this.events.emit('healthChange', this.player.hp, this.player.maxHp);
+    this.events.emit('missileCooldown', 0);
+    this.events.emit('turretCooldown', 1);
+    this.events.emit('jetpackFuel', 1, 1);
+    this.events.emit('scoreChange', 0);
+  }
+
+  update(time: number, delta: number): void {
+    if (this.isGameOver) return;
+    this.player.update(time, delta);
+    this.spawner.update(time, delta);
+    this.cullBullets();
+    this.updateParallax();
+  }
+
+  spawnExplosion(x: number, y: number): void {
+    const emitter = this.add.particles(x, y, 'pixel', {
+      speed: { min: 80, max: 220 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 3, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint: [0xffaa00, 0xff4400, 0xffffff, 0xffff00],
+      lifespan: 450,
+      quantity: 14,
+      blendMode: 'ADD',
+    });
+    emitter.setDepth(20);
+    this.time.delayedCall(500, () => emitter.destroy());
+  }
+
+  private makeBackground(): void {
+    // Solid deep space — fixed to screen
+    this.add.rectangle(400, 225, 800, 450, 0x030318).setDepth(0).setScrollFactor(0);
+
+    // Generate star textures
+    const makeStar = (count: number, size: number, alpha: number, key: string) => {
+      const gfx = this.add.graphics();
+      gfx.fillStyle(0xffffff, alpha);
+      for (let i = 0; i < count; i++) {
+        gfx.fillRect(
+          Phaser.Math.Between(0, 800),
+          Phaser.Math.Between(0, GROUND_Y),
+          size, size,
+        );
+      }
+      gfx.generateTexture(key, 800, GROUND_Y);
+      gfx.destroy();
+    };
+
+    makeStar(160, 1, 0.4, 'stars-far');
+    makeStar(60, 2, 0.7, 'stars-near');
+
+    this.bgFar  = this.add.tileSprite(400, GROUND_Y / 2, 800, GROUND_Y, 'stars-far').setDepth(1).setScrollFactor(0);
+    this.bgNear = this.add.tileSprite(400, GROUND_Y / 2, 800, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
+  }
+
+  private updateParallax(): void {
+    const sx = this.cameras.main.scrollX;
+    this.bgFar.setTilePosition(sx * 0.15, 0);
+    this.bgNear.setTilePosition(sx * 0.45, 0);
+  }
+
+  private cullBullets(): void {
+    const cam = this.cameras.main;
+    const minX = cam.scrollX - 100;
+    const maxX = cam.scrollX + 900;
+    const maxY = 550;
+
+    const cull = (group: Phaser.Physics.Arcade.Group) => {
+      group.getChildren().forEach((go) => {
+        const obj = go as Phaser.Physics.Arcade.Image;
+        if (!obj.active) return;
+        if (obj.x < minX || obj.x > maxX || obj.y > maxY || obj.y < -50) {
+          obj.setActive(false).setVisible(false);
+          if (obj.body) (obj.body as Phaser.Physics.Arcade.Body).enable = false;
+        }
+      });
+    };
+
+    cull(this.playerBullets);
+    cull(this.droneBullets);
+  }
+}

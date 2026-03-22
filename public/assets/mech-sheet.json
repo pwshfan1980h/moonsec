@@ -1,0 +1,409 @@
+{ "frames": {
+   "Mech-animated 0.aseprite": {
+    "frame": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 400
+   },
+   "Mech-animated 1.aseprite": {
+    "frame": { "x": 200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 400
+   },
+   "Mech-animated 2.aseprite": {
+    "frame": { "x": 400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 400
+   },
+   "Mech-animated 3.aseprite": {
+    "frame": { "x": 600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 400
+   },
+   "Mech-animated 4.aseprite": {
+    "frame": { "x": 800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 5.aseprite": {
+    "frame": { "x": 1000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 6.aseprite": {
+    "frame": { "x": 1200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 7.aseprite": {
+    "frame": { "x": 1400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 8.aseprite": {
+    "frame": { "x": 1600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 9.aseprite": {
+    "frame": { "x": 1800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 10.aseprite": {
+    "frame": { "x": 2000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 11.aseprite": {
+    "frame": { "x": 2200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 12.aseprite": {
+    "frame": { "x": 2400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 13.aseprite": {
+    "frame": { "x": 2600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 14.aseprite": {
+    "frame": { "x": 2800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 15.aseprite": {
+    "frame": { "x": 3000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 60
+   },
+   "Mech-animated 16.aseprite": {
+    "frame": { "x": 3200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 17.aseprite": {
+    "frame": { "x": 3400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 120
+   },
+   "Mech-animated 18.aseprite": {
+    "frame": { "x": 3600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 19.aseprite": {
+    "frame": { "x": 3800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 20.aseprite": {
+    "frame": { "x": 4000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 21.aseprite": {
+    "frame": { "x": 4200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 22.aseprite": {
+    "frame": { "x": 4400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 23.aseprite": {
+    "frame": { "x": 4600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 24.aseprite": {
+    "frame": { "x": 4800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 25.aseprite": {
+    "frame": { "x": 5000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 60
+   },
+   "Mech-animated 26.aseprite": {
+    "frame": { "x": 5200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 27.aseprite": {
+    "frame": { "x": 5400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 28.aseprite": {
+    "frame": { "x": 5600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 29.aseprite": {
+    "frame": { "x": 5800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 30.aseprite": {
+    "frame": { "x": 6000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 31.aseprite": {
+    "frame": { "x": 6200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 200
+   },
+   "Mech-animated 32.aseprite": {
+    "frame": { "x": 6400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 300
+   },
+   "Mech-animated 33.aseprite": {
+    "frame": { "x": 6600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 120
+   },
+   "Mech-animated 34.aseprite": {
+    "frame": { "x": 6800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 120
+   },
+   "Mech-animated 35.aseprite": {
+    "frame": { "x": 7000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 60
+   },
+   "Mech-animated 36.aseprite": {
+    "frame": { "x": 7200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 37.aseprite": {
+    "frame": { "x": 7400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 100
+   },
+   "Mech-animated 38.aseprite": {
+    "frame": { "x": 7600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 39.aseprite": {
+    "frame": { "x": 7800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 40.aseprite": {
+    "frame": { "x": 8000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 41.aseprite": {
+    "frame": { "x": 8200, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   },
+   "Mech-animated 42.aseprite": {
+    "frame": { "x": 8400, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 43.aseprite": {
+    "frame": { "x": 8600, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 60
+   },
+   "Mech-animated 44.aseprite": {
+    "frame": { "x": 8800, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 80
+   },
+   "Mech-animated 45.aseprite": {
+    "frame": { "x": 9000, "y": 0, "w": 200, "h": 150 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 200, "h": 150 },
+    "sourceSize": { "w": 200, "h": 150 },
+    "duration": 150
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.17-arm64",
+  "image": "mech-sheet.png",
+  "format": "RGBA8888",
+  "size": { "w": 9200, "h": 150 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "idle", "from": 0, "to": 3, "direction": "pingpong", "color": "#000000ff" },
+   { "name": "walk", "from": 4, "to": 9, "direction": "forward", "color": "#000000ff" },
+   { "name": "run", "from": 10, "to": 13, "direction": "forward", "color": "#000000ff" },
+   { "name": "shoot", "from": 14, "to": 17, "direction": "forward", "color": "#000000ff" },
+   { "name": "jump_start", "from": 18, "to": 19, "direction": "forward", "color": "#000000ff" },
+   { "name": "jump_loop", "from": 20, "to": 21, "direction": "pingpong", "color": "#000000ff" },
+   { "name": "jump_land", "from": 22, "to": 24, "direction": "forward", "color": "#000000ff" },
+   { "name": "hurt", "from": 25, "to": 26, "direction": "forward", "color": "#000000ff" },
+   { "name": "death", "from": 27, "to": 32, "direction": "forward", "color": "#000000ff" },
+   { "name": "crouch", "from": 33, "to": 34, "direction": "pingpong", "color": "#000000ff" },
+   { "name": "dash", "from": 35, "to": 37, "direction": "forward", "color": "#000000ff" },
+   { "name": "power_up", "from": 38, "to": 41, "direction": "pingpong", "color": "#000000ff" },
+   { "name": "melee", "from": 42, "to": 45, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "L-Gun", "opacity": 255, "blendMode": "normal" },
+   { "name": "Stomach", "opacity": 255, "blendMode": "normal" },
+   { "name": "L-Knee", "opacity": 255, "blendMode": "normal" },
+   { "name": "L-Calf", "opacity": 255, "blendMode": "normal" },
+   { "name": "L-Thigh", "opacity": 255, "blendMode": "normal" },
+   { "name": "R-Knee", "opacity": 255, "blendMode": "normal" },
+   { "name": "Body", "opacity": 255, "blendMode": "normal" },
+   { "name": "R-Thigh", "opacity": 255, "blendMode": "normal" },
+   { "name": "R-Calf", "opacity": 255, "blendMode": "normal" },
+   { "name": "R-Gun", "opacity": 255, "blendMode": "normal" },
+   { "name": "Flash", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

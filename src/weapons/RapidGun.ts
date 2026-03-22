@@ -1,0 +1,64 @@
+import Phaser from 'phaser';
+import type { GameScene } from '../scenes/GameScene';
+
+const FIRE_INTERVAL = 60; // ms between shots
+const SPEED = 900;
+const SPREAD = 0.06; // radians
+
+export class RapidGun {
+  private scene: GameScene;
+  private lastFire = 0;
+
+  constructor(scene: GameScene) {
+    this.scene = scene;
+  }
+
+  update(time: number, facingRight: boolean): void {
+    if (!this.scene.input.mousePointer.rightButtonDown()) return;
+    if (time - this.lastFire < FIRE_INTERVAL) return;
+    this.lastFire = time;
+
+    const player = this.scene.player;
+    const dir = facingRight ? 1 : -1;
+    const angle = (Math.random() - 0.5) * SPREAD;
+    const vx = Math.cos(angle) * SPEED * dir;
+    const vy = Math.sin(angle) * SPEED;
+
+    const b = this.scene.playerBullets.get(player.x + dir * 45, player.y - 78, 'bullet-rapid') as Phaser.Physics.Arcade.Image;
+    if (!b) return;
+
+    b.setActive(true).setVisible(true).setDepth(15);
+    b.setBlendMode(Phaser.BlendModes.ADD);
+    if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;
+    b.setVelocity(vx, vy);
+
+    // Attach glow trail
+    this.spawnTrail(b, 0x00ffff);
+
+    this.scene.audio.play('rapid');
+  }
+
+  private spawnTrail(bullet: Phaser.Physics.Arcade.Image, tint: number): void {
+    const emitter = this.scene.add.particles(0, 0, 'pixel', {
+      follow: bullet,
+      speed: { min: 0, max: 20 },
+      scale: { start: 1.2, end: 0 },
+      alpha: { start: 0.9, end: 0 },
+      tint,
+      lifespan: 80,
+      frequency: 12,
+      blendMode: 'ADD',
+      quantity: 1,
+    });
+    emitter.setDepth(14);
+
+    // Clean up emitter when bullet goes inactive
+    const cleanup = () => {
+      if (!bullet.active) {
+        emitter.destroy();
+        this.scene.events.off('postupdate', cleanup);
+      }
+    };
+    this.scene.events.on('postupdate', cleanup);
+  }
+}
