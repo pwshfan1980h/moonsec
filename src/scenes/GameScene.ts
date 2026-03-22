@@ -198,16 +198,19 @@ export class GameScene extends Phaser.Scene {
     configs.forEach(({ yMin, yMax, count, minW, maxW }, bandIdx) => {
       const span = 5600; // x from 400 to 6000
       const spacing = span / count;
-      let lastX = 0; // track last placed X per band to enforce 200px min gap
+      let lastX = 200; // initialised to start-of-span minus min-gap so i=0 is consistent
 
       for (let i = 0; i < count; i++) {
         const seed = bandIdx * 100 + i;
         const rawX = 400 + i * spacing + hash(seed) * spacing * 0.6;
+        const w = minW + hash(seed + 2000) * (maxW - minW);
         // Enforce 200px minimum gap between adjacent platforms in this band
-        const x = i === 0 ? rawX : Math.max(lastX + 200, rawX);
+        const x = Math.min(
+          i === 0 ? rawX : Math.max(lastX + 200, rawX),
+          6000 - w / 2,
+        );
         lastX = x;
         const y = yMin + hash(seed + 1000) * (yMax - yMin);
-        const w = minW + hash(seed + 2000) * (maxW - minW);
         this.platformData.push({ x, y, w });
         this.addPlatform(x, y, w);
       }
