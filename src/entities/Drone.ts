@@ -36,6 +36,10 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     this.patrolDir = dir;
   }
 
+  getState(): DroneState {
+    return this.droneState;
+  }
+
   update(time: number, delta: number): void {
     if (!this.active || this.droneState === 'DEATH') return;
 
