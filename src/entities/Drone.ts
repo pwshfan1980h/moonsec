@@ -44,8 +44,8 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     if (!this.active || this.droneState === 'DEATH') return;
 
     const body = this.body as Phaser.Physics.Arcade.Body;
-    const player = this.scene.player;
-    const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
+    const target = this.scene.getPilotOrPlayer();
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
 
     switch (this.droneState) {
       case 'HOVER': {
@@ -60,8 +60,8 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
       }
 
       case 'ATTACK': {
-        // Charge toward player on X axis, oscillate Y
-        const dx = player.x - this.x;
+        // Charge toward target on X axis, oscillate Y
+        const dx = target.x - this.x;
         body.setVelocityX(Math.sign(dx) * ATTACK_SPEED);
         body.setVelocityY(Math.sin(time * 0.003 + this.sinOffset) * 60);
 
@@ -91,8 +91,8 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   }
 
   private shoot(): void {
-    const player = this.scene.player;
-    const angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y);
+    const target = this.scene.getPilotOrPlayer();
+    const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
 
     const b = this.scene.droneBullets.get(this.x, this.y, 'bullet-drone') as Phaser.Physics.Arcade.Image;
     if (!b) return;
