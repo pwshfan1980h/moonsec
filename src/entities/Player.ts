@@ -35,6 +35,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private turret: Turret;
   private missile: HomingMissile;
 
+  private jetpackInner!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private jetpackOuter!: Phaser.GameObjects.Particles.ParticleEmitter;
+
   constructor(scene: GameScene, x: number, y: number) {
     super(scene, x, y, 'mech');
     this.scene = scene;
@@ -67,6 +70,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     this.play('idle');
+
+    // Jetpack flame emitters — orange core + cyan outer glow
+    this.jetpackInner = scene.add.particles(0, 0, 'pixel', {
+      speed:    { min: 60, max: 120 },
+      angle:    { min: 80, max: 100 },  // downward ±10°
+      scale:    { start: 2.5, end: 0 },
+      alpha:    { start: 1, end: 0 },
+      tint:     [0xff6600, 0xff2200, 0xffaa00],
+      lifespan: 120,
+      frequency: 20,
+      blendMode: 'ADD',
+      emitting:  false,
+    }).setDepth(9);
+
+    this.jetpackOuter = scene.add.particles(0, 0, 'pixel', {
+      speed:    { min: 40, max: 90 },
+      angle:    { min: 65, max: 115 }, // downward ±25°
+      scale:    { start: 3, end: 0 },
+      alpha:    { start: 0.7, end: 0 },
+      tint:     [0x00aaff, 0x0044ff, 0x44eeff],
+      lifespan: 180,
+      frequency: 25,
+      blendMode: 'ADD',
+      emitting:  false,
+    }).setDepth(8);
   }
 
   update(time: number, delta: number): void {
@@ -109,6 +137,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
       }
     }
+
+    // --- Jetpack flame ---
+    // Must be before hurtLock guard so flame turns off during hurt animation
+    const jetpackActive = space && !this.onGround && this.jetpackFuel > 0;
+    const thrustX = this.x + (this.flipX ? 12 : -12); // behind mech
+    const thrustY = this.y - 60;                        // ~53% up from feet
+    this.jetpackInner.setPosition(thrustX, thrustY);
+    this.jetpackInner.emitting = jetpackActive;
+    this.jetpackOuter.setPosition(thrustX, thrustY);
+    this.jetpackOuter.emitting = jetpackActive;
 
     // --- Hurt timeout ---
     if (this.hurtLock > 0) {
@@ -182,5 +220,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.scene.time.delayedCall(200, () => this.clearTint());
       this.scene.audio.play('hurt');
     }
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.jetpackInner.destroy();
+    this.jetpackOuter.destroy();
+    super.destroy(fromScene);
   }
 }
