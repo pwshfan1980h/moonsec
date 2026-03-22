@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
-import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT } from '../constants';
+import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -12,6 +12,7 @@ export class GameScene extends Phaser.Scene {
   drones!: Phaser.Physics.Arcade.Group;
   audio!: AudioSystem;
   score = 0;
+  platformData: { x: number; y: number; w: number }[] = [];
   private isGameOver = false;
 
   private ground!: Phaser.Physics.Arcade.StaticGroup;
@@ -44,6 +45,9 @@ export class GameScene extends Phaser.Scene {
 
     // Ground surface glow line
     this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x4444cc).setDepth(5);
+
+    // --- Platforms ---
+    this.makePlatforms();
 
     // --- Physics groups ---
     this.playerBullets = this.physics.add.group({
@@ -176,6 +180,53 @@ export class GameScene extends Phaser.Scene {
     const sx = this.cameras.main.scrollX;
     this.bgFar.setTilePosition(sx * 0.15, 0);
     this.bgNear.setTilePosition(sx * 0.45, 0);
+  }
+
+  private makePlatforms(): void {
+    this.platformData = [];
+
+    // Deterministic hash: maps any integer to a stable float in [0, 1)
+    const hash = (n: number): number =>
+      ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+
+    const configs = [
+      { ...PLATFORM_BANDS[0], count: 15, minW: 100, maxW: 160 },
+      { ...PLATFORM_BANDS[1], count: 12, minW:  80, maxW: 130 },
+      { ...PLATFORM_BANDS[2], count:  8, minW:  60, maxW: 100 },
+    ];
+
+    configs.forEach(({ yMin, yMax, count, minW, maxW }, bandIdx) => {
+      const span = 5600; // x from 400 to 6000
+      const spacing = span / count;
+      let lastX = 0; // track last placed X per band to enforce 200px min gap
+
+      for (let i = 0; i < count; i++) {
+        const seed = bandIdx * 100 + i;
+        const rawX = 400 + i * spacing + hash(seed) * spacing * 0.6;
+        // Enforce 200px minimum gap between adjacent platforms in this band
+        const x = i === 0 ? rawX : Math.max(lastX + 200, rawX);
+        lastX = x;
+        const y = yMin + hash(seed + 1000) * (yMax - yMin);
+        const w = minW + hash(seed + 2000) * (maxW - minW);
+        this.platformData.push({ x, y, w });
+        this.addPlatform(x, y, w);
+      }
+    });
+  }
+
+  private addPlatform(x: number, y: number, w: number): void {
+    const h = 8;
+    const rect = this.add.rectangle(x, y, w, h, 0x2a2a5a).setDepth(4);
+    this.ground.add(rect);
+
+    // One-way: only the top surface blocks the player
+    const body = rect.body as Phaser.Physics.Arcade.StaticBody;
+    body.checkCollision.down  = false;
+    body.checkCollision.left  = false;
+    body.checkCollision.right = false;
+
+    // Glow line — intentionally slightly lighter than ground glow (0x4444cc)
+    this.add.rectangle(x, y - h / 2 + 1, w, 2, 0x5555dd).setDepth(5);
   }
 
   private cullBullets(): void {
