@@ -144,6 +144,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const thrustX = this.x + (this.flipX ? 12 : -12); // behind mech
     const thrustY = this.y - 60;                        // ~53% up from feet
     this.jetpackInner.setPosition(thrustX, thrustY);
+    // setEmitting() not declared in Phaser 3.80 types; direct property assignment is correct
     this.jetpackInner.emitting = jetpackActive;
     this.jetpackOuter.setPosition(thrustX, thrustY);
     this.jetpackOuter.emitting = jetpackActive;
@@ -204,6 +205,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.hp <= 0) {
       this.dead = true;
+      this.jetpackInner.emitting = false;
+      this.jetpackOuter.emitting = false;
       this.play('death');
       this.scene.audio.play('death');
       const body = this.body as Phaser.Physics.Arcade.Body;
