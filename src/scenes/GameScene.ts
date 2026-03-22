@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
+import { Pilot } from '../entities/Pilot';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
+  pilot: Pilot | null = null;
   playerBullets!: Phaser.Physics.Arcade.Group;
   droneBullets!: Phaser.Physics.Arcade.Group;
   missiles!: Phaser.Physics.Arcade.Group;
@@ -14,6 +16,10 @@ export class GameScene extends Phaser.Scene {
   score = 0;
   platformData: { x: number; y: number; w: number }[] = [];
   private isGameOver = false;
+  private pilotGroundCollider: Phaser.Physics.Arcade.Collider | null = null;
+  private pilotBulletOverlap:  Phaser.Physics.Arcade.Collider | null = null;
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private spaceKey!: Phaser.Input.Keyboard.Key;
 
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private spawner!: DroneSpawner;
@@ -26,6 +32,18 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.audio = new AudioSystem();
+
+    // Input keys for pilot (Phaser deduplicates — safe alongside Player's own captures)
+    const kb = this.input.keyboard!;
+    this.cursors  = kb.createCursorKeys();
+    this.spaceKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Pilot sphere placeholder texture
+    const g = this.add.graphics();
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(8, 8, 8);
+    g.generateTexture('pilot_sphere', 16, 16);
+    g.destroy();
 
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
 
@@ -125,14 +143,63 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('turretCooldown', 1);
     this.events.emit('jetpackFuel', 1, 1);
     this.events.emit('scoreChange', 0);
+
+    // --- Eject / reenter (E key) ---
+    this.input.keyboard!.on('keydown-E', () => {
+      if (this.isGameOver) return;
+      if (this.pilot) {
+        // Reenter mech if close enough
+        const mechCenterY = this.player.y - 56;
+        const dist = Phaser.Math.Distance.Between(this.pilot.x, this.pilot.y, this.player.x, mechCenterY);
+        if (dist < 80) {
+          this.pilotGroundCollider?.destroy();
+          this.pilotBulletOverlap?.destroy();
+          this.pilotGroundCollider = null;
+          this.pilotBulletOverlap  = null;
+          this.pilot.destroy();
+          this.pilot = null;
+          this.player.reenter();
+          this.cameras.main.startFollow(this.player, true, 0.12, 0.08);
+        }
+      } else {
+        if (this.player.isDead() || this.player.isHurtLocked()) return;
+        const spawnPos = this.player.eject();
+        this.pilot = new Pilot(this, spawnPos.x, spawnPos.y);
+        this.cameras.main.startFollow(this.pilot, true, 0.12, 0.08);
+        this.pilotGroundCollider = this.physics.add.collider(this.pilot, this.ground);
+        this.pilotBulletOverlap = this.physics.add.overlap(
+          this.droneBullets,
+          this.pilot,
+          (_pilotObj, bulletObj) => {
+            if (!this.pilot?.active) return;
+            const bullet = bulletObj as Phaser.Physics.Arcade.Image;
+            bullet.setActive(false).setVisible(false);
+            if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
+            this.triggerGameOver();
+          },
+        );
+      }
+    });
   }
 
   update(time: number, delta: number): void {
     if (this.isGameOver) return;
     this.player.update(time, delta);
+    if (this.pilot?.active) this.pilot.update(this.cursors, this.spaceKey, delta);
     this.spawner.update(time, delta);
     this.cullBullets();
     this.updateParallax();
+  }
+
+  public triggerGameOver(): void {
+    if (this.isGameOver) return;
+    this.isGameOver = true;
+    this.events.emit('gameOver');
+  }
+
+  public getPilotOrPlayer(): { x: number; y: number } {
+    if (this.pilot?.active) return { x: this.pilot.x, y: this.pilot.y };
+    return { x: this.player.x, y: this.player.y };
   }
 
   spawnExplosion(x: number, y: number): void {
