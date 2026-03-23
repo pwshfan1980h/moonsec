@@ -26,6 +26,11 @@ export class UIScene extends Phaser.Scene {
   private suitBar!: Phaser.GameObjects.Rectangle;
   private pilotPip!: Phaser.GameObjects.Rectangle;
   private pilotPipLabel!: Phaser.GameObjects.Text;
+  private naniteBar!:   Phaser.GameObjects.Rectangle;
+  private naniteBg!:    Phaser.GameObjects.Rectangle;
+  private naniteLabel!: Phaser.GameObjects.Text;
+  private naniteActive = false;
+  private nanitePulseTween: Phaser.Tweens.Tween | null = null;
 
   private minimap!: MinimapRenderer;
 
@@ -86,6 +91,16 @@ export class UIScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '9px', color: '#ff4444',
     }).setVisible(false);
 
+    // ── Nanite (NNT) bar ──────────────────────────────────────────
+    // Sits below the pilot pip block (sy + 12 for pip + 6 pip height + 8 gap = sy + 26)
+    const nx = PAD;
+    const ny = sy + 26;
+    this.naniteLabel = this.add.text(nx, ny, 'NNT', {
+      fontFamily: 'monospace', fontSize: '10px', color: '#00cc66',
+    });
+    this.naniteBg  = this.add.rectangle(nx + BAR_W / 2 + 22, ny + 4, BAR_W, 6, 0x001a0d).setOrigin(0.5, 0.5);
+    this.naniteBar = this.add.rectangle(nx + 22, ny, BAR_W, 6, 0x00ff88).setOrigin(0, 0);
+
     // ── Missile cooldown bar (top-right) ──────────────────────────
     const mx = 800 - BAR_W - PAD - 22;
     const my = PAD;
@@ -144,8 +159,11 @@ export class UIScene extends Phaser.Scene {
 
     game.events.on('healthChange', (hp: number, maxHp: number) => {
       this.healthFill.setDisplaySize(BAR_W * (hp / maxHp), BAR_H);
-      const t = hp / maxHp;
-      this.healthFill.setFillStyle(t > 0.5 ? 0xff2222 : t > 0.25 ? 0xff8800 : 0xff0000);
+      if (!this.naniteActive) {
+        const t = hp / maxHp;
+        this.healthFill.setFillStyle(t > 0.5 ? 0xff2222 : t > 0.25 ? 0xff8800 : 0xff0000);
+      }
+      // When naniteActive, color stays green (set by onNaniteChange)
     });
 
     game.events.on('missileCooldown', (progress: number) => {
@@ -172,6 +190,10 @@ export class UIScene extends Phaser.Scene {
 
     game.events.on('jetpackFuel', (fuel: number, max: number) => {
       this.jetpackBar.setDisplaySize(BAR_W * (fuel / max), 6);
+    });
+
+    game.events.on('naniteChange', (state: string, progress: number) => {
+      this.onNaniteChange(state, progress);
     });
 
     game.events.on('scoreChange', (score: number) => {
@@ -257,6 +279,49 @@ export class UIScene extends Phaser.Scene {
       this.scene.resume('Game');
       this.pauseBg.setVisible(false);
       this.pauseText.setVisible(false);
+    }
+  }
+
+  private onNaniteChange(state: string, progress: number): void {
+    if (state === 'active') {
+      this.naniteActive = true;
+      this.healthFill.setFillStyle(0x00ff88);
+      this.naniteBar.setDisplaySize(BAR_W, 6);
+      this.naniteBar.setFillStyle(0x00ff88);
+      if (!this.nanitePulseTween) {
+        this.nanitePulseTween = this.tweens.add({
+          targets: this.naniteBar,
+          alpha: { from: 0.5, to: 1 },
+          duration: 400,
+          yoyo: true,
+          repeat: -1,
+        });
+      }
+    } else if (state === 'cooldown') {
+      this.naniteActive = false;
+      // Revert health bar color based on current HP ratio
+      const game = this.scene.get('Game') as GameScene;
+      if (game?.player) {
+        const t = game.player.hp / game.player.maxHp;
+        this.healthFill.setFillStyle(t > 0.5 ? 0xff2222 : t > 0.25 ? 0xff8800 : 0xff0000);
+      }
+      // Stop pulse
+      if (this.nanitePulseTween) {
+        this.nanitePulseTween.stop();
+        this.nanitePulseTween = null;
+      }
+      this.naniteBar.setAlpha(1);
+      this.naniteBar.setDisplaySize(BAR_W * progress, 6);
+      this.naniteBar.setFillStyle(0x003311);
+    } else if (state === 'ready') {
+      this.naniteActive = false;
+      if (this.nanitePulseTween) {
+        this.nanitePulseTween.stop();
+        this.nanitePulseTween = null;
+      }
+      this.naniteBar.setAlpha(1);
+      this.naniteBar.setDisplaySize(BAR_W, 6);
+      this.naniteBar.setFillStyle(0x00ff88);
     }
   }
 
