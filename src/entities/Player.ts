@@ -345,6 +345,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.naniteActive = false;
       this.naniteCooldown = NANITE_COOLDOWN;
       this.stopNaniteParticles();
+      this.scene.events.emit('naniteChange', 'cooldown', 0);
     }
     this.hp = Math.max(0, this.hp - amount);
     this.scene.events.emit('healthChange', this.hp, this.maxHp);

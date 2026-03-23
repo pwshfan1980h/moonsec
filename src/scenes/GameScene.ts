@@ -32,6 +32,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   init(data: { mechType?: MechType }): void {
+    // On first start, MechSelectScene passes mechType via scene data.
+    // On restart (R key), data is empty — registry value is intentionally preserved.
     if (data.mechType) {
       this.registry.set('mechType', data.mechType);
     }
