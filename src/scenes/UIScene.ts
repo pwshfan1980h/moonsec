@@ -51,6 +51,7 @@ export class UIScene extends Phaser.Scene {
   create(): void {
     this.gameOverActive = false;
     this.paused = false;
+    this.naniteActive = false;
     this.currentWave = 0;
     this.currentScore = 0;
 
@@ -267,6 +268,13 @@ export class UIScene extends Phaser.Scene {
     this.turretBar.setAlpha(weaponAlpha);
     this.turretBg.setAlpha(weaponAlpha);
     this.turretLabel.setAlpha(weaponAlpha);
+  }
+
+  shutdown(): void {
+    if (this.nanitePulseTween) {
+      this.nanitePulseTween.stop();
+      this.nanitePulseTween = null;
+    }
   }
 
   private togglePause(): void {
