@@ -3,7 +3,11 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 permissions:
   contents: read
