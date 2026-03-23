@@ -13,6 +13,10 @@ const JETPACK_FORCE = -920;
 const JETPACK_MAX_FUEL = 2200; // ms
 const FRICTION = 0.78;
 
+const NANITE_HEAL_AMOUNT   = 1;
+const NANITE_HEAL_DURATION = 4000;  // ms
+const NANITE_COOLDOWN      = 20000; // ms
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   declare scene: GameScene;
 
@@ -26,11 +30,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dead = false;
   piloting = true;
 
+  private animPrefix: string = '';
+  readonly bodyConfig: { w: number; h: number; offX: number; offY: number };
+
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private keyA: Phaser.Input.Keyboard.Key;
   private keyD: Phaser.Input.Keyboard.Key;
   private keySpace: Phaser.Input.Keyboard.Key;
   private keyShift: Phaser.Input.Keyboard.Key;
+  private keyQ: Phaser.Input.Keyboard.Key;
 
   private rapidGun: RapidGun;
   private turret: Turret;
@@ -39,12 +47,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jetpackInner!: Phaser.GameObjects.Particles.ParticleEmitter;
   private jetpackOuter!: Phaser.GameObjects.Particles.ParticleEmitter;
 
-  constructor(scene: GameScene, x: number, y: number) {
-    super(scene, x, y, 'mech');
+  private naniteActive     = false;
+  private naniteHealElapsed = 0;
+  private naniteCooldown   = 0;
+  private naniteHealStart  = 0;
+
+  private naniteAmbient!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private naniteSpark!:   Phaser.GameObjects.Particles.ParticleEmitter;
+  private naniteSparkEvent: Phaser.Time.TimerEvent | null = null;
+
+  constructor(scene: GameScene, x: number, y: number, mechType: string = 'mech') {
+    const MECH_CONFIG: Record<string, {
+      textureKey: string; animPrefix: string; scale: number;
+      bodyW: number; bodyH: number; bodyOffX: number; bodyOffY: number;
+    }> = {
+      mech:  { textureKey: 'mech',  animPrefix: '',       scale: 0.75, bodyW: 100, bodyH: 150, bodyOffX: 37.5, bodyOffY: 0  },
+      mech4: { textureKey: 'mech4', animPrefix: 'mech4-', scale: 1.6,  bodyW: 36,  bodyH: 60,  bodyOffX: 17,   bodyOffY: 10 },
+    };
+    const cfg = MECH_CONFIG[mechType] ?? MECH_CONFIG['mech'];
+
+    super(scene, x, y, cfg.textureKey);
     this.scene = scene;
 
+    this.animPrefix = cfg.animPrefix;
+    this.bodyConfig = { w: cfg.bodyW, h: cfg.bodyH, offX: cfg.bodyOffX, offY: cfg.bodyOffY };
+
     this.setOrigin(0.5, 1); // feet at position
-    this.setScale(0.75);
+    this.setScale(cfg.scale);
     this.setDepth(10);
 
     const kb = scene.input.keyboard!;
@@ -53,6 +82,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.keyD      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.keySpace  = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.keyShift  = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+    this.keyQ      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
 
     this.rapidGun = new RapidGun(scene);
     this.turret   = new Turret(scene);
@@ -70,7 +100,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Prevent context menu on right-click
     scene.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    this.play('idle');
+    this.play(this.animPrefix + 'idle');
 
     // Jetpack flame emitters — orange core + cyan outer glow
     this.jetpackInner = scene.add.particles(0, 0, 'pixel', {
@@ -96,6 +126,39 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       blendMode: 'ADD',
       emitting:  false,
     }).setDepth(8);
+
+    // Nanite heal emitters
+    this.naniteAmbient = scene.add.particles(this.x, this.y - 56, 'pixel', {
+      tint: [0x00ff88, 0x44ffcc, 0x00ccff],
+      speed: { min: 20, max: 50 },
+      angle: { min: 250, max: 290 },
+      lifespan: 800,
+      scale: { start: 1.5, end: 0 },
+      frequency: 60,
+      blendMode: Phaser.BlendModes.ADD,
+      emitting: false,
+    }).setDepth(9);
+
+    this.naniteSpark = scene.add.particles(this.x, this.y - 56, 'pixel', {
+      tint: [0x00ffff, 0xffffff],
+      speed: { min: 60, max: 120 },
+      angle: { min: 0, max: 360 },
+      lifespan: 300,
+      scale: { start: 2, end: 0 },
+      quantity: 6,
+      blendMode: Phaser.BlendModes.ADD,
+      emitting: false,
+    }).setDepth(9);
+
+    // Nanite Q key listener
+    this.keyQ.on('down', () => {
+      if (!this.naniteActive && this.naniteCooldown <= 0 && this.hp < this.maxHp && !this.dead && this.piloting) {
+        this.naniteActive = true;
+        this.naniteHealElapsed = 0;
+        this.naniteHealStart = this.hp;
+        this.startNaniteParticles();
+      }
+    });
   }
 
   update(time: number, delta: number): void {
@@ -172,6 +235,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.events.emit('missileCooldown', this.missile.getCooldownProgress());
     this.scene.events.emit('turretCooldown', this.turret.getCooldownProgress(time));
     this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
+
+    // ── Nanite heal ──────────────────────────────────────────────────
+    if (this.naniteActive) {
+      this.naniteHealElapsed += delta;
+      const progress = Math.min(this.naniteHealElapsed / NANITE_HEAL_DURATION, 1);
+      this.hp = Math.min(this.naniteHealStart + NANITE_HEAL_AMOUNT * progress, this.maxHp);
+      this.scene.events.emit('healthChange', this.hp, this.maxHp);
+      this.scene.events.emit('naniteChange', 'active', progress);
+      this.naniteAmbient.setPosition(this.x, this.y - 56);
+      if (progress >= 1) {
+        this.naniteActive = false;
+        this.naniteCooldown = NANITE_COOLDOWN;
+        this.stopNaniteParticles();
+      }
+    } else if (this.naniteCooldown > 0) {
+      this.naniteCooldown = Math.max(0, this.naniteCooldown - delta);
+      const cdProgress = 1 - this.naniteCooldown / NANITE_COOLDOWN;
+      this.scene.events.emit('naniteChange', 'cooldown', cdProgress);
+    } else {
+      this.scene.events.emit('naniteChange', 'ready', 1);
+    }
   }
 
   private updateAnim(body: Phaser.Physics.Arcade.Body): void {
@@ -193,7 +277,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private playAnim(key: AnimState): void {
     if (this.curAnim === key) return;
     this.curAnim = key;
-    this.play({ key, repeat: -1 }, true);
+    this.play({ key: this.animPrefix + key, repeat: -1 }, true);
+  }
+
+  private startNaniteParticles(): void {
+    this.naniteAmbient.start();
+    // Spark burst every 600ms
+    this.naniteSparkEvent = this.scene.time.addEvent({
+      delay: 600,
+      loop: true,
+      callback: () => {
+        if (this.naniteActive) {
+          this.naniteSpark.emitParticle(6, this.x, this.y - 56);
+        }
+      },
+    });
+  }
+
+  private stopNaniteParticles(): void {
+    this.naniteAmbient.stop();
+    if (this.naniteSparkEvent) {
+      this.naniteSparkEvent.remove();
+      this.naniteSparkEvent = null;
+    }
   }
 
   isDead(): boolean {
@@ -212,7 +318,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.moves = false;                // freeze mech in place (even mid-air)
     body.setCollideWorldBounds(false); // prevent spurious world-bounds events while frozen
     this.setAlpha(0.45);               // dark/idle visual — mech "goes dark"
-    this.play({ key: 'idle', repeat: -1 }, true);
+    this.play({ key: this.animPrefix + 'idle', repeat: -1 }, true);
     this.jetpackInner.emitting = false;
     this.jetpackOuter.emitting = false;
     // Spawn pilot 20px to the side and just above the mech top.
@@ -239,7 +345,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.dead = true;
       this.jetpackInner.emitting = false;
       this.jetpackOuter.emitting = false;
-      this.play('death');
+      this.play(this.animPrefix + 'death');
       this.scene.audio.play('death');
       const body = this.body as Phaser.Physics.Arcade.Body;
       body.setVelocity(0, 0);
@@ -249,7 +355,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       });
     } else {
       this.hurtLock = 600;
-      this.play({ key: 'hurt', repeat: 0 }, true);
+      this.play({ key: this.animPrefix + 'hurt', repeat: 0 }, true);
       this.curAnim = 'hurt';
       this.setTint(0xff4444);
       this.scene.time.delayedCall(200, () => this.clearTint());
@@ -260,6 +366,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   destroy(fromScene?: boolean): void {
     this.jetpackInner.destroy();
     this.jetpackOuter.destroy();
+    this.naniteAmbient.destroy();
+    this.naniteSpark.destroy();
     super.destroy(fromScene);
   }
 }
