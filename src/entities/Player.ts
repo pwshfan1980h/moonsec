@@ -17,6 +17,16 @@ const NANITE_HEAL_AMOUNT   = 1;
 const NANITE_HEAL_DURATION = 4000;  // ms
 const NANITE_COOLDOWN      = 20000; // ms
 
+export type MechType = 'mech' | 'mech4';
+
+const MECH_CONFIG: Record<MechType, {
+  textureKey: string; animPrefix: string; scale: number;
+  bodyW: number; bodyH: number; bodyOffX: number; bodyOffY: number;
+}> = {
+  mech:  { textureKey: 'mech',  animPrefix: '',       scale: 0.75, bodyW: 100, bodyH: 150, bodyOffX: 37.5, bodyOffY: 0  },
+  mech4: { textureKey: 'mech4', animPrefix: 'mech4-', scale: 1.6,  bodyW: 36,  bodyH: 60,  bodyOffX: 17,   bodyOffY: 10 },
+};
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   declare scene: GameScene;
 
@@ -56,14 +66,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private naniteSpark!:   Phaser.GameObjects.Particles.ParticleEmitter;
   private naniteSparkEvent: Phaser.Time.TimerEvent | null = null;
 
-  constructor(scene: GameScene, x: number, y: number, mechType: string = 'mech') {
-    const MECH_CONFIG: Record<string, {
-      textureKey: string; animPrefix: string; scale: number;
-      bodyW: number; bodyH: number; bodyOffX: number; bodyOffY: number;
-    }> = {
-      mech:  { textureKey: 'mech',  animPrefix: '',       scale: 0.75, bodyW: 100, bodyH: 150, bodyOffX: 37.5, bodyOffY: 0  },
-      mech4: { textureKey: 'mech4', animPrefix: 'mech4-', scale: 1.6,  bodyW: 36,  bodyH: 60,  bodyOffX: 17,   bodyOffY: 10 },
-    };
+  constructor(scene: GameScene, x: number, y: number, mechType: MechType = 'mech') {
     const cfg = MECH_CONFIG[mechType] ?? MECH_CONFIG['mech'];
 
     super(scene, x, y, cfg.textureKey);
@@ -338,6 +341,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   takeDamage(amount: number): void {
     if (this.dead || this.hurtLock > 0) return;
+    if (this.naniteActive) {
+      this.naniteActive = false;
+      this.naniteCooldown = NANITE_COOLDOWN;
+      this.stopNaniteParticles();
+    }
     this.hp = Math.max(0, this.hp - amount);
     this.scene.events.emit('healthChange', this.hp, this.maxHp);
 
@@ -364,6 +372,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
+    this.stopNaniteParticles();
     this.jetpackInner.destroy();
     this.jetpackOuter.destroy();
     this.naniteAmbient.destroy();
