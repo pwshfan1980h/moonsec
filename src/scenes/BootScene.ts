@@ -53,25 +53,31 @@ export class BootScene extends Phaser.Scene {
       meta: { frameTags: Array<{ name: string; from: number; to: number; direction: string }> };
     };
 
+    if (!atlas) {
+      console.warn(`[BootScene] No Aseprite data found for key: ${textureKey}`);
+      return;
+    }
+
     const frameKeys = Object.keys(atlas.frames);
 
     for (const tag of atlas.meta.frameTags) {
-      const frames: Phaser.Types.Animations.AnimationFrame[] = [];
+      const animFrames: Phaser.Types.Animations.AnimationFrame[] = [];
       for (let i = tag.from; i <= tag.to; i++) {
         const frameKey = frameKeys[i];
-        frames.push({
+        animFrames.push({
           key: textureKey,
           frame: frameKey,
           duration: atlas.frames[frameKey].duration,
         });
       }
 
+      if (tag.direction === 'reverse') animFrames.reverse();
+
       const isPingPong = tag.direction === 'pingpong';
 
       this.anims.create({
         key: prefix + tag.name,
-        frames,
-        repeat: -1,
+        frames: animFrames,
         yoyo: isPingPong,
       });
     }
