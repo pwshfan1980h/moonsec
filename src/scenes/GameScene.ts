@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
+import type { MechType } from '../entities/Player';
 import { Pilot } from '../entities/Pilot';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
@@ -28,6 +29,12 @@ export class GameScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'Game' });
+  }
+
+  init(data: { mechType?: MechType }): void {
+    if (data.mechType) {
+      this.registry.set('mechType', data.mechType);
+    }
   }
 
   create(): void {
@@ -93,15 +100,15 @@ export class GameScene extends Phaser.Scene {
 
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
-    this.player = new Player(this, 300, GROUND_Y - 5);
+    const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
+    this.player = new Player(this, 300, GROUND_Y - 5, mechType);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
 
-    // Body 100x150 source → 75x112.5 world at scale 0.75.
-    // Offset(62.5, 37.5) correctly places body with feet at player.y.
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
-    pb.setSize(100, 150, false);
-    pb.setOffset(37.5, 0);
+    const bc = this.player.bodyConfig;
+    pb.setSize(bc.w, bc.h, false);
+    pb.setOffset(bc.offX, bc.offY);
     pb.setCollideWorldBounds(true);
     pb.setMaxVelocityX(400);
 
