@@ -311,8 +311,8 @@ export class GameScene extends Phaser.Scene {
   private cullBullets(): void {
     const cam = this.cameras.main;
     const minX = cam.scrollX - 100;
-    const maxX = cam.scrollX + 900;
-    const maxY = 550;
+    const maxX = cam.scrollX + 1380;
+    const maxY = 820;
 
     const cull = (group: Phaser.Physics.Arcade.Group) => {
       group.getChildren().forEach((go) => {
