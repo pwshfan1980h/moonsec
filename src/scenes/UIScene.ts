@@ -103,10 +103,10 @@ export class UIScene extends Phaser.Scene {
     this.naniteBar = this.add.rectangle(nx + 22, ny, BAR_W, 6, 0x00ff88).setOrigin(0, 0);
 
     // ── Missile cooldown bar (top-right) ──────────────────────────
-    const mx = 800 - BAR_W - PAD - 22;
+    const mx = 1280 - BAR_W - PAD - 22;
     const my = PAD;
 
-    this.missileLabel = this.add.text(800 - PAD, my, 'MSL', {
+    this.missileLabel = this.add.text(1280 - PAD, my, 'MSL', {
       fontFamily: 'monospace', fontSize: '10px', color: '#ffff44',
       align: 'right',
     }).setOrigin(1, 0);
@@ -117,7 +117,7 @@ export class UIScene extends Phaser.Scene {
 
     // ── Turret cooldown bar (below missile) ───────────────────────
     const ty = my + 18;
-    this.turretLabel = this.add.text(800 - PAD, ty, 'TRT', {
+    this.turretLabel = this.add.text(1280 - PAD, ty, 'TRT', {
       fontFamily: 'monospace', fontSize: '10px', color: '#ff8844',
       align: 'right',
     }).setOrigin(1, 0);
@@ -125,32 +125,32 @@ export class UIScene extends Phaser.Scene {
     this.turretBar = this.add.rectangle(mx, ty, BAR_W, 6, 0xff6600).setOrigin(0, 0);
 
     // ── Score (top-center) ────────────────────────────────────────
-    this.scoreText = this.add.text(400, PAD, '0', {
+    this.scoreText = this.add.text(640, PAD, '0', {
       fontFamily: 'monospace', fontSize: '16px', color: '#ffffff',
       align: 'center',
     }).setOrigin(0.5, 0);
 
     // ── Persistent wave counter (below score) ─────────────────────
-    this.waveCounter = this.add.text(400, PAD + 20, '', {
+    this.waveCounter = this.add.text(640, PAD + 20, '', {
       fontFamily: 'monospace', fontSize: '9px', color: '#666688',
       align: 'center',
     }).setOrigin(0.5, 0);
 
     // ── Controls hint (bottom-left) ───────────────────────────────
-    this.add.text(PAD, 450 - PAD, 'A/D move  SPACE jump/jetpack  LMB turret  RMB rapid  SHIFT missile  ESC pause', {
+    this.add.text(PAD, 720 - PAD, 'A/D move  SPACE jump/jetpack  LMB turret  RMB rapid  SHIFT missile  ESC pause', {
       fontFamily: 'monospace', fontSize: '9px', color: '#334455',
     }).setOrigin(0, 1);
 
     // ── Wave announcement (big, fades out) ────────────────────────
-    this.waveText = this.add.text(400, 200, '', {
+    this.waveText = this.add.text(640, 320, '', {
       fontFamily: 'monospace', fontSize: '28px', color: '#ff6666',
       align: 'center',
     }).setOrigin(0.5, 0.5).setAlpha(0).setDepth(30);
 
     // ── Pause overlay ─────────────────────────────────────────────
-    this.pauseBg = this.add.rectangle(400, 225, 800, 450, 0x000000, 0.6)
+    this.pauseBg = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.6)
       .setDepth(50).setVisible(false);
-    this.pauseText = this.add.text(400, 225, 'PAUSED\n\nESC to resume', {
+    this.pauseText = this.add.text(640, 360, 'PAUSED\n\nESC to resume', {
       fontFamily: 'monospace', fontSize: '20px', color: '#8888cc',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(51).setVisible(false);
@@ -345,22 +345,22 @@ export class UIScene extends Phaser.Scene {
     const highScore = Math.max(prev, this.currentScore);
 
     // Dark overlay
-    this.add.rectangle(400, 225, 800, 450, 0x000000, 0.7).setDepth(60);
+    this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7).setDepth(60);
 
     // Game over text
-    this.add.text(400, 150, 'GAME OVER', {
+    this.add.text(640, 240, 'GAME OVER', {
       fontFamily: 'monospace', fontSize: '32px', color: '#ff2222',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
     // Score
-    this.add.text(400, 200, `SCORE: ${this.currentScore}`, {
+    this.add.text(640, 320, `SCORE: ${this.currentScore}`, {
       fontFamily: 'monospace', fontSize: '16px', color: '#ffffff',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
     // Wave reached
-    this.add.text(400, 225, `WAVE: ${this.currentWave}`, {
+    this.add.text(640, 360, `WAVE: ${this.currentWave}`, {
       fontFamily: 'monospace', fontSize: '12px', color: '#8888aa',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
@@ -368,13 +368,13 @@ export class UIScene extends Phaser.Scene {
     // High score
     const hsColor = isNew ? '#ffff00' : '#666688';
     const hsPrefix = isNew ? 'NEW HIGH SCORE: ' : 'HIGH SCORE: ';
-    this.add.text(400, 255, `${hsPrefix}${highScore}`, {
+    this.add.text(640, 408, `${hsPrefix}${highScore}`, {
       fontFamily: 'monospace', fontSize: '12px', color: hsColor,
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
     // Restart prompt
-    const restartText = this.add.text(400, 310, 'PRESS R TO RESTART', {
+    const restartText = this.add.text(640, 496, 'PRESS R TO RESTART', {
       fontFamily: 'monospace', fontSize: '14px', color: '#4488ff',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);

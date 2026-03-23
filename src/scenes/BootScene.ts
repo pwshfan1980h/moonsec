@@ -8,14 +8,14 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     // Loading bar
     const bar = this.add.graphics();
-    const w = 300, h = 12, x = (800 - w) / 2, y = 215;
+    const w = 300, h = 12, x = (1280 - w) / 2, y = 344;
     this.add.graphics().fillStyle(0x222244).fillRect(x - 2, y - 2, w + 4, h + 4);
 
     this.load.on('progress', (v: number) => {
       bar.clear().fillStyle(0x4488ff).fillRect(x, y, w * v, h);
     });
 
-    this.add.text(400, 195, 'MOONSEC // LOADING', {
+    this.add.text(640, 312, 'MOONSEC // LOADING', {
       fontFamily: 'monospace', fontSize: '13px', color: '#6688bb',
     }).setOrigin(0.5);
 

@@ -228,7 +228,7 @@ export class GameScene extends Phaser.Scene {
 
   private makeBackground(): void {
     // Solid deep space — fixed to screen
-    this.add.rectangle(400, 225, 800, 450, 0x030318).setDepth(0).setScrollFactor(0);
+    this.add.rectangle(640, 360, 1280, 720, 0x030318).setDepth(0).setScrollFactor(0);
 
     // Generate star textures
     const makeStar = (count: number, size: number, alpha: number, key: string) => {
@@ -236,20 +236,20 @@ export class GameScene extends Phaser.Scene {
       gfx.fillStyle(0xffffff, alpha);
       for (let i = 0; i < count; i++) {
         gfx.fillRect(
-          Phaser.Math.Between(0, 800),
+          Phaser.Math.Between(0, 1280),
           Phaser.Math.Between(0, GROUND_Y),
           size, size,
         );
       }
-      gfx.generateTexture(key, 800, GROUND_Y);
+      gfx.generateTexture(key, 1280, GROUND_Y);
       gfx.destroy();
     };
 
     makeStar(160, 1, 0.4, 'stars-far');
     makeStar(60, 2, 0.7, 'stars-near');
 
-    this.bgFar  = this.add.tileSprite(400, GROUND_Y / 2, 800, GROUND_Y, 'stars-far').setDepth(1).setScrollFactor(0);
-    this.bgNear = this.add.tileSprite(400, GROUND_Y / 2, 800, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
+    this.bgFar  = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-far').setDepth(1).setScrollFactor(0);
+    this.bgNear = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
   }
 
   private updateParallax(): void {

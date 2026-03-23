@@ -27,10 +27,10 @@ export class MechSelectScene extends Phaser.Scene {
     ];
 
     // Dark background
-    this.add.rectangle(400, 225, 800, 450, 0x080818);
+    this.add.rectangle(640, 360, 1280, 720, 0x080818);
 
     // Title
-    this.add.text(400, 48, 'SELECT MECH', {
+    this.add.text(640, 48, 'SELECT MECH', {
       fontFamily: 'monospace',
       fontSize: '28px',
       color: '#00ccff',
@@ -39,8 +39,8 @@ export class MechSelectScene extends Phaser.Scene {
 
     const boxW = 180;
     const boxH = 200;
-    const centerY = 220;
-    const centerXs = [255, 545];
+    const centerY = 352;
+    const centerXs = [408, 872];
 
     for (let i = 0; i < mechs.length; i++) {
       const mech = mechs[i];
@@ -93,7 +93,7 @@ export class MechSelectScene extends Phaser.Scene {
     }
 
     // Instruction text at bottom
-    this.add.text(400, 410, 'A/D — SELECT    ENTER — CONFIRM', {
+    this.add.text(640, 656, 'A/D — SELECT    ENTER — CONFIRM', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#446677',
