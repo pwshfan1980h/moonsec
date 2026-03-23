@@ -19,8 +19,9 @@ export class BootScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '13px', color: '#6688bb',
     }).setOrigin(0.5);
 
-    // Player mech (Aseprite atlas for proper per-frame timing)
+    // Player mechs (Aseprite atlas for proper per-frame timing)
     this.load.aseprite('mech', 'assets/mech-sheet.png', 'assets/mech-sheet.json');
+    this.load.aseprite('mech4', 'assets/mech4-sheet.png', 'assets/mech4-sheet.json');
 
     // Enemy drones as spritesheets (fixed-size frames, simpler)
     this.load.spritesheet('drone-red', 'assets/Viper-sheet.png', {
@@ -32,8 +33,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Mech: createFromAseprite reads frameTags → creates idle/walk/run/shoot/jump_*/etc.
-    this.anims.createFromAseprite('mech');
+    // Mechs: build animations with prefix support for each mech type
+    this.buildAsepriteAnims('mech', '');        // → 'idle', 'walk', etc. (unchanged)
+    this.buildAsepriteAnims('mech4', 'mech4-'); // → 'mech4-idle', 'mech4-walk', etc.
 
     // Drone animations (manual with prefixed keys to avoid conflicts)
     this.buildDroneAnims('drone-red');
@@ -42,8 +44,37 @@ export class BootScene extends Phaser.Scene {
     // Procedural bullet/effect textures
     this.makeTextures();
 
-    this.scene.start('Game');
-    this.scene.launch('UI');
+    this.scene.start('MechSelect');
+  }
+
+  private buildAsepriteAnims(textureKey: string, prefix: string): void {
+    const atlas = this.cache.json.get(textureKey) as {
+      frames: Record<string, { duration: number }>;
+      meta: { frameTags: Array<{ name: string; from: number; to: number; direction: string }> };
+    };
+
+    const frameKeys = Object.keys(atlas.frames);
+
+    for (const tag of atlas.meta.frameTags) {
+      const frames: Phaser.Types.Animations.AnimationFrame[] = [];
+      for (let i = tag.from; i <= tag.to; i++) {
+        const frameKey = frameKeys[i];
+        frames.push({
+          key: textureKey,
+          frame: frameKey,
+          duration: atlas.frames[frameKey].duration,
+        });
+      }
+
+      const isPingPong = tag.direction === 'pingpong';
+
+      this.anims.create({
+        key: prefix + tag.name,
+        frames,
+        repeat: -1,
+        yoyo: isPingPong,
+      });
+    }
   }
 
   private buildDroneAnims(key: string): void {

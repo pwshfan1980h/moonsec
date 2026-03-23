@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
+import { MechSelectScene } from './scenes/MechSelectScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 
@@ -15,7 +16,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, GameScene, UIScene],
+  scene: [BootScene, MechSelectScene, GameScene, UIScene],
   pixelArt: true,
   roundPixels: true,
 };
