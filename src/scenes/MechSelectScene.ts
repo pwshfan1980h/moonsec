@@ -90,14 +90,6 @@ export class MechSelectScene extends Phaser.Scene {
         this.updateSelection();
         this.confirmSelection(mechs);
       });
-
-      // Click on border area also works
-      border.setInteractive({ useHandCursor: true });
-      border.on('pointerdown', () => {
-        this.selectedIndex = i;
-        this.updateSelection();
-        this.confirmSelection(mechs);
-      });
     }
 
     // Instruction text at bottom
