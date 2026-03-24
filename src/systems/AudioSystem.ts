@@ -112,8 +112,84 @@ export class AudioSystem {
     }
   }
 
-  startLoop(_id: LoopId): void { /* Task 3 */ }
-  stopLoop(_id: LoopId): void  { /* Task 3 */ }
+  startLoop(id: LoopId): void {
+    if (this.loops.has(id)) return; // already running — no-op
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+      const FADE_IN = 0.05;
+
+      const gainNode = this.ctx.createGain();
+      gainNode.gain.setValueAtTime(0, t);
+      gainNode.connect(this.ctx.destination);
+
+      const sources: (AudioBufferSourceNode | OscillatorNode)[] = [];
+
+      if (id === 'jetpack') {
+        // White noise through bandpass 900 Hz (Q=1.5) — thrust hiss
+        const noiseSrc = this.ctx.createBufferSource();
+        noiseSrc.buffer = this.noiseBuffer;
+        noiseSrc.loop = true;
+        const bp = this.ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(900, t);
+        bp.Q.setValueAtTime(1.5, t);
+        noiseSrc.connect(bp);
+        bp.connect(gainNode);
+        noiseSrc.start(t);
+        sources.push(noiseSrc);
+
+        // Sub-sine 55 Hz — body/rumble
+        const subOsc = this.ctx.createOscillator();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(55, t);
+        subOsc.connect(gainNode);
+        subOsc.start(t);
+        sources.push(subOsc);
+
+        gainNode.gain.linearRampToValueAtTime(0.35, t + FADE_IN);
+
+      } else if (id === 'missile-flight') {
+        // Sine sweeping 180 → 500 Hz over 1.5 s then holds
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, t);
+        osc.frequency.linearRampToValueAtTime(500, t + 1.5);
+        osc.connect(gainNode);
+        osc.start(t);
+        sources.push(osc);
+
+        gainNode.gain.linearRampToValueAtTime(0.10, t + FADE_IN);
+      }
+
+      this.loops.set(id, { sources, gainNode });
+    } catch { /* ignore */ }
+  }
+
+  stopLoop(id: LoopId): void {
+    const entry = this.loops.get(id);
+    if (!entry) return; // not running — no-op
+    this.loops.delete(id);
+
+    try {
+      const t = this.ctx.currentTime;
+      const FADE_OUT = 0.08;
+
+      entry.gainNode.gain.cancelScheduledValues(t);
+      entry.gainNode.gain.setValueAtTime(entry.gainNode.gain.value, t);
+      entry.gainNode.gain.linearRampToValueAtTime(0, t + FADE_OUT);
+
+      setTimeout(() => {
+        try {
+          entry.gainNode.disconnect();
+          for (const src of entry.sources) {
+            try { src.stop(); } catch { /* already stopped */ }
+            src.disconnect();
+          }
+        } catch { /* ignore */ }
+      }, FADE_OUT * 1000 + 20);
+    } catch { /* ignore */ }
+  }
 
   update(_state: AudioUpdateState): void { /* Task 4 */ }
 
