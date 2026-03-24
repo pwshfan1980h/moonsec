@@ -270,7 +270,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     const vx = Math.abs(body.velocity.x);
-    if (vx > RUN_SPEED * 0.6) {
+    // WALK_SPEED = 220; keep run threshold well above it so walk anim plays during normal movement
+    if (vx > WALK_SPEED * 1.4) {
       this.playAnim('run');
     } else if (vx > 15) {
       this.playAnim('walk');

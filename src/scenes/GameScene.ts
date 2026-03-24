@@ -174,7 +174,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Camera ---
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    this.cameras.main.startFollow(this.player, true, 0.12, 0.08);
+    this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
 
     // --- Spawner ---
     this.spawner = new DroneSpawner(this);
@@ -240,13 +240,13 @@ export class GameScene extends Phaser.Scene {
           this.pilot.destroy();
           this.pilot = null;
           this.player.reenter();
-          this.cameras.main.startFollow(this.player, true, 0.12, 0.08);
+          this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
         }
       } else {
         if (this.player.isDead() || this.player.isHurtLocked()) return;
         const spawnPos = this.player.eject();
         this.pilot = new Pilot(this, spawnPos.x, spawnPos.y);
-        this.cameras.main.startFollow(this.pilot, true, 0.12, 0.08);
+        this.cameras.main.startFollow(this.pilot, false, 0.12, 0.08);
         this.pilotGroundCollider = this.physics.add.collider(this.pilot, this.ground);
         this.pilotBulletOverlap = this.physics.add.overlap(
           this.droneBullets,
