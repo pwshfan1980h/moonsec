@@ -65,7 +65,7 @@ export class HomingMissile {
     emitter.setDepth(15);
 
     this.active.push({ obj: m, angle, target, emitter });
-    this.scene.audio.play('missile');
+    // audio wired in Task 7 (startLoop replaces play('missile'))
   }
 
   update(_time: number, _delta: number): void {

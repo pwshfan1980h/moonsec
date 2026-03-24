@@ -1,9 +1,24 @@
-// Procedural audio via Web Audio API — no external files needed for POC
+// Procedural audio via Web Audio API — no external files needed
 
-type SoundId = 'rapid' | 'turret' | 'missile' | 'explosion' | 'hit' | 'hurt' | 'jump' | 'death' | 'drone-shoot';
+type SoundId =
+  | 'rapid' | 'turret' | 'hit' | 'hurt' | 'jump' | 'death'
+  | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact';
+
+type LoopId = 'jetpack' | 'missile-flight';
+
+interface AudioUpdateState {
+  onGround: boolean;
+  moving: boolean;   // Math.abs(velocityX) > 10
+  delta: number;     // ms
+}
+
+interface LoopEntry {
+  sources: (AudioBufferSourceNode | OscillatorNode)[];
+  gainNode: GainNode;
+}
 
 interface ToneConfig {
-  freq: number | [number, number]; // [start, end] = sweep
+  freq: number | [number, number];
   duration: number;
   type: OscillatorType;
   gain: number;
@@ -11,29 +26,47 @@ interface ToneConfig {
 }
 
 const TONES: Record<SoundId, ToneConfig> = {
-  rapid:       { freq: 1400, duration: 0.04, type: 'sawtooth',  gain: 0.10, filterFreq: 3000 },
-  turret:      { freq: [180, 60],  duration: 0.18, type: 'square',   gain: 0.25, filterFreq: 600  },
-  missile:     { freq: [220, 880], duration: 0.30, type: 'sawtooth', gain: 0.18, filterFreq: 2000 },
-  explosion:   { freq: [100, 30],  duration: 0.45, type: 'sawtooth', gain: 0.40, filterFreq: 400  },
-  hit:         { freq: 440,  duration: 0.06, type: 'square',   gain: 0.12, filterFreq: 2000 },
-  hurt:        { freq: [880, 220], duration: 0.20, type: 'square',   gain: 0.20, filterFreq: 1500 },
-  jump:        { freq: [300, 600], duration: 0.12, type: 'sine',     gain: 0.15 },
-  death:       { freq: [440, 55],  duration: 0.60, type: 'sawtooth', gain: 0.35, filterFreq: 800  },
-  'drone-shoot': { freq: 600, duration: 0.06, type: 'square',  gain: 0.08, filterFreq: 2500 },
+  rapid:           { freq: 1400,       duration: 0.04, type: 'sawtooth', gain: 0.10, filterFreq: 3000 },
+  turret:          { freq: [180, 60],  duration: 0.18, type: 'square',   gain: 0.25, filterFreq: 600  },
+  hit:             { freq: 440,        duration: 0.06, type: 'square',   gain: 0.12, filterFreq: 2000 },
+  hurt:            { freq: [880, 220], duration: 0.20, type: 'square',   gain: 0.20, filterFreq: 1500 },
+  jump:            { freq: [300, 600], duration: 0.12, type: 'sine',     gain: 0.15 },
+  death:           { freq: [440, 55],  duration: 0.60, type: 'sawtooth', gain: 0.35, filterFreq: 800  },
+  'drone-shoot':   { freq: 600,        duration: 0.06, type: 'square',   gain: 0.08, filterFreq: 2500 },
+  // explosion and missile-impact are handled by layered private methods — play() routes them
+  explosion:       { freq: [80, 15],   duration: 0.8,  type: 'sine',     gain: 0.50 },
+  footstep:        { freq: 0,          duration: 0.012, type: 'sine',    gain: 0.07 },
+  'missile-impact':{ freq: [60, 12],   duration: 0.9,  type: 'sine',     gain: 0.50 },
 };
 
 export class AudioSystem {
   private ctx: AudioContext;
   private lastPlay: Partial<Record<SoundId, number>> = {};
   private minInterval: Partial<Record<SoundId, number>> = {
-    rapid: 55, // throttle rapid gun clicks
+    rapid: 55,
   };
+  private loops = new Map<LoopId, LoopEntry>();
+  private noiseBuffer!: AudioBuffer;
+  private footstepTimer = 0;
+  private wasOnGround = false;
 
   constructor() {
     this.ctx = new AudioContext();
+    this.initNoiseBuffer();
+  }
+
+  private initNoiseBuffer(): void {
+    const sr = this.ctx.sampleRate;
+    this.noiseBuffer = this.ctx.createBuffer(1, sr, sr);
+    const data = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < sr; i++) data[i] = Math.random() * 2 - 1;
   }
 
   play(id: SoundId): void {
+    if (id === 'explosion')       { this.playExplosion();     return; }
+    if (id === 'missile-impact')  { this.playMissileImpact(); return; }
+    if (id === 'footstep')        { this.playFootstep();      return; }
+
     const now = performance.now();
     const min = this.minInterval[id] ?? 0;
     if (min > 0 && this.lastPlay[id] !== undefined && now - this.lastPlay[id]! < min) return;
@@ -78,4 +111,13 @@ export class AudioSystem {
       // Silently ignore audio errors
     }
   }
+
+  startLoop(_id: LoopId): void { /* Task 3 */ }
+  stopLoop(_id: LoopId): void  { /* Task 3 */ }
+
+  update(_state: AudioUpdateState): void { /* Task 4 */ }
+
+  private playExplosion(): void     { /* Task 2 */ }
+  private playMissileImpact(): void { /* Task 2 */ }
+  private playFootstep(): void      { /* Task 4 */ }
 }
