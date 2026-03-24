@@ -36,6 +36,9 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('drone-green', 'assets/Hornet-sheet.png', {
       frameWidth: 30, frameHeight: 25,
     });
+    this.load.spritesheet('kodiak', 'assets/Kodiak-sheet.png', {
+      frameWidth: 37, frameHeight: 30,
+    });
   }
 
   create(): void {
@@ -46,6 +49,7 @@ export class BootScene extends Phaser.Scene {
     // Drone animations (manual with prefixed keys to avoid conflicts)
     this.buildDroneAnims('drone-red');
     this.buildDroneAnims('drone-green');
+    this.buildDroneAnims('kodiak');
 
     // Procedural bullet/effect textures
     this.makeTextures();

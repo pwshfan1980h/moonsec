@@ -13,6 +13,7 @@ export class GameScene extends Phaser.Scene {
   droneBullets!: Phaser.Physics.Arcade.Group;
   missiles!: Phaser.Physics.Arcade.Group;
   drones!: Phaser.Physics.Arcade.Group;
+  crawlers!: Phaser.Physics.Arcade.Group;
   pickups!: Phaser.Physics.Arcade.Group;
   audio!: AudioSystem;
   score = 0;
@@ -120,6 +121,8 @@ export class GameScene extends Phaser.Scene {
 
     this.drones = this.physics.add.group({ runChildUpdate: true });
 
+    this.crawlers = this.physics.add.group({ runChildUpdate: true });
+
     this.pickups = this.physics.add.group({
       maxSize: 20,
       runChildUpdate: false,
@@ -142,6 +145,9 @@ export class GameScene extends Phaser.Scene {
 
     // Player lands on ground
     this.physics.add.collider(this.player, this.ground);
+
+    // Crawlers land on ground
+    this.physics.add.collider(this.crawlers, this.ground);
 
     // Drone bullets hit player
     this.physics.add.overlap(
@@ -392,24 +398,40 @@ export class GameScene extends Phaser.Scene {
         lastX = x;
         const y = yMin + hash(seed + 1000) * (yMax - yMin);
         this.platformData.push({ x, y, w });
-        this.addPlatform(x, y, w);
+        this.addStructure(x, y, w);
       }
     });
   }
 
-  private addPlatform(x: number, y: number, w: number): void {
-    const h = 8;
-    const rect = this.add.rectangle(x, y, w, h, 0x2a2a5a).setDepth(4);
+  private addStructure(x: number, y: number, w: number): void {
+    // Physics rect — one-way top surface, unchanged from before
+    const rect = this.add.rectangle(x, y, w, 8, 0x1c2040).setDepth(4);
     this.ground.add(rect);
-
-    // One-way: only the top surface blocks the player
     const body = rect.body as Phaser.Physics.Arcade.StaticBody;
     body.checkCollision.down  = false;
     body.checkCollision.left  = false;
     body.checkCollision.right = false;
 
-    // Glow line — intentionally slightly lighter than ground glow (0x4444cc)
-    this.add.rectangle(x, y - h / 2 + 1, w, 2, 0x5555dd).setDepth(5);
+    // Slab body below surface (visual only — no physics body)
+    this.add.rectangle(x, y + 14, w, 20, 0x12122e).setDepth(3);
+
+    // Corner posts
+    this.add.rectangle(x - w / 2 + 3, y + 14, 6, 20, 0x2a3a5a).setDepth(4);
+    this.add.rectangle(x + w / 2 - 3, y + 14, 6, 20, 0x2a3a5a).setDepth(4);
+
+    // Top edge glow
+    this.add.rectangle(x, y - 3, w, 2, 0x7799ff).setDepth(5);
+
+    // Bottom accent line
+    this.add.rectangle(x, y + 24, w, 2, 0x334466).setDepth(4);
+
+    // Amber indicator lights — 1 per ~50px of width
+    const lightCount = Math.max(1, Math.floor(w / 50));
+    const spacing    = w / (lightCount + 1);
+    for (let i = 0; i < lightCount; i++) {
+      const lx = x - w / 2 + spacing * (i + 1);
+      this.add.rectangle(lx, y + 14, 3, 3, 0xff8800).setDepth(5);
+    }
   }
 
   private cullBullets(): void {

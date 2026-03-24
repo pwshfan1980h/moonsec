@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from '../entities/Drone';
+import { Crawler } from '../entities/Crawler';
 import type { DroneVariant } from '../entities/Drone';
 import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS } from '../constants';
 
@@ -115,5 +116,58 @@ export class DroneSpawner {
     };
 
     spawnNext();
+
+    // Crawlers from wave 3 — 1 at wave 3, +1 every 2 waves, capped at 4
+    if (this.waveIndex >= 3) {
+      const crawlerCount = Math.min(4, Math.floor((this.waveIndex - 2) / 2) + 1);
+      const camRight = this.scene.cameras.main.scrollX + 1380;
+
+      for (let c = 0; c < crawlerCount; c++) {
+        const cx = Math.min(camRight + 80 + Math.random() * 200, WORLD_WIDTH - 100);
+        const crawler = new Crawler(this.scene, cx, GROUND_Y - 5, -1);
+        this.scene.add.existing(crawler);
+        this.scene.physics.add.existing(crawler);
+        crawler.initBody();
+        this.scene.crawlers.add(crawler);
+
+        this.scene.physics.add.overlap(
+          this.scene.playerBullets,
+          crawler,
+          (bullet, cr) => {
+            const b = bullet as Phaser.Physics.Arcade.Image;
+            b.setActive(false).setVisible(false);
+            if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+            (cr as unknown as Crawler).takeDamage(1);
+            this.scene.audio.play('hit');
+            this.scene.spawnFloatingText(
+              (cr as Phaser.GameObjects.Sprite).x,
+              (cr as Phaser.GameObjects.Sprite).y - 40, '-1', '#ffffff',
+            );
+          },
+        );
+
+        this.scene.physics.add.overlap(
+          this.scene.missiles,
+          crawler,
+          (missile, cr) => {
+            const m = missile as Phaser.Physics.Arcade.Image;
+            m.setData('hitTarget', true);
+            m.setActive(false).setVisible(false);
+            if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+            this.scene.spawnExplosion(m.x, m.y);
+            (cr as unknown as Crawler).takeDamage(3);
+            this.scene.cameras.main.shake(150, 0.01);
+            this.scene.audio.play('explosion');
+            this.scene.spawnFloatingText(
+              (cr as Phaser.GameObjects.Sprite).x,
+              (cr as Phaser.GameObjects.Sprite).y - 40, '-3', '#ffff00',
+            );
+          },
+        );
+
+        this.dronesAlive++;
+        this.scene.events.emit('dronesRemaining', this.dronesAlive);
+      }
+    }
   }
 }
