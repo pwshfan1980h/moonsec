@@ -197,9 +197,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         body.setAccelerationY(JETPACK_FORCE);
         body.velocity.y = Math.max(body.velocity.y, -200);
         this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
+        this.scene.audio.startLoop('jetpack');
       }
     } else {
       body.setAccelerationY(0);
+      this.scene.audio.stopLoop('jetpack');
       if (this.onGround && this.jetpackFuel < JETPACK_MAX_FUEL) {
         this.jetpackFuel = Math.min(JETPACK_MAX_FUEL, this.jetpackFuel + delta * 0.6);
         this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
@@ -324,6 +326,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.play({ key: this.animPrefix + 'idle', repeat: -1 }, true);
     this.jetpackInner.emitting = false;
     this.jetpackOuter.emitting = false;
+    this.scene.audio.stopLoop('jetpack');
     // Spawn pilot 20px to the side and just above the mech top.
     // displayHeight at scale 0.75 = 112.5px; +8px margin clears the sprite.
     const spawnX = this.x + (this.flipX ? -20 : 20);
@@ -340,7 +343,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   takeDamage(amount: number): void {
-    if (this.dead || this.hurtLock > 0) return;
+    if (this.dead || this.hurtLock > 0) {
+      this.scene.audio.stopLoop('jetpack'); // stop loop even on early return
+      return;
+    }
+    this.scene.audio.stopLoop('jetpack'); // stop loop on new damage (hurt + death branches)
     if (this.naniteActive) {
       this.naniteActive = false;
       this.naniteCooldown = NANITE_COOLDOWN;
@@ -354,6 +361,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.dead = true;
       this.jetpackInner.emitting = false;
       this.jetpackOuter.emitting = false;
+      this.scene.audio.stopLoop('jetpack'); // safety belt — no-op if already stopped
       this.play(this.animPrefix + 'death');
       this.scene.audio.play('death');
       const body = this.body as Phaser.Physics.Arcade.Body;
