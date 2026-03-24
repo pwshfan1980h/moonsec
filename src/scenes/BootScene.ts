@@ -19,6 +19,12 @@ export class BootScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '13px', color: '#6688bb',
     }).setOrigin(0.5);
 
+    // One-shot sound effects (loops handled procedurally in AudioSystem)
+    const sounds = ['rapid','turret','hit','hurt','jump','death','drone-shoot','explosion','footstep','missile-impact'];
+    for (const s of sounds) {
+      this.load.audio(s, `audio/${s}.wav`);
+    }
+
     // Player mechs (Aseprite atlas for proper per-frame timing)
     this.load.aseprite('mech', 'assets/mech-sheet.png', 'assets/mech-sheet.json');
     this.load.aseprite('mech4', 'assets/mech4-sheet.png', 'assets/mech4-sheet.json');

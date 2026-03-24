@@ -43,7 +43,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.audio = new AudioSystem();
+    this.audio = new AudioSystem(this.sound);
 
     // Input keys for pilot (Phaser deduplicates — safe alongside Player's own captures)
     const kb = this.input.keyboard!;

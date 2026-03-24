@@ -1,4 +1,7 @@
-// Procedural audio via Web Audio API — no external files needed
+// One-shot sounds use Phaser's built-in audio manager (loaded in BootScene).
+// Jetpack and missile-flight loops stay procedural (Web Audio API) — no loopable file equivalents.
+
+import type Phaser from 'phaser';
 
 type SoundId =
   | 'rapid' | 'turret' | 'hit' | 'hurt' | 'jump' | 'death'
@@ -17,103 +20,51 @@ interface LoopEntry {
   gainNode: GainNode;
 }
 
-interface ToneConfig {
-  freq: number | [number, number];
-  duration: number;
-  type: OscillatorType;
-  gain: number;
-  filterFreq?: number;
-}
-
-const TONES: Record<SoundId, ToneConfig> = {
-  rapid:           { freq: 1400,       duration: 0.04, type: 'sawtooth', gain: 0.10, filterFreq: 3000 },
-  turret:          { freq: [180, 60],  duration: 0.18, type: 'square',   gain: 0.25, filterFreq: 600  },
-  hit:             { freq: 440,        duration: 0.06, type: 'square',   gain: 0.12, filterFreq: 2000 },
-  hurt:            { freq: [880, 220], duration: 0.20, type: 'square',   gain: 0.20, filterFreq: 1500 },
-  jump:            { freq: [300, 600], duration: 0.12, type: 'sine',     gain: 0.15 },
-  death:           { freq: [440, 55],  duration: 0.60, type: 'sawtooth', gain: 0.35, filterFreq: 800  },
-  'drone-shoot':   { freq: 600,        duration: 0.06, type: 'square',   gain: 0.08, filterFreq: 2500 },
-  // explosion and missile-impact are handled by layered private methods — play() routes them
-  explosion:       { freq: [80, 15],   duration: 0.8,  type: 'sine',     gain: 0.50 },
-  footstep:        { freq: 0,          duration: 0.012, type: 'sine',    gain: 0.07 },
-  'missile-impact':{ freq: [60, 12],   duration: 0.9,  type: 'sine',     gain: 0.50 },
+// Volume per sound (Phaser normalises 0–1)
+const VOLUMES: Record<SoundId, number> = {
+  rapid:            0.25,
+  turret:           0.55,
+  hit:              0.40,
+  hurt:             0.70,
+  jump:             0.50,
+  death:            0.80,
+  'drone-shoot':    0.25,
+  explosion:        0.70,
+  footstep:         0.25,
+  'missile-impact': 0.80,
 };
 
 export class AudioSystem {
-  private ctx: AudioContext;
+  private soundManager: Phaser.Sound.BaseSoundManager;
+  private ctx: AudioContext;                              // used only for loops
+  private noiseBuffer!: AudioBuffer;
   private lastPlay: Partial<Record<SoundId, number>> = {};
-  private minInterval: Partial<Record<SoundId, number>> = {
-    rapid: 55,
+  private readonly minInterval: Partial<Record<SoundId, number>> = {
+    rapid: 55, // ms — prevents audio spam on rapid fire
   };
   private loops = new Map<LoopId, LoopEntry>();
-  private noiseBuffer!: AudioBuffer;
   private footstepTimer = 0;
   private wasOnGround = false;
 
-  constructor() {
+  constructor(soundManager: Phaser.Sound.BaseSoundManager) {
+    this.soundManager = soundManager;
     this.ctx = new AudioContext();
     this.initNoiseBuffer();
   }
 
-  private initNoiseBuffer(): void {
-    const sr = this.ctx.sampleRate;
-    this.noiseBuffer = this.ctx.createBuffer(1, sr, sr);
-    const data = this.noiseBuffer.getChannelData(0);
-    for (let i = 0; i < sr; i++) data[i] = Math.random() * 2 - 1;
-  }
-
   play(id: SoundId): void {
-    if (id === 'explosion')       { this.playExplosion();     return; }
-    if (id === 'missile-impact')  { this.playMissileImpact(); return; }
-    if (id === 'footstep')        { this.playFootstep();      return; }
-
     const now = performance.now();
     const min = this.minInterval[id] ?? 0;
     if (min > 0 && this.lastPlay[id] !== undefined && now - this.lastPlay[id]! < min) return;
     this.lastPlay[id] = now;
 
-    const cfg = TONES[id];
-    if (!cfg) return;
-
     try {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
-
-      const osc = this.ctx.createOscillator();
-      const gainNode = this.ctx.createGain();
-      const t = this.ctx.currentTime;
-
-      osc.type = cfg.type;
-
-      if (Array.isArray(cfg.freq)) {
-        osc.frequency.setValueAtTime(cfg.freq[0], t);
-        osc.frequency.linearRampToValueAtTime(cfg.freq[1], t + cfg.duration);
-      } else {
-        osc.frequency.setValueAtTime(cfg.freq, t);
-      }
-
-      gainNode.gain.setValueAtTime(cfg.gain, t);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, t + cfg.duration);
-
-      if (cfg.filterFreq) {
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(cfg.filterFreq, t);
-        osc.connect(filter);
-        filter.connect(gainNode);
-      } else {
-        osc.connect(gainNode);
-      }
-
-      gainNode.connect(this.ctx.destination);
-      osc.start(t);
-      osc.stop(t + cfg.duration + 0.01);
-    } catch {
-      // Silently ignore audio errors
-    }
+      this.soundManager.play(id, { volume: VOLUMES[id] });
+    } catch { /* ignore — sound not yet loaded or context suspended */ }
   }
 
   startLoop(id: LoopId): void {
-    if (this.loops.has(id)) return; // already running — no-op
+    if (this.loops.has(id)) return;
     try {
       if (this.ctx.state === 'suspended') this.ctx.resume();
       const t = this.ctx.currentTime;
@@ -126,7 +77,7 @@ export class AudioSystem {
       const sources: (AudioBufferSourceNode | OscillatorNode)[] = [];
 
       if (id === 'jetpack') {
-        // White noise through bandpass 900 Hz (Q=1.5) — thrust hiss
+        // White noise → bandpass 900 Hz (Q=1.5) — thrust hiss
         const noiseSrc = this.ctx.createBufferSource();
         noiseSrc.buffer = this.noiseBuffer;
         noiseSrc.loop = true;
@@ -139,7 +90,7 @@ export class AudioSystem {
         noiseSrc.start(t);
         sources.push(noiseSrc);
 
-        // Sub-sine 55 Hz — body/rumble
+        // Sub-sine 55 Hz — body rumble
         const subOsc = this.ctx.createOscillator();
         subOsc.type = 'sine';
         subOsc.frequency.setValueAtTime(55, t);
@@ -150,7 +101,7 @@ export class AudioSystem {
         gainNode.gain.linearRampToValueAtTime(0.35, t + FADE_IN);
 
       } else if (id === 'missile-flight') {
-        // Sine sweeping 180 → 500 Hz over 1.5 s then holds
+        // Sine sweep 180 → 500 Hz over 1.5s
         const osc = this.ctx.createOscillator();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(180, t);
@@ -168,7 +119,7 @@ export class AudioSystem {
 
   stopLoop(id: LoopId): void {
     const entry = this.loops.get(id);
-    if (!entry) return; // not running — no-op
+    if (!entry) return;
     this.loops.delete(id);
 
     try {
@@ -194,7 +145,7 @@ export class AudioSystem {
   update(state: AudioUpdateState): void {
     const { onGround, moving, delta } = state;
 
-    // Reset timer on landing to avoid an immediate step sound
+    // Reset timer on landing to prevent an immediate step sound
     if (!this.wasOnGround && onGround) {
       this.footstepTimer = 280;
     }
@@ -211,84 +162,10 @@ export class AudioSystem {
     }
   }
 
-  private playNoiseLayer(filterType: BiquadFilterType, filterFreq: number, duration: number, gain: number): void {
-    try {
-      const t = this.ctx.currentTime;
-      const src = this.ctx.createBufferSource();
-      src.buffer = this.noiseBuffer;
-
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = filterType;
-      filter.frequency.setValueAtTime(filterFreq, t);
-
-      const gainNode = this.ctx.createGain();
-      gainNode.gain.setValueAtTime(gain, t);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, t + duration);
-
-      src.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(this.ctx.destination);
-      src.start(t);
-      src.stop(t + duration + 0.01);
-    } catch { /* ignore */ }
-  }
-
-  private playOscLayer(type: OscillatorType, freqStart: number, freqEnd: number, duration: number, gain: number): void {
-    try {
-      const t = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freqStart, t);
-      osc.frequency.linearRampToValueAtTime(freqEnd, t + duration);
-
-      const gainNode = this.ctx.createGain();
-      gainNode.gain.setValueAtTime(gain, t);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, t + duration);
-
-      osc.connect(gainNode);
-      gainNode.connect(this.ctx.destination);
-      osc.start(t);
-      osc.stop(t + duration + 0.01);
-    } catch { /* ignore */ }
-  }
-
-  private playExplosion(): void {
-    if (this.ctx.state === 'suspended') this.ctx.resume();
-    this.playOscLayer('sine',     80,  15, 0.8, 0.50); // sub-bass
-    this.playNoiseLayer('lowpass', 300,     0.6, 0.40); // noise rumble
-    this.playOscLayer('sawtooth', 120, 40, 0.5, 0.30); // mid crunch
-  }
-
-  private playMissileImpact(): void {
-    if (this.ctx.state === 'suspended') this.ctx.resume();
-    this.playOscLayer('sine',     60,  12, 0.9, 0.50); // deep sub-bass
-    this.playNoiseLayer('lowpass', 200,     0.7, 0.45); // noise through lowpass
-    this.playOscLayer('sawtooth', 300, 80, 0.3, 0.20); // high crack
-  }
-
-  private playFootstep(): void {
-    try {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
-      const t = this.ctx.currentTime;
-      const duration = 0.012;
-
-      const src = this.ctx.createBufferSource();
-      src.buffer = this.noiseBuffer;
-
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.setValueAtTime(180, t);
-
-      const gain = this.ctx.createGain();
-      const jitter = 0.8 + Math.random() * 0.4; // ±20% variation
-      gain.gain.setValueAtTime(0.07 * jitter, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-
-      src.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.ctx.destination);
-      src.start(t);
-      src.stop(t + duration + 0.005);
-    } catch { /* ignore */ }
+  private initNoiseBuffer(): void {
+    const sr = this.ctx.sampleRate;
+    this.noiseBuffer = this.ctx.createBuffer(1, sr, sr);
+    const data = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < sr; i++) data[i] = Math.random() * 2 - 1;
   }
 }
