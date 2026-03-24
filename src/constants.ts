@@ -2,9 +2,6 @@ export const WORLD_WIDTH = 6400;
 export const WORLD_HEIGHT = 720;
 export const GROUND_Y = 640;       // top surface of ground
 export const GROUND_HEIGHT = 80;
-export const MECH_SCALE = 0.75;
-export const DRONE_SCALE_RED = 2.2;   // Viper 34x24 → ~75x53
-export const DRONE_SCALE_GREEN = 2.2; // Hornet 30x25 → ~66x55
 
 // Platform height bands (world Y — lower Y = higher on screen)
 export const PLATFORM_BANDS = [
@@ -19,8 +16,18 @@ export const RADAR_SCREEN_RADIUS = 65;  // px radius of drawn circle (right edge
 export const RADAR_X = 1205;            // screen-space center X
 export const RADAR_Y = 592;             // screen-space center Y
 
-// Must stay in sync with the non-exported SEEK_RANGE const in src/weapons/HomingMissile.ts
 export const MISSILE_SEEK_RANGE = 650;
+
+// Drone difficulty scaling — one bracket per wave tier
+export const WAVE_BRACKETS: {
+  minWave: number; attackSpeed: number; shootInterval: number;
+  extraHp: number; bulletSpeedMult: number;
+}[] = [
+  { minWave: 1,  attackSpeed: 160, shootInterval: 2200, extraHp: 0, bulletSpeedMult: 1.0 },
+  { minWave: 4,  attackSpeed: 200, shootInterval: 1800, extraHp: 0, bulletSpeedMult: 1.0 },
+  { minWave: 7,  attackSpeed: 240, shootInterval: 1500, extraHp: 1, bulletSpeedMult: 1.0 },
+  { minWave: 10, attackSpeed: 280, shootInterval: 1200, extraHp: 1, bulletSpeedMult: 1.2 },
+];
 
 // Pilot (on-foot) movement
 export const PILOT_WALK_SPEED       = 90;    // px/s horizontal

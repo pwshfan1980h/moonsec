@@ -2,12 +2,11 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
 import type { Drone } from '../entities/Drone';
-import { WORLD_WIDTH } from '../constants';
+import { WORLD_WIDTH, MISSILE_SEEK_RANGE } from '../constants';
 
 const COOLDOWN = 5000; // ms
 const SPEED = 480;
 const TURN_RATE = 0.065; // radians per frame
-const SEEK_RANGE = 650;
 
 interface MissileState {
   obj: Phaser.Physics.Arcade.Image;
@@ -112,7 +111,7 @@ export class HomingMissile {
 
   private findNearestDrone(x: number, y: number): Drone | null {
     let nearest: Drone | null = null;
-    let bestDist = SEEK_RANGE;
+    let bestDist = MISSILE_SEEK_RANGE;
 
     this.scene.drones.getChildren().forEach((go) => {
       const drone = go as unknown as Drone;

@@ -13,10 +13,13 @@ export class GameScene extends Phaser.Scene {
   droneBullets!: Phaser.Physics.Arcade.Group;
   missiles!: Phaser.Physics.Arcade.Group;
   drones!: Phaser.Physics.Arcade.Group;
+  pickups!: Phaser.Physics.Arcade.Group;
   audio!: AudioSystem;
   score = 0;
   platformData: { x: number; y: number; w: number }[] = [];
   private isGameOver = false;
+  private killStreak = 0;
+  private prevHp = 0;
   private pilotGroundCollider: Phaser.Physics.Arcade.Collider | null = null;
   private pilotBulletOverlap:  Phaser.Physics.Arcade.Collider | null = null;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -53,6 +56,23 @@ export class GameScene extends Phaser.Scene {
     g.fillCircle(8, 8, 8);
     g.generateTexture('pilot_sphere', 16, 16);
     g.destroy();
+
+    // Health pack — cyan cross
+    const hg = this.add.graphics();
+    hg.fillStyle(0x00ffff, 1);
+    hg.fillRect(5, 1, 4, 12);
+    hg.fillRect(1, 5, 12, 4);
+    hg.generateTexture('pickup-health', 14, 14);
+    hg.destroy();
+
+    // Fuel canister — yellow body with orange nozzle
+    const fg = this.add.graphics();
+    fg.fillStyle(0xffff00, 1);
+    fg.fillRect(2, 3, 10, 9);
+    fg.fillStyle(0xff8800, 1);
+    fg.fillRect(4, 1, 6, 3);
+    fg.generateTexture('pickup-fuel', 14, 14);
+    fg.destroy();
 
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
 
@@ -100,6 +120,12 @@ export class GameScene extends Phaser.Scene {
 
     this.drones = this.physics.add.group({ runChildUpdate: true });
 
+    this.pickups = this.physics.add.group({
+      maxSize: 20,
+      runChildUpdate: false,
+      allowGravity: false,
+    });
+
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
     const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
@@ -129,6 +155,23 @@ export class GameScene extends Phaser.Scene {
       },
     );
 
+    // Pickups collected by mech
+    this.physics.add.overlap(
+      this.pickups,
+      this.player,
+      (_p, pickup) => {
+        const pk = pickup as Phaser.Physics.Arcade.Image;
+        if (!pk.active) return;
+        pk.setActive(false).setVisible(false);
+        if (pk.body) (pk.body as Phaser.Physics.Arcade.Body).enable = false;
+        if (pk.getData('type') === 'health') {
+          this.player.heal(1);
+        } else {
+          this.player.restoreJetpackFuel(1000);
+        }
+      },
+    );
+
     // --- Camera ---
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.08);
@@ -136,10 +179,39 @@ export class GameScene extends Phaser.Scene {
     // --- Spawner ---
     this.spawner = new DroneSpawner(this);
 
-    // --- Score tracking ---
-    this.events.on('droneKilled', () => {
+    // --- Score tracking + kill streak + pickups ---
+    const STREAK_MILESTONES = [3, 5, 10, 20];
+    const STREAK_BONUSES    = [50, 100, 150, 200];
+
+    this.events.on('droneKilled', (x: number, y: number) => {
       this.score += 100;
       this.events.emit('scoreChange', this.score);
+
+      // Kill streak milestone check
+      this.killStreak++;
+      const milestoneIdx = STREAK_MILESTONES.indexOf(this.killStreak);
+      if (milestoneIdx !== -1) {
+        const bonus = STREAK_BONUSES[milestoneIdx];
+        this.score += bonus;
+        this.events.emit('scoreChange', this.score);
+        this.events.emit('killStreak', this.killStreak, bonus);
+      }
+
+      // Random pickup drop (15% health, 15% fuel)
+      const roll = Math.random();
+      if (roll < 0.15) {
+        this.spawnPickup(x, y, 'health');
+      } else if (roll < 0.30) {
+        this.spawnPickup(x, y, 'fuel');
+      }
+    });
+
+    // Reset kill streak on damage
+    this.events.on('healthChange', (hp: number) => {
+      if (hp < this.prevHp) {
+        this.killStreak = 0;
+      }
+      this.prevHp = hp;
     });
 
     this.events.on('gameOver', () => {
@@ -215,6 +287,32 @@ export class GameScene extends Phaser.Scene {
   public getPilotOrPlayer(): { x: number; y: number } {
     if (this.pilot?.active) return { x: this.pilot.x, y: this.pilot.y };
     return { x: this.player.x, y: this.player.y };
+  }
+
+  spawnFloatingText(x: number, y: number, text: string, color = '#ffffff'): void {
+    const t = this.add.text(x, y, text, { fontFamily: 'monospace', fontSize: '14px', color })
+      .setDepth(25).setOrigin(0.5, 1);
+    this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 600, onComplete: () => t.destroy() });
+  }
+
+  private spawnPickup(x: number, y: number, type: 'health' | 'fuel'): void {
+    const key = type === 'health' ? 'pickup-health' : 'pickup-fuel';
+    const p = this.pickups.get(x, y, key) as Phaser.Physics.Arcade.Image;
+    if (!p) return;
+    p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y);
+    p.setData('type', type);
+    if (p.body) {
+      const pb = p.body as Phaser.Physics.Arcade.Body;
+      pb.enable = true;
+      pb.setVelocity(0, 0);
+    }
+    // Despawn if uncollected after 6s
+    this.time.delayedCall(6000, () => {
+      if (p.active) {
+        p.setActive(false).setVisible(false);
+        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
+      }
+    });
   }
 
   spawnExplosion(x: number, y: number): void {

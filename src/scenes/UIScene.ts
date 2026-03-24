@@ -32,6 +32,7 @@ export class UIScene extends Phaser.Scene {
   private naniteActive = false;
   private nanitePulseTween: Phaser.Tweens.Tween | null = null;
 
+  private dronesRemainingText!: Phaser.GameObjects.Text;
   private minimap!: MinimapRenderer;
 
   // Pause elements
@@ -43,6 +44,7 @@ export class UIScene extends Phaser.Scene {
   private gameOverActive = false;
   private currentWave = 0;
   private currentScore = 0;
+  private lastHp = 0;
 
   constructor() {
     super({ key: 'UI', active: false });
@@ -54,6 +56,7 @@ export class UIScene extends Phaser.Scene {
     this.naniteActive = false;
     this.currentWave = 0;
     this.currentScore = 0;
+    this.lastHp = 0;
 
     // ── Health bar (top-left) ──────────────────────────────────────
     const hx = PAD;
@@ -136,6 +139,12 @@ export class UIScene extends Phaser.Scene {
       align: 'center',
     }).setOrigin(0.5, 0);
 
+    // ── Drones remaining counter (below wave counter) ──────────────
+    this.dronesRemainingText = this.add.text(640, PAD + 32, '', {
+      fontFamily: 'monospace', fontSize: '10px', color: '#ff4444',
+      align: 'center',
+    }).setOrigin(0.5, 0).setAlpha(0);
+
     // ── Controls hint (bottom-left) ───────────────────────────────
     this.add.text(PAD, 720 - PAD, 'A/D move  SPACE jump/jetpack  LMB turret  RMB rapid  SHIFT missile  ESC pause', {
       fontFamily: 'monospace', fontSize: '9px', color: '#334455',
@@ -164,7 +173,11 @@ export class UIScene extends Phaser.Scene {
         const t = hp / maxHp;
         this.healthFill.setFillStyle(t > 0.5 ? 0xff2222 : t > 0.25 ? 0xff8800 : 0xff0000);
       }
-      // When naniteActive, color stays green (set by onNaniteChange)
+      // Screen-edge flash on damage
+      if (hp < this.lastHp) {
+        this.cameras.main.flash(200, 220, 30, 30, false);
+      }
+      this.lastHp = hp;
     });
 
     game.events.on('missileCooldown', (progress: number) => {
@@ -214,6 +227,25 @@ export class UIScene extends Phaser.Scene {
         duration: 2000,
         delay: 1500,
         ease: 'Power2',
+      });
+    });
+
+    game.events.on('dronesRemaining', (count: number) => {
+      if (count > 0) {
+        this.dronesRemainingText.setText(`▼ ${count}`).setAlpha(1);
+      } else {
+        this.dronesRemainingText.setAlpha(0);
+      }
+    });
+
+    game.events.on('killStreak', (count: number, bonus: number) => {
+      const t = this.add.text(640, 360, `${count} KILLSTREAK!\n+${bonus}`, {
+        fontFamily: 'monospace', fontSize: '20px', color: '#ffff00',
+        align: 'center',
+      }).setOrigin(0.5, 0.5).setDepth(30);
+      this.tweens.add({
+        targets: t, y: 310, alpha: 0, duration: 1500, ease: 'Power2',
+        onComplete: () => t.destroy(),
       });
     });
 

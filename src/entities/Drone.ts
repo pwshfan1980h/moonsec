@@ -1,15 +1,30 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 
-type DroneState = 'HOVER' | 'ATTACK' | 'HURT' | 'DEATH';
+type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH';
 type DroneType = 'drone-red' | 'drone-green';
+export type DroneVariant = 'normal' | 'sniper';
 
-const HOVER_SPEED = 70;
-const ATTACK_SPEED = 160;
-const ATTACK_RANGE = 320;
-const SHOOT_INTERVAL = 2200;
-const HP_MAP = { 'drone-red': 2, 'drone-green': 3 };
-const DRONE_BULLET_SPEED = 300;
+interface DroneScaling {
+  attackSpeed: number;
+  shootInterval: number;
+  extraHp: number;
+  bulletSpeedMult: number;
+}
+
+const BASE_HOVER_SPEED      = 70;
+const BASE_ATTACK_RANGE     = 320;
+const BASE_BULLET_SPEED     = 300;
+const HP_MAP                = { 'drone-red': 2, 'drone-green': 3 };
+
+const SNIPER_HP             = 1;
+const SNIPER_SCALE          = 1.4;
+const SNIPER_HOVER_SPEED    = 40;
+const SNIPER_ATTACK_SPEED   = 80;
+const SNIPER_ATTACK_RANGE   = 520;
+const SNIPER_SHOOT_INTERVAL = 4000;
+const SNIPER_BULLET_SPEED   = 480;
+const SNIPER_FLEE_RANGE     = 200;
 
 export class Drone extends Phaser.Physics.Arcade.Sprite {
   declare scene: GameScene;
@@ -17,17 +32,50 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   private droneState: DroneState = 'HOVER';
   private hp: number;
   private droneType: DroneType;
+  private droneVariant: DroneVariant;
   private sinOffset: number;
   private shootTimer = 0;
   private patrolDir = -1;
 
-  constructor(scene: GameScene, x: number, y: number, type: DroneType) {
+  // Instance stats (set per-variant in constructor)
+  private attackSpeed: number;
+  private shootInterval: number;
+  private bulletSpeed: number;
+  private attackRange: number;
+  private hoverSpeed: number;
+
+  constructor(
+    scene: GameScene,
+    x: number,
+    y: number,
+    type: DroneType,
+    scaling: DroneScaling,
+    variant: DroneVariant = 'normal',
+  ) {
     super(scene, x, y, type);
     this.scene = scene;
     this.droneType = type;
-    this.hp = HP_MAP[type];
+    this.droneVariant = variant;
+
+    if (variant === 'sniper') {
+      this.hp             = SNIPER_HP;
+      this.attackSpeed    = SNIPER_ATTACK_SPEED;
+      this.shootInterval  = SNIPER_SHOOT_INTERVAL;
+      this.bulletSpeed    = SNIPER_BULLET_SPEED;
+      this.attackRange    = SNIPER_ATTACK_RANGE;
+      this.hoverSpeed     = SNIPER_HOVER_SPEED;
+      this.setScale(SNIPER_SCALE);
+    } else {
+      this.hp             = HP_MAP[type] + scaling.extraHp;
+      this.attackSpeed    = scaling.attackSpeed;
+      this.shootInterval  = scaling.shootInterval;
+      this.bulletSpeed    = BASE_BULLET_SPEED * scaling.bulletSpeedMult;
+      this.attackRange    = BASE_ATTACK_RANGE;
+      this.hoverSpeed     = BASE_HOVER_SPEED;
+      this.setScale(2.2);
+    }
+
     this.sinOffset = Math.random() * Math.PI * 2;
-    this.setScale(2.2);
     this.setDepth(8);
     this.play(`${type}-hover`);
   }
@@ -43,47 +91,78 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   update(time: number, delta: number): void {
     if (!this.active || this.droneState === 'DEATH') return;
 
-    const body = this.body as Phaser.Physics.Arcade.Body;
+    const body   = this.body as Phaser.Physics.Arcade.Body;
     const target = this.scene.getPilotOrPlayer();
-    const dist = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
+    const dist   = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
 
     switch (this.droneState) {
       case 'HOVER': {
-        // Drift left, oscillate Y
-        body.setVelocityX(this.patrolDir * HOVER_SPEED);
+        body.setVelocityX(this.patrolDir * this.hoverSpeed);
         body.setVelocityY(Math.sin(time * 0.002 + this.sinOffset) * 40);
 
-        if (dist < ATTACK_RANGE) {
+        if (dist < this.attackRange) {
           this.setDroneState('ATTACK');
         }
         break;
       }
 
       case 'ATTACK': {
-        // Charge toward target on X axis, oscillate Y
         const dx = target.x - this.x;
-        body.setVelocityX(Math.sign(dx) * ATTACK_SPEED);
-        body.setVelocityY(Math.sin(time * 0.003 + this.sinOffset) * 60);
 
-        // Face player
+        if (this.droneVariant === 'sniper') {
+          // Flee if player closes in
+          if (dist < SNIPER_FLEE_RANGE) {
+            this.setDroneState('FLEE');
+            break;
+          }
+          // Hover in place and shoot from a distance
+          body.setVelocityX(0);
+          body.setVelocityY(Math.sin(time * 0.002 + this.sinOffset) * 20);
+          if (dist > this.attackRange * 1.2) {
+            this.setDroneState('HOVER');
+            break;
+          }
+        } else {
+          // Charge toward target
+          body.setVelocityX(Math.sign(dx) * this.attackSpeed);
+          body.setVelocityY(Math.sin(time * 0.003 + this.sinOffset) * 60);
+          if (dist > this.attackRange * 1.4) {
+            this.setDroneState('HOVER');
+            break;
+          }
+        }
+
+        // Face player and shoot
         this.setFlipX(dx > 0);
-
-        // Periodic shot
         this.shootTimer -= delta;
         if (this.shootTimer <= 0) {
-          this.shootTimer = SHOOT_INTERVAL + Math.random() * 600;
+          this.shootTimer = this.shootInterval + Math.random() * 600;
+          this.shoot();
+        }
+        break;
+      }
+
+      case 'FLEE': {
+        // Move away from player
+        const dx = this.x - target.x;
+        body.setVelocityX(Math.sign(dx) * this.attackSpeed * 1.5);
+        body.setVelocityY(Math.sin(time * 0.003 + this.sinOffset) * 30);
+
+        // Shoot while fleeing
+        this.shootTimer -= delta;
+        if (this.shootTimer <= 0) {
+          this.shootTimer = this.shootInterval + Math.random() * 1000;
           this.shoot();
         }
 
-        // Back off if too close
-        if (dist > ATTACK_RANGE * 1.4) {
-          this.setDroneState('HOVER');
+        // Return to attack once safe distance regained
+        if (dist > SNIPER_FLEE_RANGE * 1.5) {
+          this.setDroneState('ATTACK');
         }
         break;
       }
 
       case 'HURT': {
-        // Handled by animation complete listener
         body.setVelocity(body.velocity.x * 0.7, body.velocity.y * 0.7);
         break;
       }
@@ -92,7 +171,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
 
   private shoot(): void {
     const target = this.scene.getPilotOrPlayer();
-    const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+    const angle  = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
 
     const b = this.scene.droneBullets.get(this.x, this.y, 'bullet-drone') as Phaser.Physics.Arcade.Image;
     if (!b) return;
@@ -100,7 +179,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     b.setActive(true).setVisible(true).setDepth(14);
     b.setBlendMode(Phaser.BlendModes.ADD);
     if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;
-    b.setVelocity(Math.cos(angle) * DRONE_BULLET_SPEED, Math.sin(angle) * DRONE_BULLET_SPEED);
+    b.setVelocity(Math.cos(angle) * this.bulletSpeed, Math.sin(angle) * this.bulletSpeed);
 
     this.scene.audio.play('drone-shoot');
   }
@@ -125,12 +204,12 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
         this.play(`${this.droneType}-hover`);
         break;
       case 'ATTACK':
+      case 'FLEE':
         this.play(`${this.droneType}-attack`);
         break;
       case 'HURT': {
         this.play(`${this.droneType}-hurt`);
         this.setTint(0xff8888);
-        // Return to hover/attack after hurt anim
         this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
           this.clearTint();
           this.removeAllListeners(Phaser.Animations.Events.ANIMATION_COMPLETE);
@@ -146,7 +225,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
         this.spawnDeathParticles();
 
         this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-          this.scene.events.emit('droneKilled');
+          this.scene.events.emit('droneKilled', this.x, this.y);
           this.setActive(false).setVisible(false);
         });
         break;
@@ -156,13 +235,13 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
 
   private spawnDeathParticles(): void {
     const emitter = this.scene.add.particles(this.x, this.y, 'pixel', {
-      speed: { min: 60, max: 180 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 2.5, end: 0 },
-      alpha: { start: 1, end: 0 },
-      tint: [0xffaa00, 0xff4400, 0xffffff, 0xff0000],
-      lifespan: 500,
-      quantity: 10,
+      speed:     { min: 60, max: 180 },
+      angle:     { min: 0, max: 360 },
+      scale:     { start: 2.5, end: 0 },
+      alpha:     { start: 1, end: 0 },
+      tint:      [0xffaa00, 0xff4400, 0xffffff, 0xff0000],
+      lifespan:  500,
+      quantity:  10,
       blendMode: 'ADD',
     });
     emitter.setDepth(20);

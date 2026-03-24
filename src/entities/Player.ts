@@ -307,6 +307,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  heal(amount: number): void {
+    if (this.dead) return;
+    this.hp = Math.min(this.maxHp, this.hp + amount);
+    this.scene.events.emit('healthChange', this.hp, this.maxHp);
+  }
+
+  restoreJetpackFuel(amount: number): void {
+    this.jetpackFuel = Math.min(JETPACK_MAX_FUEL, this.jetpackFuel + amount);
+    this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
+  }
+
   isDead(): boolean {
     return this.dead;
   }
