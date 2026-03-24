@@ -73,6 +73,7 @@ export class DroneSpawner {
         drone,
         (d, missile) => {
           const m = missile as Phaser.Physics.Arcade.Image;
+          m.setData('hitTarget', true); // signal HomingMissile.update() to play impact
           m.setActive(false).setVisible(false);
           if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
           this.scene.spawnExplosion(m.x, m.y);

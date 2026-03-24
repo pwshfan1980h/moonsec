@@ -42,6 +42,7 @@ export class HomingMissile {
     if (!m) return;
 
     m.setActive(true).setVisible(true).setDepth(16);
+    m.setData('hitTarget', false); // clear stale flag from pool re-use
     m.setBlendMode(Phaser.BlendModes.ADD);
     if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = true;
 
@@ -65,7 +66,7 @@ export class HomingMissile {
     emitter.setDepth(15);
 
     this.active.push({ obj: m, angle, target, emitter });
-    // audio wired in Task 7 (startLoop replaces play('missile'))
+    this.scene.audio.startLoop('missile-flight');
   }
 
   update(_time: number, _delta: number): void {
@@ -73,6 +74,12 @@ export class HomingMissile {
       const { obj, emitter } = state;
 
       if (!obj.active) {
+        if (obj.getData('hitTarget') === true) {
+          this.scene.audio.stopLoop('missile-flight');
+          this.scene.audio.play('missile-impact');
+        } else {
+          this.scene.audio.stopLoop('missile-flight'); // silent stop — miss
+        }
         emitter.destroy();
         return false;
       }
@@ -91,9 +98,10 @@ export class HomingMissile {
       obj.setRotation(state.angle);
 
       // Deactivate if off-world
-      if (obj.x < -100 || obj.x > WORLD_WIDTH + 100 || obj.y < -100 || obj.y > 600) {
+      if (obj.x < -100 || obj.x > WORLD_WIDTH + 100 || obj.y < -100 || obj.y > 820) {
         obj.setActive(false).setVisible(false);
         if (obj.body) (obj.body as Phaser.Physics.Arcade.Body).enable = false;
+        this.scene.audio.stopLoop('missile-flight'); // silent stop — miss (matches cullBullets maxY)
         emitter.destroy();
         return false;
       }
