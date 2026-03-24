@@ -191,7 +191,25 @@ export class AudioSystem {
     } catch { /* ignore */ }
   }
 
-  update(_state: AudioUpdateState): void { /* Task 4 */ }
+  update(state: AudioUpdateState): void {
+    const { onGround, moving, delta } = state;
+
+    // Reset timer on landing to avoid an immediate step sound
+    if (!this.wasOnGround && onGround) {
+      this.footstepTimer = 280;
+    }
+    this.wasOnGround = onGround;
+
+    if (onGround && moving) {
+      this.footstepTimer -= delta;
+      if (this.footstepTimer <= 0) {
+        this.footstepTimer = 280;
+        this.play('footstep');
+      }
+    } else {
+      this.footstepTimer = Math.min(this.footstepTimer, 280);
+    }
+  }
 
   private playNoiseLayer(filterType: BiquadFilterType, filterFreq: number, duration: number, gain: number): void {
     try {
@@ -248,5 +266,29 @@ export class AudioSystem {
     this.playOscLayer('sawtooth', 300, 80, 0.3, 0.20); // high crack
   }
 
-  private playFootstep(): void { /* Task 4 */ }
+  private playFootstep(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+      const duration = 0.012;
+
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(180, t);
+
+      const gain = this.ctx.createGain();
+      const jitter = 0.8 + Math.random() * 0.4; // ±20% variation
+      gain.gain.setValueAtTime(0.07 * jitter, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      src.start(t);
+      src.stop(t + duration + 0.005);
+    } catch { /* ignore */ }
+  }
 }
