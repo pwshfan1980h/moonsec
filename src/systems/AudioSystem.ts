@@ -117,7 +117,60 @@ export class AudioSystem {
 
   update(_state: AudioUpdateState): void { /* Task 4 */ }
 
-  private playExplosion(): void     { /* Task 2 */ }
-  private playMissileImpact(): void { /* Task 2 */ }
-  private playFootstep(): void      { /* Task 4 */ }
+  private playNoiseLayer(filterType: BiquadFilterType, filterFreq: number, duration: number, gain: number): void {
+    try {
+      const t = this.ctx.currentTime;
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = filterType;
+      filter.frequency.setValueAtTime(filterFreq, t);
+
+      const gainNode = this.ctx.createGain();
+      gainNode.gain.setValueAtTime(gain, t);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+      src.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(this.ctx.destination);
+      src.start(t);
+      src.stop(t + duration + 0.01);
+    } catch { /* ignore */ }
+  }
+
+  private playOscLayer(type: OscillatorType, freqStart: number, freqEnd: number, duration: number, gain: number): void {
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freqStart, t);
+      osc.frequency.linearRampToValueAtTime(freqEnd, t + duration);
+
+      const gainNode = this.ctx.createGain();
+      gainNode.gain.setValueAtTime(gain, t);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+      osc.connect(gainNode);
+      gainNode.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + duration + 0.01);
+    } catch { /* ignore */ }
+  }
+
+  private playExplosion(): void {
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.playOscLayer('sine',     80,  15, 0.8, 0.50); // sub-bass
+    this.playNoiseLayer('lowpass', 300,     0.6, 0.40); // noise rumble
+    this.playOscLayer('sawtooth', 120, 40, 0.5, 0.30); // mid crunch
+  }
+
+  private playMissileImpact(): void {
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.playOscLayer('sine',     60,  12, 0.9, 0.50); // deep sub-bass
+    this.playNoiseLayer('lowpass', 200,     0.7, 0.45); // noise through lowpass
+    this.playOscLayer('sawtooth', 300, 80, 0.3, 0.20); // high crack
+  }
+
+  private playFootstep(): void { /* Task 4 */ }
 }
