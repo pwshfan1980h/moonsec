@@ -5,6 +5,9 @@ import { Pilot } from '../entities/Pilot';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
+import { ProgressionSystem } from '../systems/ProgressionSystem';
+import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
+import { CARD_POOL } from '../data/upgradeCards';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -56,6 +59,21 @@ export class GameScene extends Phaser.Scene {
     this.cameraBoundMaxY = 720;
     this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
+
+    // Init ProgressionSystem once — guard against re-creation on level restart
+    if (!this.registry.get('progression')) {
+      this.registry.set('progression', new ProgressionSystem());
+    }
+    const prog = this.registry.get('progression') as ProgressionSystem;
+
+    // isNewGame flag: set by UIScene before restart; reset run upgrades
+    if (this.registry.get('isNewGame')) {
+      this.registry.set('runUpgrades', [] as string[]);
+      this.registry.set('isNewGame', false);
+    }
+    if (!this.registry.get('runUpgrades')) {
+      this.registry.set('runUpgrades', [] as string[]);
+    }
 
     this.audio = new AudioSystem(this.sound);
 
@@ -156,6 +174,19 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, 300, spawnY, mechType);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
+
+    // Apply persistent tree upgrades
+    for (const id of prog.ownedNodes) {
+      const node = TREE_NODES.find(n => n.id === id);
+      if (node) applyTreeEffect(this.player, node.effect);
+    }
+
+    // Re-apply per-run card upgrades (survive L1→L2 transition)
+    const runUpgrades = (this.registry.get('runUpgrades') as string[]) ?? [];
+    for (const id of runUpgrades) {
+      const card = CARD_POOL.find(c => c.id === id);
+      if (card) card.apply(this.player);
+    }
 
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     const bc = this.player.bodyConfig;
@@ -258,11 +289,22 @@ export class GameScene extends Phaser.Scene {
       // Level transition handled by UIScene listening to same event
     });
 
-    this.events.on('waveCleared', () => {
-      if (this.currentLevel !== 2) return;
-      this.cameraBoundMaxY = Math.min(4800, this.cameraBoundMaxY + 480);
-      this.cameras.main.setBounds(0, 0, 1280, this.cameraBoundMaxY);
-      this.physics.world.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+    this.events.on('waveCleared', (wave: number) => {
+      // L2 vertical camera expansion on each wave clear
+      if (this.currentLevel === 2) {
+        this.cameraBoundMaxY = Math.min(4800, this.cameraBoundMaxY + 480);
+        this.cameras.main.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+        this.physics.world.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+      }
+
+      // Between-wave upgrade card picker (skip for boss wave)
+      if (!this.spawner.isBossWave()) {
+        this.scene.launch('UpgradeCards', { wave, audio: this.audio, player: this.player });
+        this.scene.pause('Game');
+        this.scene.get('UpgradeCards').events.once('shutdown', () => {
+          this.scene.resume('Game');
+        });
+      }
     });
 
     // --- Emit initial HUD state ---
