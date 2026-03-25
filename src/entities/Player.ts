@@ -3,14 +3,10 @@ import type { GameScene } from '../scenes/GameScene';
 import { RapidGun } from '../weapons/RapidGun';
 import { Turret } from '../weapons/Turret';
 import { HomingMissile } from '../weapons/HomingMissile';
+import { MECH_STATS } from '../constants';
 
 type AnimState = 'idle' | 'walk' | 'run' | 'jump_loop' | 'jump_start' | 'jump_land' | 'hurt' | 'death';
 
-const WALK_SPEED = 220;
-const RUN_SPEED = 350;
-const JUMP_VEL = -510;
-const JETPACK_FORCE = -920;
-const JETPACK_MAX_FUEL = 2200; // ms
 const FRICTION = 0.78;
 
 const NANITE_HEAL_AMOUNT   = 1;
@@ -31,11 +27,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   declare scene: GameScene;
 
   hp = 5;
-  readonly maxHp = 5;
+  maxHp = 5;
+
+  walkSpeed = 220;
+  runSpeed  = 350;
+  jumpVelocity = -510;
+  jetpackAccel = -920;
+  jetpackMaxFuel = 2200;
 
   private curAnim: AnimState = 'idle';
   private onGround = false;
-  private jetpackFuel = JETPACK_MAX_FUEL;
+  private jetpackFuel = 0;
   private hurtLock = 0;
   private dead = false;
   piloting = true;
@@ -75,6 +77,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.animPrefix = cfg.animPrefix;
     this.bodyConfig = { w: cfg.bodyW, h: cfg.bodyH, offX: cfg.bodyOffX, offY: cfg.bodyOffY };
+
+    const stats = MECH_STATS[mechType] ?? MECH_STATS['mech4'];
+    this.maxHp          = stats.maxHp;
+    this.hp             = stats.maxHp;
+    this.walkSpeed      = stats.walkSpeed;
+    this.runSpeed       = stats.runSpeed;
+    this.jumpVelocity   = stats.jumpVelocity;
+    this.jetpackAccel   = stats.jetpackAccel;
+    this.jetpackMaxFuel = stats.jetpackMaxFuel;
+    this.jetpackFuel    = stats.jetpackMaxFuel;
 
     this.setOrigin(0.5, 1); // feet at position
     this.setScale(cfg.scale);
@@ -192,10 +204,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // --- Horizontal movement ---
     if (left) {
-      body.setVelocityX(-WALK_SPEED);
+      body.setVelocityX(-this.walkSpeed);
       this.setFlipX(true);
     } else if (right) {
-      body.setVelocityX(WALK_SPEED);
+      body.setVelocityX(this.walkSpeed);
       this.setFlipX(false);
     } else {
       body.setVelocityX(body.velocity.x * FRICTION);
@@ -204,22 +216,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // --- Jump / Jetpack ---
     if (space) {
       if (this.onGround && Phaser.Input.Keyboard.JustDown(this.keySpace)) {
-        body.setVelocityY(JUMP_VEL);
+        body.setVelocityY(this.jumpVelocity);
         this.playAnim('jump_start');
         this.scene.audio.play('jump');
       } else if (!this.onGround && this.jetpackFuel > 0) {
         this.jetpackFuel -= delta;
-        body.setAccelerationY(JETPACK_FORCE);
+        body.setAccelerationY(this.jetpackAccel);
         body.velocity.y = Math.max(body.velocity.y, -200);
-        this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
+        this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
         this.scene.audio.startLoop('jetpack');
       }
     } else {
       body.setAccelerationY(0);
       this.scene.audio.stopLoop('jetpack');
-      if (this.onGround && this.jetpackFuel < JETPACK_MAX_FUEL) {
-        this.jetpackFuel = Math.min(JETPACK_MAX_FUEL, this.jetpackFuel + delta * 0.6);
-        this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
+      if (this.onGround && this.jetpackFuel < this.jetpackMaxFuel) {
+        this.jetpackFuel = Math.min(this.jetpackMaxFuel, this.jetpackFuel + delta * 0.6);
+        this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
       }
     }
 
@@ -256,7 +268,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Emit weapon cooldowns + fuel to HUD
     this.scene.events.emit('missileCooldown', this.missile.getCooldownProgress());
     this.scene.events.emit('turretCooldown', this.turret.getCooldownProgress(time));
-    this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
+    this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
 
     // ── Nanite heal ──────────────────────────────────────────────────
     if (this.naniteActive) {
@@ -287,8 +299,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     const vx = Math.abs(body.velocity.x);
-    // WALK_SPEED = 220; keep run threshold well above it so walk anim plays during normal movement
-    if (vx > WALK_SPEED * 1.4) {
+    // walkSpeed baseline; keep run threshold well above it so walk anim plays during normal movement
+    if (vx > this.walkSpeed * 1.4) {
       this.playAnim('run');
     } else if (vx > 15) {
       this.playAnim('walk');
@@ -332,8 +344,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   restoreJetpackFuel(amount: number): void {
-    this.jetpackFuel = Math.min(JETPACK_MAX_FUEL, this.jetpackFuel + amount);
-    this.scene.events.emit('jetpackFuel', this.jetpackFuel, JETPACK_MAX_FUEL);
+    this.jetpackFuel = Math.min(this.jetpackMaxFuel, this.jetpackFuel + amount);
+    this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
   }
 
   isDead(): boolean {

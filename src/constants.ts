@@ -41,3 +41,29 @@ export const MAX_WAVES_L2     = 12;
 export const BOSS_WAVE_L2     = 12;
 export const L2_SPEED_MULT    = 1.2;
 export const L2_INTERVAL_MULT = 0.85;
+
+export const MECH_STATS: Record<string, {
+  maxHp: number;
+  walkSpeed: number;
+  runSpeed: number;
+  jumpVelocity: number;
+  jetpackAccel: number;
+  jetpackMaxFuel: number;
+}> = {
+  mech: {   // STRIDER — speed archetype: fast, high fuel, low HP
+    maxHp: 3,
+    walkSpeed: 440,
+    runSpeed: 700,
+    jumpVelocity: -510,
+    jetpackAccel: -1840,
+    jetpackMaxFuel: 4400,
+  },
+  mech4: {  // SCOUT — balanced baseline
+    maxHp: 5,
+    walkSpeed: 220,
+    runSpeed: 350,
+    jumpVelocity: -510,
+    jetpackAccel: -920,
+    jetpackMaxFuel: 2200,
+  },
+};
