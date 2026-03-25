@@ -45,6 +45,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   hasGravBoost      = false;
   hasOverload       = false;
   hasRegenField     = false;
+  damageShield      = false;  // reactive-armor card: absorb next hit
 
   private curAnim: AnimState = 'idle';
   private onGround = false;
@@ -286,7 +287,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.naniteActive) {
       this.naniteHealElapsed += delta;
       const progress = Math.min(this.naniteHealElapsed / NANITE_HEAL_DURATION, 1);
-      this.hp = Math.min(this.naniteHealStart + NANITE_HEAL_AMOUNT * progress, this.maxHp);
+      this.hp = Math.min(this.naniteHealStart + this.naniteHealAmount * progress, this.maxHp);
       this.scene.events.emit('healthChange', this.hp, this.maxHp);
       this.scene.events.emit('naniteChange', 'active', progress);
       this.naniteAmbient.setPosition(this.x, this.y - 56);
@@ -402,6 +403,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
     this.scene.audio.stopLoop('jetpack'); // stop loop on new damage (hurt + death branches)
+    if (this.damageShield) {
+      this.damageShield = false;
+      return; // absorb one hit
+    }
     if (this.naniteActive) {
       this.naniteActive = false;
       this.naniteCooldown = this.naniteCooldownMs;

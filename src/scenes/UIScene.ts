@@ -439,12 +439,13 @@ export class UIScene extends Phaser.Scene {
 
     // Save high score via ProgressionSystem
     const prog = this.registry.get('progression') as ProgressionSystem | undefined;
+    const prevHighScore = prog ? prog.highScore : 0;
     if (prog) {
       prog.addScore(this.currentScore);
       prog.updateHighScore(this.currentScore);
     }
     const highScore = prog ? prog.highScore : this.currentScore;
-    const isNew = prog ? this.currentScore >= highScore : false;
+    const isNew = this.currentScore > prevHighScore;
 
     // Dark overlay
     this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7).setDepth(60);

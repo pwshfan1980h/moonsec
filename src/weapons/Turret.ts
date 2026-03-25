@@ -14,11 +14,11 @@ export class Turret {
 
   getCooldownProgress(time: number): number {
     const elapsed = time - this.lastFire;
-    return Math.min(1, elapsed / FIRE_INTERVAL);
+    return Math.min(1, elapsed / this.scene.player.turretCooldownMs);
   }
 
   fire(fromX: number, fromY: number, toX: number, toY: number, time: number): void {
-    if (time - this.lastFire < FIRE_INTERVAL) return;
+    if (time - this.lastFire < this.scene.player.turretCooldownMs) return;
     this.lastFire = time;
 
     const angle = Phaser.Math.Angle.Between(fromX, fromY, toX, toY);

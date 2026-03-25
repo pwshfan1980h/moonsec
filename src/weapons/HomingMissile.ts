@@ -32,6 +32,7 @@ export class HomingMissile {
   fire(player: Player): void {
     const now = this.scene.time.now;
     if (now - this.lastFire < COOLDOWN) return;
+    if (this.active.length >= player.missileSlots) return;
     this.lastFire = now;
 
     const facingRight = !player.flipX;

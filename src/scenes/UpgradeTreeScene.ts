@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { TREE_NODES, type TreeNode } from '../data/upgradeTree';
-import type { ProgressionSystem } from '../systems/ProgressionSystem';
+import { ProgressionSystem } from '../systems/ProgressionSystem';
 
 const COL_X: Record<string, number> = { offense: 320, defense: 640, mobility: 960 };
 const TIER_Y = [160, 280, 400, 520];
@@ -24,6 +24,7 @@ export class UpgradeTreeScene extends Phaser.Scene {
   private gfx!: Phaser.GameObjects.Graphics;
   private scoreBankText!: Phaser.GameObjects.Text;
   private nodeObjects = new Map<string, { bg: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }>();
+  private nodeLayerObjects: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
     super({ key: 'UpgradeTree' });
@@ -32,6 +33,10 @@ export class UpgradeTreeScene extends Phaser.Scene {
   create(): void {
     const W = 1280, H = 720;
 
+    // Guard: ProgressionSystem may not be registered if player navigates here before playing
+    if (!this.registry.get('progression')) {
+      this.registry.set('progression', new ProgressionSystem());
+    }
     this.prog = this.registry.get('progression') as ProgressionSystem;
 
     // Animated particle background
@@ -113,10 +118,11 @@ export class UpgradeTreeScene extends Phaser.Scene {
     const y0 = TIER_Y[node.tier - 1] + NODE_H / 2;
     const y1 = TIER_Y[node.tier]     - NODE_H / 2;
     const owned = this.prog.ownedNodes.includes(node.id);
-    this.add.graphics()
+    const g = this.add.graphics()
       .lineStyle(1, owned ? 0x00ccff : 0x112233, 1)
       .beginPath().moveTo(x, y0).lineTo(x, y1).strokePath()
       .setDepth(9);
+    this.nodeLayerObjects.push(g);
   }
 
   private createNode(node: TreeNode): void {
@@ -141,17 +147,19 @@ export class UpgradeTreeScene extends Phaser.Scene {
     }).setOrigin(0.5).setAlpha(alpha).setDepth(11);
 
     const costLabel = owned ? '\u2713' : `${node.cost} pts`;
-    this.add.text(x, y + 10, costLabel, {
+    const costText = this.add.text(x, y + 10, costLabel, {
       fontFamily: 'monospace', fontSize: '9px',
       color: owned ? '#00ff88' : affordable ? '#00ff8877' : '#333333',
     }).setOrigin(0.5).setAlpha(alpha).setDepth(11);
 
     this.nodeObjects.set(node.id, { bg, label });
+    this.nodeLayerObjects.push(bg, label, costText);
 
     if (owned) return;
 
     const hit = this.add.rectangle(x, y, NODE_W, NODE_H, 0, 0)
       .setInteractive({ useHandCursor: prereqMet }).setDepth(12);
+    this.nodeLayerObjects.push(hit);
 
     if (!prereqMet) return;
 
@@ -188,12 +196,9 @@ export class UpgradeTreeScene extends Phaser.Scene {
   }
 
   private refreshNodes(): void {
-    this.nodeObjects.forEach(obj => { obj.bg.destroy(); obj.label.destroy(); });
+    this.nodeLayerObjects.forEach(o => o.destroy());
+    this.nodeLayerObjects = [];
     this.nodeObjects.clear();
-    // Destroy all node/connector graphics at depth 9-12
-    [...this.children.list]
-      .filter(c => (c as any).depth >= 9 && (c as any).depth <= 12)
-      .forEach(c => (c as Phaser.GameObjects.GameObject).destroy());
     for (const node of TREE_NODES) {
       this.drawConnector(node);
       this.createNode(node);

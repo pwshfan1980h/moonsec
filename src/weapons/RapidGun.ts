@@ -15,7 +15,7 @@ export class RapidGun {
 
   update(time: number, facingRight: boolean): void {
     if (!this.scene.input.mousePointer.rightButtonDown()) return;
-    if (time - this.lastFire < FIRE_INTERVAL) return;
+    if (time - this.lastFire < this.scene.player.rapidMinInterval) return;
     this.lastFire = time;
 
     const player = this.scene.player;
