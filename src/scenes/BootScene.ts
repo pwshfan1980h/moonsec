@@ -39,6 +39,12 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('kodiak', 'assets/Kodiak-sheet.png', {
       frameWidth: 37, frameHeight: 30,
     });
+    this.load.spritesheet('sentinel', 'assets/Sentinel-sheet.png', {
+      frameWidth: 37, frameHeight: 29,
+    });
+    this.load.spritesheet('nexus', 'assets/Nexus-sheet.png', {
+      frameWidth: 25, frameHeight: 27,
+    });
   }
 
   create(): void {
@@ -50,6 +56,44 @@ export class BootScene extends Phaser.Scene {
     this.buildDroneAnims('drone-red');
     this.buildDroneAnims('drone-green');
     this.buildDroneAnims('kodiak');
+
+    // Sentinel — 4 standard animations (same layout as Viper/Hornet)
+    this.buildDroneAnims('sentinel');
+
+    // Nexus Boss — 5 animations, built inline (non-standard layout)
+    const fps = (ms: number) => Math.round(1000 / ms);
+    this.anims.create({
+      key: 'nexus-hover',
+      frames: this.anims.generateFrameNumbers('nexus', { start: 0, end: 3 }),
+      frameRate: fps(120),
+      repeat: -1,
+      yoyo: true,
+    });
+    this.anims.create({
+      key: 'nexus-charge',
+      frames: this.anims.generateFrameNumbers('nexus', { start: 4, end: 6 }),
+      frameRate: fps(100),
+      repeat: -1,
+      yoyo: true,
+    });
+    this.anims.create({
+      key: 'nexus-attack',
+      frames: this.anims.generateFrameNumbers('nexus', { start: 7, end: 10 }),
+      frameRate: fps(80),
+      repeat: 0,
+    });
+    this.anims.create({
+      key: 'nexus-hurt',
+      frames: this.anims.generateFrameNumbers('nexus', { start: 11, end: 12 }),
+      frameRate: fps(100),
+      repeat: 0,
+    });
+    this.anims.create({
+      key: 'nexus-death',
+      frames: this.anims.generateFrameNumbers('nexus', { start: 13, end: 17 }),
+      frameRate: fps(120),
+      repeat: 0,
+    });
 
     // Procedural bullet/effect textures
     this.makeTextures();
