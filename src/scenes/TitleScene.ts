@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-const OPTIONS = ['START GAME', 'STORY'] as const;
+const OPTIONS = ['START GAME', 'STORY', 'UPGRADES'] as const;
 
 export class TitleScene extends Phaser.Scene {
   private selectedIndex = 0;
@@ -143,10 +143,16 @@ export class TitleScene extends Phaser.Scene {
 
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      if (this.selectedIndex === 0) {
-        this.scene.start('MechSelect');
-      } else {
-        this.scene.start('Story');
+      switch (this.selectedIndex) {
+        case 0: // START GAME
+          this.scene.start('MechSelect');
+          break;
+        case 1: // STORY
+          this.scene.start('Story');
+          break;
+        case 2: // UPGRADES
+          this.scene.start('UpgradeTree');
+          break;
       }
     });
   }
