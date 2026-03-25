@@ -48,7 +48,6 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     // Reset state that persists across scene.restart() (instance is reused, not reconstructed)
     this.isGameOver   = false;
-    this.score        = 0;
     this.killStreak   = 0;
     this.prevHp       = 0;
     this.pilot        = null;
@@ -271,9 +270,10 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('missileCooldown', 0);
     this.events.emit('turretCooldown', 1);
     this.events.emit('jetpackFuel', 1, 1);
-    this.events.emit('scoreChange', 0);
+    this.events.emit('scoreChange', this.score);
 
     if (this.currentLevel === 2) {
+      this.physics.world.off('worldbounds');
       this.physics.world.on('worldbounds', (body: Phaser.Physics.Arcade.Body) => {
         const go = body.gameObject as Phaser.Physics.Arcade.Image;
         if (!go?.active) return;
