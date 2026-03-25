@@ -35,6 +35,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   jetpackAccel = -920;
   jetpackMaxFuel = 2200;
 
+  rapidMinInterval  = 60;
+  turretCooldownMs  = 650;
+  missileSlots      = 6;
+  naniteCooldownMs  = 20000;
+  naniteHealAmount  = 1;
+  hasNaniteBurst    = false;
+  hasAirDash        = false;
+  hasGravBoost      = false;
+  hasOverload       = false;
+  hasRegenField     = false;
+
   private curAnim: AnimState = 'idle';
   private onGround = false;
   private jetpackFuel = 0;
@@ -281,12 +292,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.naniteAmbient.setPosition(this.x, this.y - 56);
       if (progress >= 1) {
         this.naniteActive = false;
-        this.naniteCooldown = NANITE_COOLDOWN;
+        this.naniteCooldown = this.naniteCooldownMs;
         this.stopNaniteParticles();
       }
     } else if (this.naniteCooldown > 0) {
       this.naniteCooldown = Math.max(0, this.naniteCooldown - delta);
-      const cdProgress = 1 - this.naniteCooldown / NANITE_COOLDOWN;
+      const cdProgress = 1 - this.naniteCooldown / this.naniteCooldownMs;
       this.scene.events.emit('naniteChange', 'cooldown', cdProgress);
     } else {
       this.scene.events.emit('naniteChange', 'ready', 1);
@@ -393,7 +404,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.audio.stopLoop('jetpack'); // stop loop on new damage (hurt + death branches)
     if (this.naniteActive) {
       this.naniteActive = false;
-      this.naniteCooldown = NANITE_COOLDOWN;
+      this.naniteCooldown = this.naniteCooldownMs;
       this.stopNaniteParticles();
       this.scene.events.emit('naniteChange', 'cooldown', 0);
     }
