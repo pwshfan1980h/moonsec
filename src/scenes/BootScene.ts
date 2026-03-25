@@ -98,7 +98,7 @@ export class BootScene extends Phaser.Scene {
     // Procedural bullet/effect textures
     this.makeTextures();
 
-    this.scene.start('MechSelect');
+    this.scene.start('Title');
   }
 
   private buildAsepriteAnims(textureKey: string, prefix: string): void {
