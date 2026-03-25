@@ -20,7 +20,7 @@ const PATROL_LANES  = [380, 420, 460, 500, 540];
 
 export class DroneSpawner {
   private scene: GameScene;
-  private waveIndex  = 0;
+  waveIndex  = 0;
   private nextWaveTime = 3000; // first wave after 3s
   private spawning   = false;
   private dronesAlive = 0;
@@ -46,6 +46,12 @@ export class DroneSpawner {
         scene.events.emit('waveCleared', this.waveIndex);
       }
     });
+  }
+
+  isBossWave(): boolean {
+    const currentLevel = (this.scene.registry.get('currentLevel') as number) ?? 1;
+    const bossWave = currentLevel === 2 ? BOSS_WAVE_L2 : BOSS_WAVE_L1;
+    return this.waveIndex >= bossWave;
   }
 
   update(time: number, _delta: number): void {
