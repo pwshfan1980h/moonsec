@@ -72,8 +72,6 @@ export class Crawler extends Phaser.Physics.Arcade.Sprite {
         }
         break;
       }
-      case 'HURT':
-        break;
     }
   }
 

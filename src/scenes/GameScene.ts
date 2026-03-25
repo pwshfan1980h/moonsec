@@ -4,8 +4,7 @@ import type { MechType } from '../entities/Player';
 import { Pilot } from '../entities/Pilot';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
-import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS,
-         BOSS_WAVE_L1 } from '../constants';
+import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;

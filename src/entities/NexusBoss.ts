@@ -163,8 +163,6 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         // Transition handled in fire() via delayedCall
         break;
 
-      case 'HURT':
-        break;
     }
   }
 
