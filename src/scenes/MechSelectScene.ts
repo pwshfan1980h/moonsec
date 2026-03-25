@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { MechType } from '../entities/Player';
+import { MECH_STATS } from '../constants';
 
 interface MechConfig {
   key: MechType;
@@ -38,7 +39,7 @@ export class MechSelectScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     const boxW = 180;
-    const boxH = 200;
+    const boxH = 320;
     const centerY = 352;
     const centerXs = [408, 872];
 
@@ -56,13 +57,13 @@ export class MechSelectScene extends Phaser.Scene {
       this.borders.push(border);
 
       // Mech sprite — positioned in upper portion of box
-      const spriteY = centerY - 30;
+      const spriteY = centerY - 60;
       const sprite = this.add.sprite(cx, spriteY, mech.key);
       sprite.setOrigin(0.5, 0.75);
       if (mech.key === 'mech') {
-        sprite.setScale(0.75);
+        sprite.setScale(0.3);
       } else {
-        sprite.setScale(1.4);
+        sprite.setScale(0.7);
       }
       sprite.play({ key: mech.animKey, repeat: -1 });
       this.sprites.push(sprite);
@@ -91,6 +92,49 @@ export class MechSelectScene extends Phaser.Scene {
         this.confirmSelection(mechs);
       });
     }
+
+    // Stat bars
+    const BAR_W = 130;
+    const BAR_H = 5;
+    const barY0 = 480; // first stat bar row
+
+    const addStatBar = (
+      cx: number, y: number,
+      label: string, fill: number, ratio: number,
+      badge: string, badgeColor: string
+    ) => {
+      this.add.text(cx - BAR_W / 2, y - 13, label, {
+        fontFamily: 'monospace', fontSize: '9px', color: '#5588aa',
+      }).setOrigin(0, 0);
+      // Track background
+      this.add.rectangle(cx, y + BAR_H / 2, BAR_W, BAR_H, 0x0d1f2d).setOrigin(0.5, 0.5);
+      // Fill bar (left-anchored)
+      this.add.rectangle(cx - BAR_W / 2 + (BAR_W * ratio) / 2, y + BAR_H / 2, BAR_W * ratio, BAR_H, fill).setOrigin(0.5, 0.5);
+      // Badge text
+      this.add.text(cx + BAR_W / 2 + 6, y - 2, badge, {
+        fontFamily: 'monospace', fontSize: '8px', color: badgeColor,
+      }).setOrigin(0, 0);
+    };
+
+    const mechKeys = ['mech', 'mech4'] as const;
+    mechKeys.forEach((key, i) => {
+      const cx = centerXs[i];
+      const stats = MECH_STATS[key];
+      const isStrider = key === 'mech';
+
+      // HP — ceiling is Scout max (5)
+      addStatBar(cx, barY0,      'HP',        0xff3333, stats.maxHp / 5,
+        isStrider ? '▼ –2' : '— 5',   isStrider ? '#ff5555' : '#5588aa');
+      // Speed — ceiling is Strider max (440)
+      addStatBar(cx, barY0 + 22, 'SPEED',     0xffcc00, stats.walkSpeed / 440,
+        isStrider ? '▲ 2×' : '— base', isStrider ? '#00ff88' : '#5588aa');
+      // Jetpack — ceiling is Strider max (4400)
+      addStatBar(cx, barY0 + 44, 'JETPACK',   0x2299ff, stats.jetpackMaxFuel / 4400,
+        isStrider ? '▲ 2×' : '— base', isStrider ? '#00ff88' : '#5588aa');
+      // Nanite CD — same for both
+      addStatBar(cx, barY0 + 66, 'NANITE CD', 0x00ff88, 0.65,
+        '— 20s', '#5588aa');
+    });
 
     // Instruction text at bottom
     this.add.text(640, 656, 'A/D — SELECT    ENTER — CONFIRM', {
