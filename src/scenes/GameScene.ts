@@ -379,10 +379,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   spawnExplosion(x: number, y: number): void {
-    const emitter = this.add.particles(x, y, 'pixel', {
+    const emitter = this.add.particles(x, y, 'flare', {
       speed: { min: 80, max: 220 },
       angle: { min: 0, max: 360 },
-      scale: { start: 3, end: 0 },
+      scale: { start: 1.5, end: 0 },
       alpha: { start: 1, end: 0 },
       tint: [0xffaa00, 0xff4400, 0xffffff, 0xffff00],
       lifespan: 450,
@@ -414,6 +414,9 @@ export class GameScene extends Phaser.Scene {
 
     makeStar(160, 1, 0.4, 'stars-far');
     makeStar(60, 2, 0.7, 'stars-near');
+
+    // Add nebula background (scrollFactor 0 — image is exactly 1280×720, any parallax would expose edges)
+    this.add.image(640, 360, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
 
     this.bgFar  = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-far').setDepth(1).setScrollFactor(0);
     this.bgNear = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
@@ -449,6 +452,9 @@ export class GameScene extends Phaser.Scene {
 
     makeStar(120, 1, 0.3, 'stars-far-l2');
     makeStar(40,  2, 0.6, 'stars-near-l2');
+
+    // Add nebula background (scrollFactor 0 — image is exactly 1280×720, any parallax would expose edges)
+    this.add.image(640, 360, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
 
     this.bgFar  = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-far-l2').setDepth(1).setScrollFactor(0);
     this.bgNear = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-near-l2').setDepth(2).setScrollFactor(0);

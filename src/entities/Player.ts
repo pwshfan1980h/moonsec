@@ -107,10 +107,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.play(this.animPrefix + 'idle');
 
     // Jetpack flame emitters — orange core + cyan outer glow
-    this.jetpackInner = scene.add.particles(0, 0, 'pixel', {
+    this.jetpackInner = scene.add.particles(0, 0, 'flare', {
       speed:    { min: 60, max: 120 },
       angle:    { min: 80, max: 100 },  // downward ±10°
-      scale:    { start: 2.5, end: 0 },
+      scale:    { start: 0.8, end: 0 },
       alpha:    { start: 1, end: 0 },
       tint:     [0xff6600, 0xff2200, 0xffaa00],
       lifespan: 120,
@@ -119,10 +119,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       emitting:  false,
     }).setDepth(9);
 
-    this.jetpackOuter = scene.add.particles(0, 0, 'pixel', {
+    this.jetpackOuter = scene.add.particles(0, 0, 'flare', {
       speed:    { min: 40, max: 90 },
       angle:    { min: 65, max: 115 }, // downward ±25°
-      scale:    { start: 3, end: 0 },
+      scale:    { start: 1.2, end: 0 },
       alpha:    { start: 0.7, end: 0 },
       tint:     [0x00aaff, 0x0044ff, 0x44eeff],
       lifespan: 180,
@@ -131,7 +131,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       emitting:  false,
     }).setDepth(8);
 
-    // Jetpack exhaust smoke — dissipates behind the player during flight
+    // Jetpack exhaust smoke — intentionally uses 'pixel' (1×1 square) for blocky wispy look;
+    // switching to 'flare' would produce an undesirable ~110px soft circle per particle
     this.jetpackSmoke = scene.add.particles(0, 0, 'pixel', {
       speed:     { min: 10, max: 40 },
       angle:     { min: 60, max: 120 }, // downward spread
@@ -145,23 +146,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }).setDepth(7); // behind flame (depth 8,9), above background
 
     // Nanite heal emitters
-    this.naniteAmbient = scene.add.particles(this.x, this.y - 56, 'pixel', {
+    this.naniteAmbient = scene.add.particles(this.x, this.y - 56, 'flare', {
       tint: [0x00ff88, 0x44ffcc, 0x00ccff],
       speed: { min: 20, max: 50 },
       angle: { min: 250, max: 290 },
       lifespan: 800,
-      scale: { start: 1.5, end: 0 },
+      scale: { start: 0.8, end: 0 },
       frequency: 60,
       blendMode: Phaser.BlendModes.ADD,
       emitting: false,
     }).setDepth(9);
 
-    this.naniteSpark = scene.add.particles(this.x, this.y - 56, 'pixel', {
+    this.naniteSpark = scene.add.particles(this.x, this.y - 56, 'flare', {
       tint: [0x00ffff, 0xffffff],
       speed: { min: 60, max: 120 },
       angle: { min: 0, max: 360 },
       lifespan: 300,
-      scale: { start: 2, end: 0 },
+      scale: { start: 1, end: 0 },
       quantity: 6,
       blendMode: Phaser.BlendModes.ADD,
       emitting: false,

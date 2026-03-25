@@ -45,6 +45,12 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('nexus', 'assets/Nexus-sheet.png', {
       frameWidth: 25, frameHeight: 27,
     });
+
+    // Load new SVG assets for visual upgrades
+    this.load.svg('logo', 'assets/logo.svg', { width: 600, height: 150 });
+    this.load.svg('hud-bracket', 'assets/hud-bracket.svg', { width: 180, height: 20 });
+    this.load.svg('nebula-bg', 'assets/nebula-bg.svg', { width: 1280, height: 720 });
+    this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
   }
 
   create(): void {

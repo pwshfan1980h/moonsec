@@ -70,7 +70,7 @@ export class UIScene extends Phaser.Scene {
     this.healthBg   = this.add.rectangle(hx + BAR_W / 2 + 22, hy + 4, BAR_W, BAR_H, 0x330000).setOrigin(0.5, 0.5);
     this.healthFill = this.add.rectangle(hx + 22, hy, BAR_W, BAR_H, 0xff2222).setOrigin(0, 0);
     // border
-    this.add.rectangle(hx + BAR_W / 2 + 22, hy + 4, BAR_W + 2, BAR_H + 2, 0x660000).setOrigin(0.5, 0.5).setDepth(-1);
+    this.add.image(hx + 22 - 20, hy - 4, 'hud-bracket').setOrigin(0, 0).setDepth(1);
 
     // ── Jetpack fuel (small bar below health) ─────────────────────
     const jy = hy + 18;
@@ -118,7 +118,7 @@ export class UIScene extends Phaser.Scene {
 
     this.missileBg   = this.add.rectangle(mx + BAR_W / 2, my + 4, BAR_W, BAR_H, 0x333300).setOrigin(0.5, 0.5);
     this.missileBar  = this.add.rectangle(mx, my, BAR_W, BAR_H, 0xffff00).setOrigin(0, 0);
-    this.add.rectangle(mx + BAR_W / 2, my + 4, BAR_W + 2, BAR_H + 2, 0x665500).setOrigin(0.5, 0.5).setDepth(-1);
+    this.add.image(mx - 20, my - 4, 'hud-bracket').setOrigin(0, 0).setDepth(1);
 
     // ── Turret cooldown bar (below missile) ───────────────────────
     const ty = my + 18;
@@ -128,6 +128,7 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(1, 0);
     this.turretBg = this.add.rectangle(mx + BAR_W / 2, ty + 4, BAR_W, 6, 0x331100).setOrigin(0.5, 0.5);
     this.turretBar = this.add.rectangle(mx, ty, BAR_W, 6, 0xff6600).setOrigin(0, 0);
+    this.add.image(mx - 20, ty - 6, 'hud-bracket').setOrigin(0, 0).setDepth(1).setAlpha(0.6);
 
     // ── Score (top-center) ────────────────────────────────────────
     this.scoreText = this.add.text(640, PAD, '0', {

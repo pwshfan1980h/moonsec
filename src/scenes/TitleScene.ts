@@ -43,19 +43,17 @@ export class TitleScene extends Phaser.Scene {
     this.add.image(640, 360, 'title-stars-near').setDepth(2);
 
     // Logo
-    this.add.text(640, 220, 'MOONSEC', {
-      fontFamily: 'monospace',
-      fontSize: '72px',
-      color: '#00ccff',
-      stroke: '#004466',
-      strokeThickness: 8,
-    }).setOrigin(0.5).setDepth(10);
-
-    this.add.text(640, 298, 'LUNAR BASE RECLAMATION PROTOCOL', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#446677',
-    }).setOrigin(0.5).setDepth(10);
+    const logoImage = this.add.image(640, 150, 'logo').setDepth(10);
+    
+    // Add floating animation to the logo
+    this.tweens.add({
+      targets: logoImage,
+      y: 160,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
     // Menu options
     OPTIONS.forEach((label, i) => {
