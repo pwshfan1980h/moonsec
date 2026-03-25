@@ -203,6 +203,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  getState(): 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH' {
+    if (this.bossState === 'CHARGE' || this.bossState === 'FIRE') return 'ATTACK';
+    if (this.bossState === 'HURT')  return 'HURT';
+    if (this.bossState === 'DEATH') return 'DEATH';
+    return 'HOVER';
+  }
+
   takeDamage(amount: number): void {
     if (this.bossState === 'DEATH' || this.bossState === 'HURT') return;
     this.hp -= amount;
