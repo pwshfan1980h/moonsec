@@ -5,7 +5,10 @@ import type Phaser from 'phaser';
 
 type SoundId =
   | 'rapid' | 'turret' | 'hit' | 'hurt' | 'jump' | 'death'
-  | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact';
+  | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
+  | 'nanite-heal' | 'nanite-tick' | 'pickup' | 'eject'
+  | 'ui-nav' | 'ui-confirm' | 'level-complete'
+  | 'upgrade-pick' | 'upgrade-buy' | 'upgrade-denied';
 
 type LoopId = 'jetpack' | 'missile-flight';
 
@@ -33,6 +36,16 @@ const VOLUMES: Record<SoundId, number> = {
   explosion:        0.70,
   footstep:         0.25,
   'missile-impact': 0.80,
+  'nanite-heal':    0.55,
+  'nanite-tick':    0.30,
+  'pickup':         0.50,
+  'eject':          0.60,
+  'ui-nav':         0.25,
+  'ui-confirm':     0.40,
+  'level-complete': 0.70,
+  'upgrade-pick':   0.55,
+  'upgrade-buy':    0.65,
+  'upgrade-denied': 0.40,
 };
 
 export class AudioSystem {
@@ -42,6 +55,7 @@ export class AudioSystem {
   private lastPlay: Partial<Record<SoundId, number>> = {};
   private readonly minInterval: Partial<Record<SoundId, number>> = {
     rapid: 55, // ms — prevents audio spam on rapid fire
+    'nanite-tick': 550,
   };
   private loops = new Map<LoopId, LoopEntry>();
   private footstepTimer = 0;

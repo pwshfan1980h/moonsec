@@ -187,6 +187,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.naniteHealElapsed = 0;
         this.naniteHealStart = this.hp;
         this.startNaniteParticles();
+        this.scene.audio.play('nanite-heal');
       }
     });
   }
@@ -324,6 +325,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       callback: () => {
         if (this.naniteActive) {
           this.naniteSpark.emitParticle(6, this.x, this.y - 56);
+          this.scene.audio.play('nanite-tick');
         }
       },
     });

@@ -409,7 +409,7 @@ export class UIScene extends Phaser.Scene {
 
     // Level complete stinger — low triumphant boom
     const gameSceneForAudio = this.scene.get('Game') as GameScene;
-    gameSceneForAudio?.audio?.playAt('explosion', { rate: 0.3, detune: -600, volume: 0.45 });
+    gameSceneForAudio?.audio?.play('level-complete');
 
     // Transition after 2000ms
     this.time.delayedCall(2000, () => {

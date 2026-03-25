@@ -109,18 +109,22 @@ export class MechSelectScene extends Phaser.Scene {
     keyA.on('down', () => {
       this.selectedIndex = 0;
       this.updateSelection();
+      this.sound.play('ui-nav', { volume: 0.25 });
     });
     keyD.on('down', () => {
       this.selectedIndex = 1;
       this.updateSelection();
+      this.sound.play('ui-nav', { volume: 0.25 });
     });
     keyLeft.on('down', () => {
       this.selectedIndex = 0;
       this.updateSelection();
+      this.sound.play('ui-nav', { volume: 0.25 });
     });
     keyRight.on('down', () => {
       this.selectedIndex = 1;
       this.updateSelection();
+      this.sound.play('ui-nav', { volume: 0.25 });
     });
     keyEnter.on('down', () => {
       this.confirmSelection(mechs);
@@ -143,6 +147,7 @@ export class MechSelectScene extends Phaser.Scene {
   }
 
   private confirmSelection(mechs: MechConfig[]): void {
+    this.sound.play('ui-confirm', { volume: 0.40 });
     const mechType = mechs[this.selectedIndex].key;
     this.scene.start('Game', { mechType });
     this.scene.launch('UI');

@@ -20,7 +20,13 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // One-shot sound effects (loops handled procedurally in AudioSystem)
-    const sounds = ['rapid','turret','hit','hurt','jump','death','drone-shoot','explosion','footstep','missile-impact'];
+    const sounds = [
+      'rapid','turret','hit','hurt','jump','death',
+      'drone-shoot','explosion','footstep','missile-impact',
+      'nanite-heal','nanite-tick','pickup','eject',
+      'ui-nav','ui-confirm','level-complete',
+      'upgrade-pick','upgrade-buy','upgrade-denied',
+    ];
     for (const s of sounds) {
       this.load.audio(s, `audio/${s}.wav`);
     }

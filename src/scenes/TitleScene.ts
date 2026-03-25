@@ -108,6 +108,7 @@ export class TitleScene extends Phaser.Scene {
     if (this.inputLocked) return;
     this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + dir, 0, OPTIONS.length);
     this.updateSelection();
+    this.sound.play('ui-nav', { volume: 0.25 });
   }
 
   private updateSelection(): void {
@@ -137,6 +138,7 @@ export class TitleScene extends Phaser.Scene {
   private confirmSelection(): void {
     if (this.inputLocked) return;
     this.inputLocked = true;
+    this.sound.play('ui-confirm', { volume: 0.40 });
     this.pulseTween?.stop();
 
     this.cameras.main.fadeOut(300, 0, 0, 0);

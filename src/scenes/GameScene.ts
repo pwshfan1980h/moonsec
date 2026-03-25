@@ -196,6 +196,7 @@ export class GameScene extends Phaser.Scene {
         } else {
           this.player.restoreJetpackFuel(1000);
         }
+        this.audio.play('pickup');
       },
     );
 
@@ -306,6 +307,7 @@ export class GameScene extends Phaser.Scene {
         }
       } else {
         if (this.player.isDead() || this.player.isHurtLocked()) return;
+        this.audio.play('eject');
         const spawnPos = this.player.eject();
         this.pilot = new Pilot(this, spawnPos.x, spawnPos.y);
         this.cameras.main.startFollow(this.pilot, false, 0.12, 0.08);
