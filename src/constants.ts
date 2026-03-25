@@ -34,3 +34,10 @@ export const PILOT_WALK_SPEED       = 90;    // px/s horizontal
 export const PILOT_JUMP_VEL         = -280;  // px/s, applied once on jump keydown
 export const PILOT_JETPACK_ACCEL    = -1200; // px/s² via setAccelerationY; net with gravity 600 = -600 upward
 export const PILOT_JETPACK_MAX_FUEL = 3000;  // ms; ~3 seconds at 60fps
+
+export const MAX_WAVES_L1     = 10;
+export const BOSS_WAVE_L1     = 10;
+export const MAX_WAVES_L2     = 12;
+export const BOSS_WAVE_L2     = 12;
+export const L2_SPEED_MULT    = 1.2;
+export const L2_INTERVAL_MULT = 0.85;
