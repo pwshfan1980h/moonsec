@@ -34,15 +34,6 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     this.scaling = scaling;
     this.level   = level;
 
-    // Apply L2 multiplier to boss own stats
-    if (level === 2) {
-      this.scaling = {
-        ...scaling,
-        attackSpeed:   Math.round(scaling.attackSpeed   * 1.2),
-        shootInterval: Math.round(scaling.shootInterval * 0.85),
-      };
-    }
-
     this.hp = level === 2 ? Math.round(HP * 1.2) : HP;
     this.setOrigin(0.5, 0.5);
     this.setScale(SCALE);

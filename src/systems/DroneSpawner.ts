@@ -33,20 +33,19 @@ export class DroneSpawner {
     scene.events.on('droneKilled', () => {
       this.dronesAlive = Math.max(0, this.dronesAlive - 1);
       scene.events.emit('dronesRemaining', this.dronesAlive);
-      if (this.dronesAlive === 0 && !this.spawning) {
+      if (this.dronesAlive === 0 && !this.spawning && this.waveIndex > 0) {
         scene.events.emit('waveCleared', this.waveIndex);
       }
     });
-    // Also listen for bossKilled — boss doesn't emit droneKilled
+    // bossKilled — boss doesn't emit droneKilled; handle decrement and isBossDead in one listener
     scene.events.on('bossKilled', () => {
+      this.isBossDead = true;
       this.dronesAlive = Math.max(0, this.dronesAlive - 1);
       scene.events.emit('dronesRemaining', this.dronesAlive);
-      if (this.dronesAlive === 0 && !this.spawning) {
+      if (this.dronesAlive === 0 && !this.spawning && this.waveIndex > 0) {
         scene.events.emit('waveCleared', this.waveIndex);
       }
     });
-    // Gate further spawning once boss is dead
-    scene.events.on('bossKilled', () => { this.isBossDead = true; });
   }
 
   update(time: number, _delta: number): void {
@@ -133,7 +132,7 @@ export class DroneSpawner {
       if (spawned >= count) {
         this.spawning = false;
         // Check if wave cleared immediately (shouldn't happen but guard anyway)
-        if (this.dronesAlive === 0) {
+        if (this.dronesAlive === 0 && this.waveIndex > 0) {
           this.scene.events.emit('waveCleared', this.waveIndex);
         }
         return;
