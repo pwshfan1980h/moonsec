@@ -30,7 +30,6 @@ export class UIScene extends Phaser.Scene {
   private naniteBg!:    Phaser.GameObjects.Rectangle;
   private naniteLabel!: Phaser.GameObjects.Text;
   private naniteActive = false;
-  private levelNameText: Phaser.GameObjects.Text | null = null;
   private levelCompleteActive = false;
   private nanitePulseTween: Phaser.Tweens.Tween | null = null;
 
@@ -408,9 +407,8 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(61);
 
     // Level complete stinger — low triumphant boom
-    try {
-      this.sound.play('explosion', { volume: 0.45, rate: 0.3, detune: -600 });
-    } catch { /* ignore */ }
+    const gameSceneForAudio = this.scene.get('Game') as GameScene;
+    gameSceneForAudio?.audio?.playAt('explosion', { rate: 0.3, detune: -600, volume: 0.45 });
 
     // Transition after 2000ms
     this.time.delayedCall(2000, () => {
