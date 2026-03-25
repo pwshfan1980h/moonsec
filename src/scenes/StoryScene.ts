@@ -31,6 +31,7 @@ export class StoryScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.input.keyboard!.removeAllListeners();
     this.inputLocked = false;
 
     // Background — slightly darker than title for gravitas

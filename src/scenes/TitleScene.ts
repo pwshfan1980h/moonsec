@@ -13,6 +13,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.input.keyboard!.removeAllListeners();
     this.inputLocked = false;
     this.selectedIndex = 0;
     this.optionTexts = [];
@@ -138,6 +139,7 @@ export class TitleScene extends Phaser.Scene {
   private confirmSelection(): void {
     if (this.inputLocked) return;
     this.inputLocked = true;
+    this.pulseTween?.stop();
 
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
