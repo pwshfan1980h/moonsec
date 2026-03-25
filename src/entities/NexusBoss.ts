@@ -26,8 +26,11 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private bossState: BossState = 'DRIFT';
   private hp: number;
   private driftDir = -1;
-  private phaseTimer = 0;
-  private escorts: (Drone | null)[] = [null, null];
+  private phaseTimer = DRIFT_MS;
+  private escortSlots: Array<{ drone: Drone | null; colliders: Phaser.Physics.Arcade.Collider[] }> = [
+    { drone: null, colliders: [] },
+    { drone: null, colliders: [] },
+  ];
   private scaling: DroneScaling;
   private level: number;
 
@@ -69,6 +72,12 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     if (this.bossState === 'DEATH') return;
     if (!this.active) return;
 
+    // Destroy any stale colliders from a previous escort in this slot
+    for (const col of this.escortSlots[slot].colliders) {
+      col.destroy();
+    }
+    this.escortSlots[slot].colliders = [];
+
     const dx  = slot === 0 ? -120 : 120;
     const escort = new Drone(
       this.scene,
@@ -87,7 +96,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     escort.startPatrol(-1);
 
     // Register bullet overlaps for escort (same as DroneSpawner pattern)
-    this.scene.physics.add.overlap(
+    const c1 = this.scene.physics.add.overlap(
       this.scene.playerBullets,
       escort,
       (e, bullet) => {
@@ -99,7 +108,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         this.scene.spawnFloatingText((e as Phaser.GameObjects.Sprite).x, (e as Phaser.GameObjects.Sprite).y - 20, '-1', '#ffffff');
       },
     );
-    this.scene.physics.add.overlap(
+    const c2 = this.scene.physics.add.overlap(
       this.scene.missiles,
       escort,
       (e, missile) => {
@@ -114,14 +123,14 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         this.scene.spawnFloatingText((e as Phaser.GameObjects.Sprite).x, (e as Phaser.GameObjects.Sprite).y - 20, '-3', '#ffff00');
       },
     );
-
-    this.escorts[slot] = escort;
+    this.escortSlots[slot].colliders = [c1, c2];
+    this.escortSlots[slot].drone = escort;
 
     // Respawn logic — check if escort died
     const checkRespawn = () => {
       if (this.bossState === 'DEATH' || !this.active) return;
       if (!escort.active) {
-        this.escorts[slot] = null;
+        this.escortSlots[slot].drone = null;
         this.scene.time.delayedCall(ESCORT_RESPAWN, () => {
           if (this.bossState !== 'DEATH' && this.active) {
             this.spawnEscort(slot);
@@ -256,6 +265,12 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         this.play('nexus-death');
         (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
         (this.body as Phaser.Physics.Arcade.Body).enable = false;
+
+        // Destroy escort colliders to prevent stale callbacks
+        for (const slot of this.escortSlots) {
+          for (const col of slot.colliders) col.destroy();
+          slot.colliders = [];
+        }
 
         // Three staggered explosions
         const offsets = [{ x: 0, y: 0 }, { x: -40, y: 20 }, { x: 35, y: -15 }];
