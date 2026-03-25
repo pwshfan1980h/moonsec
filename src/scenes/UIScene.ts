@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
 import type { GameScene } from './GameScene';
+import type { ProgressionSystem } from '../systems/ProgressionSystem';
 import { PILOT_JETPACK_MAX_FUEL } from '../constants';
 
 const BAR_W = 140;
@@ -287,6 +288,7 @@ export class UIScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-R', () => {
       if (!this.gameOverActive) return;
       const gameScene = this.scene.get('Game');
+      this.registry.set('isNewGame', true);
       gameScene.scene.restart();
       this.scene.restart();
     });
@@ -435,13 +437,14 @@ export class UIScene extends Phaser.Scene {
   private showGameOver(): void {
     this.gameOverActive = true;
 
-    // Save high score
-    const prev = parseInt(localStorage.getItem('moonsec-highscore') || '0', 10);
-    const isNew = this.currentScore > prev;
-    if (isNew) {
-      localStorage.setItem('moonsec-highscore', String(this.currentScore));
+    // Save high score via ProgressionSystem
+    const prog = this.registry.get('progression') as ProgressionSystem | undefined;
+    if (prog) {
+      prog.addScore(this.currentScore);
+      prog.updateHighScore(this.currentScore);
     }
-    const highScore = Math.max(prev, this.currentScore);
+    const highScore = prog ? prog.highScore : this.currentScore;
+    const isNew = prog ? this.currentScore >= highScore : false;
 
     // Dark overlay
     this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.7).setDepth(60);
