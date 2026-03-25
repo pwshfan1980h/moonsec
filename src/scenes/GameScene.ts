@@ -4,7 +4,8 @@ import type { MechType } from '../entities/Player';
 import { Pilot } from '../entities/Pilot';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
-import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
+import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS,
+         BOSS_WAVE_L1 } from '../constants';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -30,17 +31,18 @@ export class GameScene extends Phaser.Scene {
   private spawner!: DroneSpawner;
   private bgFar!: Phaser.GameObjects.TileSprite;
   private bgNear!: Phaser.GameObjects.TileSprite;
+  public currentLevel = 1;
+  private isBossDead = false;
+  private cameraBoundMaxY = 720;
 
   constructor() {
     super({ key: 'Game' });
   }
 
-  init(data: { mechType?: MechType }): void {
-    // On first start, MechSelectScene passes mechType via scene data.
-    // On restart (R key), data is empty — registry value is intentionally preserved.
-    if (data.mechType) {
-      this.registry.set('mechType', data.mechType);
-    }
+  init(data: { mechType?: MechType; level?: number; totalScore?: number }): void {
+    if (data.mechType) this.registry.set('mechType', data.mechType);
+    if (data.level !== undefined) this.registry.set('currentLevel', data.level);
+    if (data.totalScore !== undefined) this.registry.set('totalScore', data.totalScore);
   }
 
   create(): void {
@@ -52,6 +54,10 @@ export class GameScene extends Phaser.Scene {
     this.pilot        = null;
     this.pilotGroundCollider = null;
     this.pilotBulletOverlap  = null;
+    this.isBossDead      = false;
+    this.cameraBoundMaxY = 720;
+    this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
+    this.score           = (this.registry.get('totalScore')   as number) ?? 0;
 
     this.audio = new AudioSystem(this.sound);
 
@@ -84,27 +90,34 @@ export class GameScene extends Phaser.Scene {
     fg.generateTexture('pickup-fuel', 14, 14);
     fg.destroy();
 
-    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
+    if (this.currentLevel === 2) {
+      this.physics.world.setBounds(0, 0, 1280, 4800);
+      this.makeBackgroundL2();
+      this.makeGroundL2();
+      this.makeShaftLedges();
+    } else {
+      this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
 
-    // --- Background ---
-    this.makeBackground();
+      // --- Background ---
+      this.makeBackground();
 
-    // --- Ground ---
-    this.ground = this.physics.add.staticGroup();
-    const groundRect = this.add.rectangle(
-      WORLD_WIDTH / 2,
-      GROUND_Y + GROUND_HEIGHT / 2,
-      WORLD_WIDTH,
-      GROUND_HEIGHT,
-      0x1a1a3a,
-    ).setDepth(4);
-    this.ground.add(groundRect);
+      // --- Ground ---
+      this.ground = this.physics.add.staticGroup();
+      const groundRect = this.add.rectangle(
+        WORLD_WIDTH / 2,
+        GROUND_Y + GROUND_HEIGHT / 2,
+        WORLD_WIDTH,
+        GROUND_HEIGHT,
+        0x1a1a3a,
+      ).setDepth(4);
+      this.ground.add(groundRect);
 
-    // Ground surface glow line
-    this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x4444cc).setDepth(5);
+      // Ground surface glow line
+      this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x4444cc).setDepth(5);
 
-    // --- Platforms ---
-    this.makePlatforms();
+      // --- Platforms ---
+      this.makePlatforms();
+    }
 
     // --- Physics groups ---
     this.playerBullets = this.physics.add.group({
@@ -141,7 +154,8 @@ export class GameScene extends Phaser.Scene {
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
     const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
-    this.player = new Player(this, 300, GROUND_Y - 5, mechType);
+    const spawnY = this.currentLevel === 2 ? 200 : GROUND_Y - 5;
+    this.player = new Player(this, 300, spawnY, mechType);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
 
@@ -188,8 +202,13 @@ export class GameScene extends Phaser.Scene {
     );
 
     // --- Camera ---
-    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
+    if (this.currentLevel === 2) {
+      this.cameras.main.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+      this.cameras.main.startFollow(this.player, false, 0.10, 0.10);
+    } else {
+      this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+      this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
+    }
 
     // --- Spawner ---
     this.spawner = new DroneSpawner(this);
@@ -233,12 +252,41 @@ export class GameScene extends Phaser.Scene {
       this.isGameOver = true;
     });
 
+    this.events.on('bossKilled', () => {
+      this.isBossDead = true;
+      this.score += 1000;
+      this.events.emit('scoreChange', this.score);
+      // Level transition handled by UIScene listening to same event
+    });
+
+    this.events.on('waveCleared', () => {
+      if (this.currentLevel !== 2) return;
+      this.cameraBoundMaxY = Math.min(4800, this.cameraBoundMaxY + 480);
+      this.cameras.main.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+      this.physics.world.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+    });
+
     // --- Emit initial HUD state ---
     this.events.emit('healthChange', this.player.hp, this.player.maxHp);
     this.events.emit('missileCooldown', 0);
     this.events.emit('turretCooldown', 1);
     this.events.emit('jetpackFuel', 1, 1);
     this.events.emit('scoreChange', 0);
+
+    if (this.currentLevel === 2) {
+      this.physics.world.on('worldbounds', (body: Phaser.Physics.Arcade.Body) => {
+        const go = body.gameObject as Phaser.Physics.Arcade.Image;
+        if (!go?.active) return;
+        const bounces = (go.getData('bounces') ?? 0) + 1;
+        if (bounces >= 2) {
+          go.setActive(false).setVisible(false);
+          body.enable = false;
+        } else {
+          go.setData('bounces', bounces);
+          this.audio.playAt('hit', { rate: 1.8, detune: 400, volume: 0.2 });
+        }
+      });
+    }
 
     // --- Eject / reenter (E key) ---
     this.input.keyboard!.on('keydown-E', () => {
@@ -372,6 +420,54 @@ export class GameScene extends Phaser.Scene {
     this.bgNear = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
   }
 
+  private makeGroundL2(): void {
+    this.ground = this.physics.add.staticGroup();
+    const groundRect = this.add.rectangle(640, 4760, 1280, 80, 0x0a2010).setDepth(4);
+    this.ground.add(groundRect);
+    this.add.rectangle(640, 4721, 1280, 2, 0x00ff66).setDepth(5);
+    // Left/right walls (visual only — world bounds handle physics)
+    this.add.rectangle(4, 2400, 8, 4800, 0x0a2010).setDepth(4);
+    this.add.rectangle(1276, 2400, 8, 4800, 0x0a2010).setDepth(4);
+  }
+
+  private makeBackgroundL2(): void {
+    // Solid dark green background — fixed to screen
+    this.add.rectangle(640, 360, 1280, 720, 0x001400).setDepth(0).setScrollFactor(0);
+
+    const makeStar = (count: number, size: number, alpha: number, key: string) => {
+      const gfx = this.add.graphics();
+      gfx.fillStyle(0x88ff88, alpha);
+      for (let i = 0; i < count; i++) {
+        gfx.fillRect(
+          Phaser.Math.Between(0, 1280),
+          Phaser.Math.Between(0, GROUND_Y),
+          size, size,
+        );
+      }
+      gfx.generateTexture(key, 1280, GROUND_Y);
+      gfx.destroy();
+    };
+
+    makeStar(120, 1, 0.3, 'stars-far-l2');
+    makeStar(40,  2, 0.6, 'stars-near-l2');
+
+    this.bgFar  = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-far-l2').setDepth(1).setScrollFactor(0);
+    this.bgNear = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-near-l2').setDepth(2).setScrollFactor(0);
+  }
+
+  private makeShaftLedges(): void {
+    if (!this.ground) this.ground = this.physics.add.staticGroup();
+
+    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+
+    for (let i = 0; i < 18; i++) {
+      const w = 200 + hash(i) * 140;
+      const x = i % 2 === 0 ? w / 2 : 1280 - w / 2;
+      const y = 600 + i * 200 + hash(i + 100) * 80;
+      this.addStructure(x, y, w, 'green');
+    }
+  }
+
   private updateParallax(): void {
     const sx = this.cameras.main.scrollX;
     this.bgFar.setTilePosition(sx * 0.15, 0);
@@ -413,9 +509,16 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private addStructure(x: number, y: number, w: number): void {
+  private addStructure(x: number, y: number, w: number, palette: 'blue' | 'green' = 'blue'): void {
+    const bodyColor   = palette === 'green' ? 0x0a2010 : 0x1c2040;
+    const slabColor   = palette === 'green' ? 0x051008 : 0x12122e;
+    const postColor   = palette === 'green' ? 0x1a4028 : 0x2a3a5a;
+    const glowColor   = palette === 'green' ? 0x00ff66 : 0x7799ff;
+    const accentColor = palette === 'green' ? 0x0a3018 : 0x334466;
+    const lightColor  = palette === 'green' ? 0x44ff44 : 0xff8800;
+
     // Physics rect — one-way top surface, unchanged from before
-    const rect = this.add.rectangle(x, y, w, 8, 0x1c2040).setDepth(4);
+    const rect = this.add.rectangle(x, y, w, 8, bodyColor).setDepth(4);
     this.ground.add(rect);
     const body = rect.body as Phaser.Physics.Arcade.StaticBody;
     body.checkCollision.down  = false;
@@ -423,24 +526,24 @@ export class GameScene extends Phaser.Scene {
     body.checkCollision.right = false;
 
     // Slab body below surface (visual only — no physics body)
-    this.add.rectangle(x, y + 14, w, 20, 0x12122e).setDepth(3);
+    this.add.rectangle(x, y + 14, w, 20, slabColor).setDepth(3);
 
     // Corner posts
-    this.add.rectangle(x - w / 2 + 3, y + 14, 6, 20, 0x2a3a5a).setDepth(4);
-    this.add.rectangle(x + w / 2 - 3, y + 14, 6, 20, 0x2a3a5a).setDepth(4);
+    this.add.rectangle(x - w / 2 + 3, y + 14, 6, 20, postColor).setDepth(4);
+    this.add.rectangle(x + w / 2 - 3, y + 14, 6, 20, postColor).setDepth(4);
 
     // Top edge glow
-    this.add.rectangle(x, y - 3, w, 2, 0x7799ff).setDepth(5);
+    this.add.rectangle(x, y - 3, w, 2, glowColor).setDepth(5);
 
     // Bottom accent line
-    this.add.rectangle(x, y + 24, w, 2, 0x334466).setDepth(4);
+    this.add.rectangle(x, y + 24, w, 2, accentColor).setDepth(4);
 
     // Amber indicator lights — 1 per ~50px of width
     const lightCount = Math.max(1, Math.floor(w / 50));
     const spacing    = w / (lightCount + 1);
     for (let i = 0; i < lightCount; i++) {
       const lx = x - w / 2 + spacing * (i + 1);
-      this.add.rectangle(lx, y + 14, 3, 3, 0xff8800).setDepth(5);
+      this.add.rectangle(lx, y + 14, 3, 3, lightColor).setDepth(5);
     }
   }
 
@@ -448,13 +551,14 @@ export class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const minX = cam.scrollX - 100;
     const maxX = cam.scrollX + 1380;
-    const maxY = 820;
+    const minY = cam.scrollY - 100;
+    const maxY = cam.scrollY + 820;
 
     const cull = (group: Phaser.Physics.Arcade.Group) => {
       group.getChildren().forEach((go) => {
         const obj = go as Phaser.Physics.Arcade.Image;
         if (!obj.active) return;
-        if (obj.x < minX || obj.x > maxX || obj.y > maxY || obj.y < -50) {
+        if (obj.x < minX || obj.x > maxX || obj.y > maxY || obj.y < minY) {
           obj.setActive(false).setVisible(false);
           if (obj.body) (obj.body as Phaser.Physics.Arcade.Body).enable = false;
         }
