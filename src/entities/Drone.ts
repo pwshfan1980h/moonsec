@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 
 type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH';
-type DroneType = 'drone-red' | 'drone-green';
+export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
 export type DroneVariant = 'normal' | 'sniper';
 
 interface DroneScaling {
@@ -15,7 +15,7 @@ interface DroneScaling {
 const BASE_HOVER_SPEED      = 70;
 const BASE_ATTACK_RANGE     = 320;
 const BASE_BULLET_SPEED     = 300;
-const HP_MAP                = { 'drone-red': 2, 'drone-green': 3 };
+const HP_MAP                = { 'drone-red': 2, 'drone-green': 3, 'sentinel': 3 };
 
 const SNIPER_HP             = 1;
 const SNIPER_SCALE          = 1.4;
@@ -51,6 +51,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     type: DroneType,
     scaling: DroneScaling,
     variant: DroneVariant = 'normal',
+    forceHp?: number,
   ) {
     super(scene, x, y, type);
     this.scene = scene;
@@ -66,7 +67,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
       this.hoverSpeed     = SNIPER_HOVER_SPEED;
       this.setScale(SNIPER_SCALE);
     } else {
-      this.hp             = HP_MAP[type] + scaling.extraHp;
+      this.hp             = forceHp !== undefined ? forceHp : HP_MAP[type] + scaling.extraHp;
       this.attackSpeed    = scaling.attackSpeed;
       this.shootInterval  = scaling.shootInterval;
       this.bulletSpeed    = BASE_BULLET_SPEED * scaling.bulletSpeedMult;
@@ -181,7 +182,11 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;
     b.setVelocity(Math.cos(angle) * this.bulletSpeed, Math.sin(angle) * this.bulletSpeed);
 
-    this.scene.audio.play('drone-shoot');
+    if (this.droneType === 'sentinel') {
+      this.scene.audio.playAt('drone-shoot', { rate: 1.3, detune: 200, volume: 0.3 });
+    } else {
+      this.scene.audio.play('drone-shoot');
+    }
   }
 
   takeDamage(amount: number): void {
