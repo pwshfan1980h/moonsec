@@ -44,6 +44,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Reset state that persists across scene.restart() (instance is reused, not reconstructed)
+    this.isGameOver   = false;
+    this.score        = 0;
+    this.killStreak   = 0;
+    this.prevHp       = 0;
+    this.pilot        = null;
+    this.pilotGroundCollider = null;
+    this.pilotBulletOverlap  = null;
+
     this.audio = new AudioSystem(this.sound);
 
     // Input keys for pilot (Phaser deduplicates — safe alongside Player's own captures)
