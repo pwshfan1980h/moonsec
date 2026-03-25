@@ -12,6 +12,7 @@ type LoopId = 'jetpack' | 'missile-flight';
 interface AudioUpdateState {
   onGround: boolean;
   moving: boolean;   // Math.abs(velocityX) > 10
+  velocityY: number; // px/s — used for hard-landing detection
   delta: number;     // ms
 }
 
@@ -143,11 +144,16 @@ export class AudioSystem {
   }
 
   update(state: AudioUpdateState): void {
-    const { onGround, moving, delta } = state;
+    const { onGround, moving, velocityY, delta } = state;
 
-    // Reset timer on landing to prevent an immediate step sound
+    // Landing detection — play a thud on hard landings (>180 px/s downward)
     if (!this.wasOnGround && onGround) {
       this.footstepTimer = 280;
+      if (velocityY > 180) {
+        try {
+          this.soundManager.play('footstep', { volume: 0.55 });
+        } catch { /* ignore */ }
+      }
     }
     this.wasOnGround = onGround;
 

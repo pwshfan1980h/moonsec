@@ -56,6 +56,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private jetpackInner!: Phaser.GameObjects.Particles.ParticleEmitter;
   private jetpackOuter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private jetpackSmoke!: Phaser.GameObjects.Particles.ParticleEmitter;
 
   private naniteActive     = false;
   private naniteHealElapsed = 0;
@@ -129,6 +130,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       blendMode: 'ADD',
       emitting:  false,
     }).setDepth(8);
+
+    // Jetpack exhaust smoke — dissipates behind the player during flight
+    this.jetpackSmoke = scene.add.particles(0, 0, 'pixel', {
+      speed:     { min: 10, max: 40 },
+      angle:     { min: 60, max: 120 }, // downward spread
+      scale:     { start: 3.5, end: 0 },
+      alpha:     { start: 0.22, end: 0 },
+      tint:      [0xaaaaaa, 0x888888, 0xcccccc, 0xffffff],
+      lifespan:  700,
+      frequency: 35,
+      blendMode: Phaser.BlendModes.NORMAL,
+      emitting:  false,
+    }).setDepth(7); // behind flame (depth 8,9), above background
 
     // Nanite heal emitters
     this.naniteAmbient = scene.add.particles(this.x, this.y - 56, 'pixel', {
@@ -218,6 +232,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jetpackInner.emitting = jetpackActive;
     this.jetpackOuter.setPosition(thrustX, thrustY);
     this.jetpackOuter.emitting = jetpackActive;
+    this.jetpackSmoke.setPosition(thrustX, thrustY);
+    this.jetpackSmoke.emitting = jetpackActive;
 
     // --- Hurt timeout ---
     if (this.hurtLock > 0) {

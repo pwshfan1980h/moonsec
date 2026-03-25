@@ -283,8 +283,9 @@ export class GameScene extends Phaser.Scene {
     this.player.update(time, delta);
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     this.audio.update({
-      onGround: pb.blocked.down,
-      moving: Math.abs(pb.velocity.x) > 10,
+      onGround:  pb.blocked.down,
+      moving:    Math.abs(pb.velocity.x) > 10,
+      velocityY: pb.velocity.y,
       delta,
     });
     if (this.pilot?.active) this.pilot.update(this.cursors, this.spaceKey, delta);
