@@ -133,7 +133,7 @@ export class DroneSpawner {
         this.scene.physics.add.overlap(
           this.scene.playerBullets,
           crawler,
-          (bullet, cr) => {
+          (cr, bullet) => {
             const b = bullet as Phaser.Physics.Arcade.Image;
             b.setActive(false).setVisible(false);
             if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
@@ -149,7 +149,7 @@ export class DroneSpawner {
         this.scene.physics.add.overlap(
           this.scene.missiles,
           crawler,
-          (missile, cr) => {
+          (cr, missile) => {
             const m = missile as Phaser.Physics.Arcade.Image;
             m.setData('hitTarget', true);
             m.setActive(false).setVisible(false);
