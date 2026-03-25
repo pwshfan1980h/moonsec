@@ -1,16 +1,10 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
+import type { DroneScaling } from '../systems/DroneSpawner';
 
 type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH';
 export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
 export type DroneVariant = 'normal' | 'sniper';
-
-interface DroneScaling {
-  attackSpeed: number;
-  shootInterval: number;
-  extraHp: number;
-  bulletSpeedMult: number;
-}
 
 const BASE_HOVER_SPEED      = 70;
 const BASE_ATTACK_RANGE     = 320;

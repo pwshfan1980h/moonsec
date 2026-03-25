@@ -2,8 +2,16 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from '../entities/Drone';
 import { Crawler } from '../entities/Crawler';
-import type { DroneVariant } from '../entities/Drone';
-import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS } from '../constants';
+import { NexusBoss } from '../entities/NexusBoss';
+import type { DroneVariant, DroneType } from '../entities/Drone';
+import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, L2_SPEED_MULT, L2_INTERVAL_MULT } from '../constants';
+
+export interface DroneScaling {
+  attackSpeed: number;
+  shootInterval: number;
+  extraHp: number;
+  bulletSpeedMult: number;
+}
 
 const WAVE_DELAY    = 15000; // ms between waves
 const SPAWN_STAGGER = 700;   // ms between drones in a wave
@@ -16,6 +24,7 @@ export class DroneSpawner {
   private nextWaveTime = 3000; // first wave after 3s
   private spawning   = false;
   private dronesAlive = 0;
+  private isBossDead = false;
 
   constructor(scene: GameScene) {
     this.scene = scene;
@@ -24,11 +33,24 @@ export class DroneSpawner {
     scene.events.on('droneKilled', () => {
       this.dronesAlive = Math.max(0, this.dronesAlive - 1);
       scene.events.emit('dronesRemaining', this.dronesAlive);
+      if (this.dronesAlive === 0 && !this.spawning) {
+        scene.events.emit('waveCleared', this.waveIndex);
+      }
     });
+    // Also listen for bossKilled — boss doesn't emit droneKilled
+    scene.events.on('bossKilled', () => {
+      this.dronesAlive = Math.max(0, this.dronesAlive - 1);
+      scene.events.emit('dronesRemaining', this.dronesAlive);
+      if (this.dronesAlive === 0 && !this.spawning) {
+        scene.events.emit('waveCleared', this.waveIndex);
+      }
+    });
+    // Gate further spawning once boss is dead
+    scene.events.on('bossKilled', () => { this.isBossDead = true; });
   }
 
   update(time: number, _delta: number): void {
-    if (this.spawning) return;
+    if (this.spawning || this.isBossDead) return;
     if (time < this.nextWaveTime) return;
 
     this.nextWaveTime = time + WAVE_DELAY;
@@ -39,36 +61,100 @@ export class DroneSpawner {
     this.spawning = true;
     this.waveIndex++;
     this.scene.events.emit('waveStart', this.waveIndex);
-    const count = 3 + (this.waveIndex - 1) * 2;
 
-    // Find the highest bracket whose minWave ≤ current wave
+    const currentLevel = (this.scene.registry.get('currentLevel') as number) ?? 1;
+    const bossWave     = currentLevel === 2 ? BOSS_WAVE_L2 : BOSS_WAVE_L1;
+
+    // Determine bracket
     let bracket = WAVE_BRACKETS[0];
     for (const b of WAVE_BRACKETS) {
       if (this.waveIndex >= b.minWave) bracket = b;
     }
 
+    // Apply L2 difficulty multiplier
+    if (currentLevel === 2) {
+      bracket = {
+        ...bracket,
+        attackSpeed:   Math.round(bracket.attackSpeed   * L2_SPEED_MULT),
+        shootInterval: Math.round(bracket.shootInterval * L2_INTERVAL_MULT),
+      };
+    }
+
+    // Boss wave — spawn NexusBoss instead of regular drones
+    if (this.waveIndex === bossWave) {
+      this.spawning = false;
+      const camCentreX = this.scene.cameras.main.scrollX + 640;
+      const spawnY     = currentLevel === 2 ? 200 : 180;
+      const boss = new NexusBoss(this.scene, camCentreX, spawnY, bracket, currentLevel);
+      this.scene.add.existing(boss);
+      this.scene.physics.add.existing(boss);
+      boss.initBody();
+      this.scene.drones.add(boss);
+
+      // Register bullet overlaps for boss
+      this.scene.physics.add.overlap(
+        this.scene.playerBullets,
+        boss,
+        (b, bullet) => {
+          const blt = bullet as Phaser.Physics.Arcade.Image;
+          blt.setActive(false).setVisible(false);
+          if (blt.body) (blt.body as Phaser.Physics.Arcade.Body).enable = false;
+          (b as unknown as NexusBoss).takeDamage(1);
+          this.scene.audio.play('hit');
+          this.scene.spawnFloatingText((b as Phaser.GameObjects.Sprite).x, (b as Phaser.GameObjects.Sprite).y - 30, '-1', '#ffffff');
+        },
+      );
+      this.scene.physics.add.overlap(
+        this.scene.missiles,
+        boss,
+        (b, missile) => {
+          const m = missile as Phaser.Physics.Arcade.Image;
+          m.setData('hitTarget', true);
+          m.setActive(false).setVisible(false);
+          if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+          this.scene.spawnExplosion(m.x, m.y);
+          (b as unknown as NexusBoss).takeDamage(3);
+          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.audio.play('explosion');
+          this.scene.spawnFloatingText((b as Phaser.GameObjects.Sprite).x, (b as Phaser.GameObjects.Sprite).y - 30, '-3', '#ffff00');
+        },
+      );
+
+      this.dronesAlive++;  // boss counts as one unit
+      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+      return;
+    }
+
+    // Normal wave — spawn drones
+    const count = 3 + (this.waveIndex - 1) * 2;
     let spawned = 0;
 
     const spawnNext = () => {
       if (spawned >= count) {
         this.spawning = false;
+        // Check if wave cleared immediately (shouldn't happen but guard anyway)
+        if (this.dronesAlive === 0) {
+          this.scene.events.emit('waveCleared', this.waveIndex);
+        }
         return;
       }
 
-      const i = spawned;
-      // Spawn off the right edge of the visible viewport (1280px canvas)
+      const i        = spawned;
       const camRight = this.scene.cameras.main.scrollX + 1380;
       const spawnX   = Math.min(camRight + 60 + Math.random() * 200, WORLD_WIDTH - 50);
       const lane     = PATROL_LANES[i % PATROL_LANES.length];
       const spawnY   = Math.min(lane, GROUND_Y - 40);
 
-      // Every 3rd drone from wave 5 onward becomes a sniper
-      const isSniper: boolean = this.waveIndex >= 5 && i % 3 === 2;
+      // Sentinel: every 4th drone from wave 7+
+      const isSentinel = this.waveIndex >= 7 && i % 4 === 3;
+      // Sniper: every 3rd drone from wave 5+ (only if not sentinel slot)
+      const isSniper   = !isSentinel && this.waveIndex >= 5 && i % 3 === 2;
       const variant: DroneVariant = isSniper ? 'sniper' : 'normal';
-      // Snipers use drone-red (smaller scale at 1.4× distinguishes them visually)
-      const type: 'drone-red' | 'drone-green' = isSniper || i % 2 === 0 ? 'drone-red' : 'drone-green';
+      const type: DroneType       = isSentinel ? 'sentinel'
+                                  : (isSniper || i % 2 === 0 ? 'drone-red' : 'drone-green');
 
-      const drone = new Drone(this.scene, spawnX, spawnY, type, bracket, variant);
+      const forceHp = isSentinel ? 3 : undefined;
+      const drone   = new Drone(this.scene, spawnX, spawnY, type, bracket, variant, forceHp);
       this.scene.add.existing(drone);
       this.scene.physics.add.existing(drone);
       this.scene.drones.add(drone);
@@ -76,11 +162,10 @@ export class DroneSpawner {
       this.dronesAlive++;
       this.scene.events.emit('dronesRemaining', this.dronesAlive);
 
-      // No gravity on drones
       (drone.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
       drone.startPatrol(i % 2 === 0 ? -1 : 1);
 
-      // Register collision with player bullets
+      // Player bullet overlap
       this.scene.physics.add.overlap(
         this.scene.playerBullets,
         drone,
@@ -94,7 +179,7 @@ export class DroneSpawner {
         },
       );
 
-      // Register collision with missiles
+      // Missile overlap
       this.scene.physics.add.overlap(
         this.scene.missiles,
         drone,

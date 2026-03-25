@@ -1,13 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from './Drone';
-
-interface DroneScaling {
-  attackSpeed: number;
-  shootInterval: number;
-  extraHp: number;
-  bulletSpeedMult: number;
-}
+import type { DroneScaling } from '../systems/DroneSpawner';
 
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'HURT' | 'DEATH';
 
