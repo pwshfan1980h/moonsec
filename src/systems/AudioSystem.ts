@@ -64,6 +64,16 @@ export class AudioSystem {
     } catch { /* ignore — sound not yet loaded or context suspended */ }
   }
 
+  playAt(id: SoundId, opts: { rate?: number; detune?: number; volume?: number }): void {
+    try {
+      this.soundManager.play(id, {
+        volume:  opts.volume  ?? VOLUMES[id],
+        rate:    opts.rate    ?? 1,
+        detune:  opts.detune  ?? 0,
+      });
+    } catch { /* ignore — sound not yet loaded or context suspended */ }
+  }
+
   startLoop(id: LoopId): void {
     if (this.loops.has(id)) return;
     try {
