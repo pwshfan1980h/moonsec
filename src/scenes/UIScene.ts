@@ -30,6 +30,8 @@ export class UIScene extends Phaser.Scene {
   private naniteBg!:    Phaser.GameObjects.Rectangle;
   private naniteLabel!: Phaser.GameObjects.Text;
   private naniteActive = false;
+  private levelNameText: Phaser.GameObjects.Text | null = null;
+  private levelCompleteActive = false;
   private nanitePulseTween: Phaser.Tweens.Tween | null = null;
 
   private dronesRemainingText!: Phaser.GameObjects.Text;
@@ -52,6 +54,7 @@ export class UIScene extends Phaser.Scene {
 
   create(): void {
     this.gameOverActive = false;
+    this.levelCompleteActive = false;
     this.paused = false;
     this.naniteActive = false;
     this.currentWave = 0;
@@ -228,6 +231,22 @@ export class UIScene extends Phaser.Scene {
         delay: 1500,
         ease: 'Power2',
       });
+
+      // Show level name on wave 1 only
+      if (wave === 1) {
+        const gameScene = this.scene.get('Game') as GameScene;
+        const levelNum  = gameScene.currentLevel;
+        const levelName = levelNum === 2 ? 'SUBSURFACE' : 'SURFACE OPS';
+        const t = this.add.text(640, 80, levelName, {
+          fontFamily: 'monospace', fontSize: '22px',
+          color: levelNum === 2 ? '#00ff66' : '#6699ff',
+          stroke: '#000000', strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(50).setAlpha(0);
+        this.tweens.add({
+          targets: t, alpha: 1, duration: 400, yoyo: true, hold: 1200,
+          onComplete: () => t.destroy(),
+        });
+      }
     });
 
     game.events.on('dronesRemaining', (count: number) => {
@@ -251,6 +270,12 @@ export class UIScene extends Phaser.Scene {
 
     game.events.on('gameOver', () => {
       this.showGameOver();
+    });
+
+    game.events.on('bossKilled', () => {
+      if (this.levelCompleteActive) return;
+      this.levelCompleteActive = true;
+      this.showLevelComplete();
     });
 
     // ── Keyboard handlers ─────────────────────────────────────────
@@ -363,6 +388,49 @@ export class UIScene extends Phaser.Scene {
       this.naniteBar.setDisplaySize(BAR_W, 6);
       this.naniteBar.setFillStyle(0x00ff88);
     }
+  }
+
+  private showLevelComplete(): void {
+    const gameScene = this.scene.get('Game') as GameScene;
+    const mechType  = gameScene.registry.get('mechType') as string;
+    const score     = gameScene.score;
+    const level     = gameScene.currentLevel;
+
+    // Overlay
+    this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.75).setDepth(60);
+    this.add.text(640, 280, 'LEVEL COMPLETE', {
+      fontFamily: 'monospace', fontSize: '32px', color: '#00ff88',
+    }).setOrigin(0.5).setDepth(61);
+
+    const nextName = level === 1 ? 'DESCENDING TO SUBSURFACE…' : 'ALL CLEAR';
+    this.add.text(640, 340, nextName, {
+      fontFamily: 'monospace', fontSize: '16px', color: '#aaffcc',
+    }).setOrigin(0.5).setDepth(61);
+
+    // Level complete stinger — low triumphant boom
+    try {
+      this.sound.play('explosion', { volume: 0.45, rate: 0.3, detune: -600 });
+    } catch { /* ignore */ }
+
+    // Transition after 2000ms
+    this.time.delayedCall(2000, () => {
+      this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
+        if (progress === 1) {
+          if (level === 1) {
+            gameScene.scene.start('Game', {
+              level: 2,
+              mechType,
+              totalScore: score,
+            });
+            this.scene.restart();
+          } else {
+            // Victory — return to Level 1
+            gameScene.scene.start('Game', { mechType });
+            this.scene.restart();
+          }
+        }
+      });
+    });
   }
 
   private showGameOver(): void {
