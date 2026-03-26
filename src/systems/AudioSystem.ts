@@ -62,11 +62,31 @@ export class AudioSystem {
   };
   private loops = new Map<LoopId, LoopEntry>();
   private footstepTimer = 0;
+  private readonly onBeforeUnload = () => { try { this.ctx.close(); } catch { /* ignore */ } };
 
   constructor(soundManager: Phaser.Sound.BaseSoundManager) {
     this.soundManager = soundManager;
     this.ctx = new AudioContext();
     this.initNoiseBuffer();
+    window.addEventListener('beforeunload', this.onBeforeUnload);
+  }
+
+  /** Call before discarding this instance (e.g. scene restart) to stop all nodes and close the AudioContext. */
+  destroy(): void {
+    window.removeEventListener('beforeunload', this.onBeforeUnload);
+    // Stop all active loops immediately (no fade — context is going away)
+    for (const id of [...this.loops.keys()]) {
+      const entry = this.loops.get(id)!;
+      this.loops.delete(id);
+      try {
+        for (const src of entry.sources) {
+          try { src.stop(); } catch { /* already stopped */ }
+          src.disconnect();
+        }
+        entry.gainNode.disconnect();
+      } catch { /* ignore */ }
+    }
+    try { this.ctx.close(); } catch { /* ignore */ }
   }
 
   play(id: SoundId): void {
@@ -184,6 +204,7 @@ export class AudioSystem {
       osc.connect(masterGain);
       osc.start(t);
       osc.stop(t + duration);
+      osc.onended = () => { try { masterGain.disconnect(); } catch { /* ignore */ } };
 
       if (noiseLayer) {
         const noiseSrc = this.ctx.createBufferSource();
@@ -221,6 +242,7 @@ export class AudioSystem {
       bp.connect(gain);
       noiseSrc.start(t);
       noiseSrc.stop(t + DURATION);
+      noiseSrc.onended = () => { try { gain.disconnect(); } catch { /* ignore */ } };
     } catch { /* ignore */ }
   }
 

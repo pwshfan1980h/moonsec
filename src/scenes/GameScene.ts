@@ -75,6 +75,7 @@ export class GameScene extends Phaser.Scene {
       this.registry.set('runUpgrades', [] as string[]);
     }
 
+    this.audio?.destroy(); // close old AudioContext before creating new one
     this.audio = new AudioSystem(this.sound);
 
     // Input keys for pilot (Phaser deduplicates — safe alongside Player's own captures)
