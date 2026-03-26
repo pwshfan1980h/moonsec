@@ -36,7 +36,6 @@ export class GameScene extends Phaser.Scene {
   private bgHaze?: Phaser.GameObjects.TileSprite;
   public currentLevel = 1;
   private isBossDead = false;
-  private cameraBoundMaxY = GAME_H;
 
   constructor() {
     super({ key: 'Game' });
@@ -57,7 +56,6 @@ export class GameScene extends Phaser.Scene {
     this.pilotGroundCollider = null;
     this.pilotBulletOverlap  = null;
     this.isBossDead      = false;
-    this.cameraBoundMaxY = GAME_H;
     this.bgHaze          = undefined;
     this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
@@ -110,10 +108,10 @@ export class GameScene extends Phaser.Scene {
     fg.destroy();
 
     if (this.currentLevel === 2) {
-      this.physics.world.setBounds(0, 0, GAME_W, 4800);
+      this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
       this.makeBackgroundL2();
       this.makeGroundL2();
-      this.makeShaftLedges();
+      this.makePlatforms('purple', { low: 18, mid: 15, high: 10 });
     } else {
       this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
 
@@ -130,8 +128,6 @@ export class GameScene extends Phaser.Scene {
         0x1a1a3a,
       ).setDepth(4);
       this.ground.add(groundRect);
-
-      // Ground surface glow line
       this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x4444cc).setDepth(5);
 
       // --- Platforms ---
@@ -173,7 +169,7 @@ export class GameScene extends Phaser.Scene {
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
     const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
-    const spawnY = this.currentLevel === 2 ? 200 : GROUND_Y - 5;
+    const spawnY = GROUND_Y - 5; // same for both levels — L2 is now a surface level
     this.player = new Player(this, 300, spawnY, mechType);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
@@ -235,13 +231,8 @@ export class GameScene extends Phaser.Scene {
     );
 
     // --- Camera ---
-    if (this.currentLevel === 2) {
-      this.cameras.main.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
-      this.cameras.main.startFollow(this.player, false, 0.10, 0.10);
-    } else {
-      this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-      this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
-    }
+    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+    this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
 
     // --- Spawner ---
     this.spawner = new DroneSpawner(this);
@@ -293,13 +284,6 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.events.on('waveCleared', (wave: number) => {
-      // L2 vertical camera expansion on each wave clear
-      if (this.currentLevel === 2) {
-        this.cameraBoundMaxY = Math.min(4800, this.cameraBoundMaxY + 480);
-        this.cameras.main.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
-        this.physics.world.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
-      }
-
       // Between-wave upgrade card picker (skip for boss wave)
       if (!this.spawner.isBossWave()) {
         this.scene.launch('UpgradeCards', { wave, audio: this.audio, player: this.player });
@@ -499,12 +483,16 @@ export class GameScene extends Phaser.Scene {
 
   private makeGroundL2(): void {
     this.ground = this.physics.add.staticGroup();
-    const groundRect = this.add.rectangle(GAME_W / 2, 4760, GAME_W, 80, 0x0a2010).setDepth(4);
+    const groundRect = this.add.rectangle(
+      WORLD_WIDTH / 2,
+      GROUND_Y + GROUND_HEIGHT / 2,
+      WORLD_WIDTH,
+      GROUND_HEIGHT,
+      0x0d0a20,
+    ).setDepth(4);
     this.ground.add(groundRect);
-    this.add.rectangle(GAME_W / 2, 4721, GAME_W, 2, 0x00ff66).setDepth(5);
-    // Left/right walls (visual only — world bounds handle physics)
-    this.add.rectangle(4, 2400, 8, 4800, 0x0a2010).setDepth(4);
-    this.add.rectangle(GAME_W - 4, 2400, 8, 4800, 0x0a2010).setDepth(4);
+    // Purple glow line (visual only — not added to physics group)
+    this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x6633cc).setDepth(5);
   }
 
   private makeBackgroundL2(): void {
@@ -558,19 +546,6 @@ export class GameScene extends Phaser.Scene {
     // bgHaze intentionally left undefined for L2 (no atmospheric scattering)
   }
 
-  private makeShaftLedges(): void {
-    if (!this.ground) this.ground = this.physics.add.staticGroup();
-
-    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
-
-    for (let i = 0; i < 18; i++) {
-      const w = 200 + hash(i) * 140;
-      const x = i % 2 === 0 ? w / 2 : GAME_W - w / 2;
-      const y = 600 + i * 200 + hash(i + 100) * 80;
-      this.addStructure(x, y, w, 'green');
-    }
-  }
-
   private updateParallax(): void {
     const sx = this.cameras.main.scrollX;
     this.bgStars.setTilePosition(sx * 0.05, 0);
@@ -578,48 +553,49 @@ export class GameScene extends Phaser.Scene {
     if (this.bgHaze) this.bgHaze.setTilePosition(sx * 0.35, 0);
   }
 
-  private makePlatforms(): void {
+  private makePlatforms(
+    palette: 'blue' | 'purple' = 'blue',
+    counts: { low: number; mid: number; high: number } = { low: 15, mid: 12, high: 8 },
+  ): void {
     this.platformData = [];
 
-    // Deterministic hash: maps any integer to a stable float in [0, 1)
     const hash = (n: number): number =>
       ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
 
     const configs = [
-      { ...PLATFORM_BANDS[0], count: 15, minW: 100, maxW: 160 },
-      { ...PLATFORM_BANDS[1], count: 12, minW:  80, maxW: 130 },
-      { ...PLATFORM_BANDS[2], count:  8, minW:  60, maxW: 100 },
+      { ...PLATFORM_BANDS[0], count: counts.low,  minW: 100, maxW: 160 },
+      { ...PLATFORM_BANDS[1], count: counts.mid,  minW:  80, maxW: 130 },
+      { ...PLATFORM_BANDS[2], count: counts.high, minW:  60, maxW: 100 },
     ];
 
     configs.forEach(({ yMin, yMax, count, minW, maxW }, bandIdx) => {
-      const span = 5600; // x from 400 to 6000
+      const span    = 5600;
       const spacing = span / count;
-      let lastX = 200; // initialised to start-of-span minus min-gap so i=0 is consistent
+      let lastX     = 200;
 
       for (let i = 0; i < count; i++) {
         const seed = bandIdx * 100 + i;
         const rawX = 400 + i * spacing + hash(seed) * spacing * 0.6;
-        const w = minW + hash(seed + 2000) * (maxW - minW);
-        // Enforce 200px minimum gap between adjacent platforms in this band
-        const x = Math.min(
+        const w    = minW + hash(seed + 2000) * (maxW - minW);
+        const x    = Math.min(
           i === 0 ? rawX : Math.max(lastX + 200, rawX),
           6000 - w / 2,
         );
         lastX = x;
         const y = yMin + hash(seed + 1000) * (yMax - yMin);
         this.platformData.push({ x, y, w });
-        this.addStructure(x, y, w);
+        this.addStructure(x, y, w, palette);
       }
     });
   }
 
-  private addStructure(x: number, y: number, w: number, palette: 'blue' | 'green' = 'blue'): void {
-    const bodyColor   = palette === 'green' ? 0x0a2010 : 0x1c2040;
-    const slabColor   = palette === 'green' ? 0x051008 : 0x12122e;
-    const postColor   = palette === 'green' ? 0x1a4028 : 0x2a3a5a;
-    const glowColor   = palette === 'green' ? 0x00ff66 : 0x7799ff;
-    const accentColor = palette === 'green' ? 0x0a3018 : 0x334466;
-    const lightColor  = palette === 'green' ? 0x44ff44 : 0xff8800;
+  private addStructure(x: number, y: number, w: number, palette: 'blue' | 'purple' = 'blue'): void {
+    const bodyColor   = palette === 'purple' ? 0x1a0d2e : 0x1c2040;
+    const slabColor   = palette === 'purple' ? 0x100820 : 0x12122e;
+    const postColor   = palette === 'purple' ? 0x2a1a44 : 0x2a3a5a;
+    const glowColor   = palette === 'purple' ? 0xaa66ff : 0x7799ff;
+    const accentColor = palette === 'purple' ? 0x3a2255 : 0x334466;
+    const lightColor  = palette === 'purple' ? 0xff3355 : 0xff8800;
 
     // Physics rect — one-way top surface, unchanged from before
     const rect = this.add.rectangle(x, y, w, 8, bodyColor).setDepth(4);
