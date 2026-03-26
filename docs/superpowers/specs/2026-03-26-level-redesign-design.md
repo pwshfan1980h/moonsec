@@ -202,9 +202,10 @@ this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerra
 L1 physics world bounds `+200` overage (`WORLD_HEIGHT + 200`) is intentional — allows bullets/enemies to travel slightly below the visible area — leave it unchanged.
 
 ### L2 Ground — `makeGroundL2()`
-Replace the entire method body with only these two elements (the existing code uses `GAME_W/2 = 960` as center-X, covering only a 1920px strip of a 6400px world):
-- Ground rect: center at `(WORLD_WIDTH/2, GROUND_Y + GROUND_HEIGHT/2)`, size `(WORLD_WIDTH, GROUND_HEIGHT)`, color `#0d0a20` (deep violet-navy)
-- Glow line: Y = `GROUND_Y + 1`, full width `WORLD_WIDTH`, height 2px, color `#6633cc` (purple)
+Replace the entire method body with the following (the existing code uses `GAME_W/2 = 960` as center-X, covering only a 1920px strip of a 6400px world):
+1. `this.ground = this.physics.add.staticGroup()` — must be initialized here since L2 never calls L1's ground setup
+2. Ground rect: center at `(WORLD_WIDTH/2, GROUND_Y + GROUND_HEIGHT/2)`, size `(WORLD_WIDTH, GROUND_HEIGHT)`, color `#0d0a20` (deep violet-navy); add to physics group via `this.ground.add(groundRect)`
+3. Glow line: Y = `GROUND_Y + 1`, full width `WORLD_WIDTH`, height 2px, color `#6633cc` (purple) — visual only, not added to physics group
 
 The existing left/right shaft walls and all other geometry are removed by replacing the full method body.
 
