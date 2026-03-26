@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { TREE_NODES, type TreeNode } from '../data/upgradeTree';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
+import { GAME_W, GAME_H } from '../constants';
 
-const COL_X: Record<string, number> = { offense: 320, defense: 640, mobility: 960 };
-const TIER_Y = [160, 280, 400, 520];
-const NODE_W = 160;
-const NODE_H = 52;
+const COL_X: Record<string, number> = { offense: 480, defense: 960, mobility: 1440 };
+const TIER_Y = [200, 360, 520, 680];
+const NODE_W = 200;
+const NODE_H = 60;
 
 interface Particle {
   angle: number;
@@ -31,7 +32,7 @@ export class UpgradeTreeScene extends Phaser.Scene {
   }
 
   create(): void {
-    const W = 1280, H = 720;
+    const W = GAME_W, H = GAME_H;
 
     // Guard: ProgressionSystem may not be registered if player navigates here before playing
     if (!this.registry.get('progression')) {
@@ -50,19 +51,19 @@ export class UpgradeTreeScene extends Phaser.Scene {
     const colNames: Record<string, string> = { offense: 'OFFENSE', defense: 'DEFENSE', mobility: 'MOBILITY' };
     const colColors: Record<string, string> = { offense: '#ff6644', defense: '#4499ff', mobility: '#ffcc00' };
     for (const col of ['offense', 'defense', 'mobility']) {
-      this.add.text(COL_X[col], 90, colNames[col], {
+      this.add.text(COL_X[col], 120, colNames[col], {
         fontFamily: 'monospace', fontSize: '12px', color: colColors[col],
       }).setOrigin(0.5).setDepth(10);
     }
 
     // Score bank display
-    this.scoreBankText = this.add.text(W / 2, 44, '', {
+    this.scoreBankText = this.add.text(W / 2, 60, '', {
       fontFamily: 'monospace', fontSize: '14px', color: '#00ff88',
     }).setOrigin(0.5).setDepth(10);
     this.updateScoreDisplay();
 
     // Title label (small, above score)
-    this.add.text(W / 2, 20, 'UPGRADE TREE', {
+    this.add.text(W / 2, 28, 'UPGRADE TREE', {
       fontFamily: 'monospace', fontSize: '11px', color: '#334455',
     }).setOrigin(0.5).setDepth(10);
 
@@ -73,7 +74,7 @@ export class UpgradeTreeScene extends Phaser.Scene {
     }
 
     // Back button
-    const back = this.add.text(40, 40, '[ \u2190 BACK ]', {
+    const back = this.add.text(52, 52, '[ \u2190 BACK ]', {
       fontFamily: 'monospace', fontSize: '12px', color: '#336677',
     }).setDepth(10).setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setStyle({ color: '#00ccff' }));
@@ -212,7 +213,7 @@ export class UpgradeTreeScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     const dt = delta / 1000;
-    const cx = 640, cy = 360;
+    const cx = GAME_W / 2, cy = GAME_H / 2;
     this.gfx.clear();
     for (const p of this.particles) {
       p.angle += p.speed * dt;

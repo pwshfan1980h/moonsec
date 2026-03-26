@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CARD_POOL, type UpgradeCard } from '../data/upgradeCards';
 import type { Player } from '../entities/Player';
 import type { AudioSystem } from '../systems/AudioSystem';
+import { GAME_W, GAME_H } from '../constants';
 
 interface CardSceneData {
   wave: number;
@@ -29,7 +30,7 @@ export class UpgradeCardScene extends Phaser.Scene {
 
   create(data: CardSceneData): void {
     const { wave } = data;
-    const W = 1280, H = 720;
+    const W = GAME_W, H = GAME_H;
 
     // Dark overlay
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.85).setDepth(70);
