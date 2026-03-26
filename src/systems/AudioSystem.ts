@@ -8,14 +8,14 @@ type SoundId =
   | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
   | 'nanite-heal' | 'nanite-tick' | 'pickup' | 'eject'
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
-  | 'upgrade-pick' | 'upgrade-buy' | 'upgrade-denied';
+  | 'upgrade-pick' | 'upgrade-buy' | 'upgrade-denied'
+  | 'missile-launch' | 'landing-soft' | 'landing-heavy';
 
-type LoopId = 'jetpack' | 'missile-flight';
+type LoopId = 'jetpack';
 
 interface AudioUpdateState {
   onGround: boolean;
   moving: boolean;   // Math.abs(velocityX) > 10
-  velocityY: number; // px/s — used for hard-landing detection
   delta: number;     // ms
 }
 
@@ -46,6 +46,9 @@ const VOLUMES: Record<SoundId, number> = {
   'upgrade-pick':   0.55,
   'upgrade-buy':    0.65,
   'upgrade-denied': 0.40,
+  'missile-launch': 0.45,
+  'landing-soft':   0.30,
+  'landing-heavy':  0.50,
 };
 
 export class AudioSystem {
@@ -59,7 +62,6 @@ export class AudioSystem {
   };
   private loops = new Map<LoopId, LoopEntry>();
   private footstepTimer = 0;
-  private wasOnGround = false;
 
   constructor(soundManager: Phaser.Sound.BaseSoundManager) {
     this.soundManager = soundManager;
@@ -72,6 +74,11 @@ export class AudioSystem {
     const min = this.minInterval[id] ?? 0;
     if (min > 0 && this.lastPlay[id] !== undefined && now - this.lastPlay[id]! < min) return;
     this.lastPlay[id] = now;
+
+    // Procedural sounds — bypass Phaser sound manager
+    if (id === 'missile-launch') { this.playMissileLaunch(); return; }
+    if (id === 'landing-soft')  { this.playProceduralOneShot(70, 0.08, 0.30); return; }
+    if (id === 'landing-heavy') { this.playProceduralOneShot(55, 0.12, 0.50, { filterHz: 200 }); return; }
 
     try {
       this.soundManager.play(id, { volume: VOLUMES[id] });
@@ -124,18 +131,6 @@ export class AudioSystem {
         sources.push(subOsc);
 
         gainNode.gain.linearRampToValueAtTime(0.35, t + FADE_IN);
-
-      } else if (id === 'missile-flight') {
-        // Sine sweep 180 → 500 Hz over 1.5s
-        const osc = this.ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(180, t);
-        osc.frequency.linearRampToValueAtTime(500, t + 1.5);
-        osc.connect(gainNode);
-        osc.start(t);
-        sources.push(osc);
-
-        gainNode.gain.linearRampToValueAtTime(0.10, t + FADE_IN);
       }
 
       this.loops.set(id, { sources, gainNode });
@@ -167,19 +162,70 @@ export class AudioSystem {
     } catch { /* ignore */ }
   }
 
-  update(state: AudioUpdateState): void {
-    const { onGround, moving, velocityY, delta } = state;
+  private playProceduralOneShot(
+    freq: number,
+    duration: number,
+    peakGain: number,
+    noiseLayer?: { filterHz: number },
+  ): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
 
-    // Landing detection — play a thud on hard landings (>180 px/s downward)
-    if (!this.wasOnGround && onGround) {
-      this.footstepTimer = 280;
-      if (velocityY > 180) {
-        try {
-          this.soundManager.play('footstep', { volume: 0.55 });
-        } catch { /* ignore */ }
+      const masterGain = this.ctx.createGain();
+      masterGain.gain.setValueAtTime(peakGain, t);
+      masterGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+      masterGain.connect(this.ctx.destination);
+
+      // Sine oscillator
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      osc.connect(masterGain);
+      osc.start(t);
+      osc.stop(t + duration);
+
+      if (noiseLayer) {
+        const noiseSrc = this.ctx.createBufferSource();
+        noiseSrc.buffer = this.noiseBuffer;
+        const lp = this.ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(noiseLayer.filterHz, t);
+        noiseSrc.connect(lp);
+        lp.connect(masterGain);
+        noiseSrc.start(t);
+        noiseSrc.stop(t + duration);
       }
-    }
-    this.wasOnGround = onGround;
+    } catch { /* ignore */ }
+  }
+
+  private playMissileLaunch(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+      const DURATION = 0.35;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.45, t);
+      gain.gain.linearRampToValueAtTime(0, t + DURATION);
+      gain.connect(this.ctx.destination);
+
+      // White noise through bandpass, sweep 2000→600 Hz
+      const noiseSrc = this.ctx.createBufferSource();
+      noiseSrc.buffer = this.noiseBuffer;
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(2000, t);
+      bp.frequency.linearRampToValueAtTime(600, t + DURATION);
+      noiseSrc.connect(bp);
+      bp.connect(gain);
+      noiseSrc.start(t);
+      noiseSrc.stop(t + DURATION);
+    } catch { /* ignore */ }
+  }
+
+  update(state: AudioUpdateState): void {
+    const { onGround, moving, delta } = state;
 
     if (onGround && moving) {
       this.footstepTimer -= delta;

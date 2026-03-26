@@ -66,7 +66,7 @@ export class HomingMissile {
     emitter.setDepth(15);
 
     this.active.push({ obj: m, angle, target, emitter });
-    this.scene.audio.startLoop('missile-flight');
+    this.scene.audio.play('missile-launch');
   }
 
   update(_time: number, _delta: number): void {
@@ -75,10 +75,7 @@ export class HomingMissile {
 
       if (!obj.active) {
         if (obj.getData('hitTarget') === true) {
-          this.scene.audio.stopLoop('missile-flight');
           this.scene.audio.play('missile-impact');
-        } else {
-          this.scene.audio.stopLoop('missile-flight'); // silent stop — miss
         }
         emitter.destroy();
         return false;
@@ -101,7 +98,7 @@ export class HomingMissile {
       if (obj.x < -100 || obj.x > WORLD_WIDTH + 100 || obj.y < -100 || obj.y > 820) {
         obj.setActive(false).setVisible(false);
         if (obj.body) (obj.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.scene.audio.stopLoop('missile-flight'); // silent stop — miss (matches cullBullets maxY)
+        // missile-launch is a one-shot; no loop to stop here
         emitter.destroy();
         return false;
       }

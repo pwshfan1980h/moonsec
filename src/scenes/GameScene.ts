@@ -376,7 +376,6 @@ export class GameScene extends Phaser.Scene {
     this.audio.update({
       onGround:  pb.blocked.down,
       moving:    Math.abs(pb.velocity.x) > 10,
-      velocityY: pb.velocity.y,
       delta,
     });
     if (this.pilot?.active) this.pilot.update(this.cursors, this.spaceKey, delta);
