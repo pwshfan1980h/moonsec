@@ -19,8 +19,9 @@
 
 No position changes needed — the text is bottom-left anchored with `setOrigin(0, 1)`.
 
-Also update all L2 level name strings to match the rebuilt surface layout:
+Also update all L2 level name strings and colors to match the rebuilt surface layout:
 - Level name in wave-start flash: `'SUBSURFACE'` → `'DARK SIDE'`
+- Level name flash color (currently `'#00ff66'` — green): change to `'#aa66ff'` (cold purple matching the dark-side palette)
 - Level-complete transition text in `showLevelComplete()`: `'DESCENDING TO SUBSURFACE…'` → `'DESCENDING TO DARK SIDE…'`
 
 ---
@@ -42,20 +43,21 @@ Remove the current two-layer dot-scatter parallax. Replace with three procedural
 - Draw a filled baseline rect `#0d0d1e` (full width, 200px tall)
 - Overlay a terrain silhouette: flat baseline with 6–8 shallow crater arcs cut in using `arc()` in erase/darker color `#070710`
 - Craters: radius 30–80px, deterministic positions from hash, along the bottom 80px of the texture
-- Stored as `bgTerrain` tileSprite at Y = `GROUND_Y - 160`, depth 2
+- Stored as `bgTerrain` tileSprite at Y = `GROUND_Y`, `setOrigin(0.5, 1)` (bottom edge at ground line), depth 2
 
 ### Layer 3 — Dust haze (scroll 0.35×)
 - Generate a `GAME_W × 120` texture
 - Fill with a vertical gradient: `#1a1a2e` at bottom fading to transparent at top (simulate with 8 horizontal rect strips decreasing alpha)
-- Stored as `bgHaze` tileSprite at Y = `GROUND_Y - 80`, depth 3
+- Stored as `bgHaze` tileSprite at Y = `GROUND_Y`, `setOrigin(0.5, 1)` (bottom edge at ground line), depth 3
 
-### updateParallax() — update to 3 layers
+### updateParallax() — final version (handles both L1 and L2)
+Use this single canonical implementation (replaces the previous two-layer version):
 ```ts
 private updateParallax(): void {
   const sx = this.cameras.main.scrollX;
   this.bgStars.setTilePosition(sx * 0.05, 0);
   this.bgTerrain.setTilePosition(sx * 0.20, 0);
-  this.bgHaze.setTilePosition(sx * 0.35, 0);
+  if (this.bgHaze) this.bgHaze.setTilePosition(sx * 0.35, 0);
 }
 ```
 
@@ -146,6 +148,8 @@ if (this.currentLevel === 2) {
 ```
 Also remove the `cameraBoundMaxY` field declaration from GameScene.
 
+The `worldbounds` bounce event handler in `create()` (which lets bullets bounce off world edges for L2) should be **kept as-is** — it still applies to the surface-level layout since bullets can still reach world boundaries.
+
 ### Physics world bounds
 ```ts
 // Before:
@@ -177,10 +181,11 @@ Replace current green-tinted shaft background with cold dark-side surface:
 Both `makeBackgroundL2()` paths must assign `this.bgStars` and `this.bgTerrain` (the `!`-typed fields). `bgHaze` is left `undefined` for L2.
 
 ### L2 Ground — `makeGroundL2()`
-Replace shaft/wall geometry. The existing code uses `GAME_W/2` (960) as the center-X, which only covers a 1920px-wide strip of a 6400px world — this must change to `WORLD_WIDTH/2` (3200):
+Replace the entire method body with only these two elements (the existing code uses `GAME_W/2 = 960` as center-X, covering only a 1920px strip of a 6400px world):
 - Ground rect: center at `(WORLD_WIDTH/2, GROUND_Y + GROUND_HEIGHT/2)`, size `(WORLD_WIDTH, GROUND_HEIGHT)`, color `#0d0a20` (deep violet-navy)
-- Glow line: Y = `GROUND_Y + 1`, color `#6633cc` (purple), height 2px
-- Remove left/right shaft walls entirely
+- Glow line: Y = `GROUND_Y + 1`, full width `WORLD_WIDTH`, height 2px, color `#6633cc` (purple)
+
+The existing left/right shaft walls and all other geometry are removed by replacing the full method body.
 
 ### L2 Platforms
 Reuse `makePlatforms()` with new `palette` and `counts` parameters. Update the signature:
@@ -194,12 +199,14 @@ private makePlatforms(
 
 L1 call: `makePlatforms()` (defaults). L2 call: `makePlatforms('purple', { low: 18, mid: 15, high: 10 })`.
 
-Also update the internal `addStructure()` helper's palette type union to include `'purple'`:
+Remove `makeShaftLedges()` — it was L2-only shaft geometry, no longer needed after the surface-level rebuild.
+
+Update the internal `addStructure()` helper's palette type union (removing `'green'` which was only used by `makeShaftLedges()`):
 ```ts
 // Before:
 function addStructure(palette: 'blue' | 'green', ...): void
 // After:
-function addStructure(palette: 'blue' | 'green' | 'purple', ...): void
+function addStructure(palette: 'blue' | 'purple', ...): void
 ```
 
 ```ts
@@ -216,15 +223,7 @@ Reuse `makeBaseProps()` with a `damageLevel: 'low' | 'high'` parameter:
 - L2: `damageLevel = 'high'` (2 in 3 domes damaged, all towers tilted, solar panels 50% missing)
 
 ### L2 updateParallax()
-L2 uses `bgStars` and `bgTerrain` only (no haze). Add a level check in `updateParallax()`:
-```ts
-private updateParallax(): void {
-  const sx = this.cameras.main.scrollX;
-  this.bgStars.setTilePosition(sx * 0.05, 0);
-  this.bgTerrain.setTilePosition(sx * 0.20, 0);
-  if (this.bgHaze) this.bgHaze.setTilePosition(sx * 0.35, 0);
-}
-```
+No additional changes needed — the canonical `updateParallax()` defined in Change 2 already handles L2 correctly via the `if (this.bgHaze)` guard (`bgHaze` is `undefined` for L2).
 
 ---
 
