@@ -112,6 +112,7 @@ export class GameScene extends Phaser.Scene {
       this.makeBackgroundL2();
       this.makeGroundL2();
       this.makePlatforms('purple', { low: 18, mid: 15, high: 10 });
+      this.makeBaseProps('high'); // more damage — dark side is ruined
     } else {
       this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
 
@@ -132,6 +133,7 @@ export class GameScene extends Phaser.Scene {
 
       // --- Platforms ---
       this.makePlatforms();
+      this.makeBaseProps(); // 'low' damage — default
     }
 
     // --- Physics groups ---
@@ -493,6 +495,121 @@ export class GameScene extends Phaser.Scene {
     this.ground.add(groundRect);
     // Purple glow line (visual only — not added to physics group)
     this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x6633cc).setDepth(5);
+  }
+
+  private makeBaseProps(damageLevel: 'low' | 'high' = 'low'): void {
+    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+
+    // ── Habitat Domes (8) ─────────────────────────────────────────────
+    for (let i = 0; i < 8; i++) {
+      const x   = Math.max(200, Math.min(6200, 300 + i * 725 + (hash(i + 10) * 400 - 200)));
+      const r   = 50 + hash(i + 20) * 50;
+      const dmg = damageLevel === 'high' ? hash(i + 30) < 0.67 : hash(i + 30) < 0.33;
+      const g   = this.add.graphics().setDepth(3.5).setPosition(x, GROUND_Y);
+
+      // Dome shell — upper semicircle (clockwise arc PI→0 passes through top)
+      g.fillStyle(0x12122e, 1);
+      g.slice(0, 0, r, Math.PI, 0, false);
+      g.fillPath();
+
+      // Inner glow (60% radius)
+      g.fillStyle(0x0d0d25, 1);
+      g.slice(0, 0, r * 0.6, Math.PI, 0, false);
+      g.fillPath();
+
+      // Panel lines — radial from center to rim
+      const lineCount = 4 + Math.floor(hash(i + 40) * 3);
+      g.lineStyle(1, 0x2a2a50, 1);
+      for (let l = 0; l < lineCount; l++) {
+        if (dmg && l === 1) continue; // leave a gap for damaged domes
+        const a = -Math.PI + (Math.PI * (l + 1)) / (lineCount + 1);
+        g.lineBetween(0, 0, Math.cos(a) * r, Math.sin(a) * r);
+      }
+
+      // Base plate (at ground level = y:0 in local coords since position is GROUND_Y)
+      g.fillStyle(0x1a1a3a, 1);
+      g.fillRect(-r - 10, 0, r * 2 + 20, 12);
+
+      // Airlock nub
+      g.fillStyle(0x1e1e44, 1);
+      g.fillRect(-7, -18, 14, 18);
+
+      // Window dot at upper-center
+      g.fillStyle(dmg ? 0xff2200 : 0x4488ff, dmg ? 1 : 0.6);
+      g.fillCircle(0, -r * 0.65, 4);
+
+      // Crack for damaged domes
+      if (dmg) {
+        g.lineStyle(1, 0xff4400, 0.7);
+        const crackA = -Math.PI * 0.7;
+        g.lineBetween(
+          Math.cos(crackA) * r * 0.9, Math.sin(crackA) * r * 0.9,
+          Math.cos(crackA) * r * 0.3 + hash(i + 60) * 10 - 5,
+          Math.sin(crackA) * r * 0.3,
+        );
+      }
+    }
+
+    // ── Communication Towers (6) ─────────────────────────────────────
+    for (let i = 0; i < 6; i++) {
+      const x   = Math.max(300, Math.min(6000, 500 + i * 900 + (hash(i + 110) * 300 - 150)));
+      const mh  = 80 + hash(i + 120) * 60; // mast height 80–140px
+      const dmg = damageLevel === 'high' ? true : hash(i + 130) < 0.5;
+      const g   = this.add.graphics().setDepth(3.5).setPosition(x, GROUND_Y);
+      if (dmg) g.setAngle(hash(i + 140) * 12 - 6); // −6° to +6° lean
+
+      // Base block
+      g.fillStyle(0x1e2040, 1);
+      g.fillRect(-10, -10, 20, 10);
+
+      // Mast — drawn upward from origin so setAngle rotates around base
+      g.fillStyle(0x1e2040, 1);
+      g.fillRect(-3, -mh, 6, mh);
+
+      // Support struts (undamaged towers only)
+      if (!dmg) {
+        g.lineStyle(1, 0x1a1a38, 1);
+        g.lineBetween(0, -mh * 0.6, -25, 0);
+        g.lineBetween(0, -mh * 0.6, 25, 0);
+      }
+
+      // Dish or broken stub
+      if (!dmg) {
+        g.fillStyle(0x252545, 1);
+        g.fillEllipse(0, -mh, 28, 14);
+        g.lineStyle(1, 0x3a3a60, 1);
+        g.lineBetween(-14, -mh, 14, -mh);
+      } else {
+        g.fillStyle(0x252545, 1);
+        g.fillEllipse(0, -mh, 14, 6);
+        g.lineStyle(1, 0x3a3a60, 1);
+        g.lineBetween(-7, -mh, 7, -mh + 5);
+      }
+    }
+
+    // ── Solar Array Clusters (5) ─────────────────────────────────────
+    for (let i = 0; i < 5; i++) {
+      const cx   = Math.max(300, Math.min(6000, 400 + i * 1100 + (hash(i + 210) * 300 - 150)));
+      const cnt  = 3 + Math.floor(hash(i + 220) * 3); // 3–5 panels
+      const miss = damageLevel === 'high' ? 0.5 : 0;
+
+      for (let p = 0; p < cnt; p++) {
+        if (miss > 0 && hash(i * 100 + p + 230) < miss) continue;
+        const px = cx + (p - (cnt - 1) / 2) * 44;
+
+        const g = this.add.graphics().setDepth(3.5);
+        g.fillStyle(0x1a1a38, 1);
+        g.fillRect(px - 2, GROUND_Y - 40, 4, 40);
+
+        // Panel tilted 30° (rotates around center of rectangle)
+        this.add.rectangle(px, GROUND_Y - 40, 32, 10, 0x1a2840)
+          .setDepth(3.5).setAngle(30);
+
+        // Panel highlight
+        this.add.rectangle(px, GROUND_Y - 44, 30, 1, 0x334466)
+          .setDepth(3.6).setAngle(30);
+      }
+    }
   }
 
   private makeBackgroundL2(): void {
