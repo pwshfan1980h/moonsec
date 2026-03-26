@@ -129,7 +129,7 @@ export class DroneSpawner {
     }
 
     // Normal wave — spawn drones
-    const count = 3 + (this.waveIndex - 1) * 2;
+    const count = 4 + (this.waveIndex - 1) * 2;
     let spawned = 0;
 
     const MARGIN = 150;

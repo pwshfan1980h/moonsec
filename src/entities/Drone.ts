@@ -12,7 +12,7 @@ const BASE_BULLET_SPEED     = 300;
 const HP_MAP                = { 'drone-red': 2, 'drone-green': 3, 'sentinel': 3 };
 
 const SNIPER_HP             = 1;
-const SNIPER_SCALE          = 1.4;
+const SNIPER_SCALE          = 1.54;
 const SNIPER_HOVER_SPEED    = 40;
 const SNIPER_ATTACK_SPEED   = 80;
 const SNIPER_ATTACK_RANGE   = 520;
@@ -67,7 +67,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
       this.bulletSpeed    = BASE_BULLET_SPEED * scaling.bulletSpeedMult;
       this.attackRange    = BASE_ATTACK_RANGE;
       this.hoverSpeed     = BASE_HOVER_SPEED;
-      this.setScale(2.2);
+      this.setScale(2.42);
     }
 
     this.sinOffset = Math.random() * Math.PI * 2;

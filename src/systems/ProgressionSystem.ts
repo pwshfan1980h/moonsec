@@ -53,6 +53,12 @@ export class ProgressionSystem {
     }
   }
 
+  resetData(): void {
+    this.data = { scoreBank: 0, ownedNodes: [], highScore: 0 };
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(LEGACY_KEY);
+  }
+
   buyNode(id: string): boolean {
     const node = TREE_NODES.find(n => n.id === id);
     if (!node) return false;

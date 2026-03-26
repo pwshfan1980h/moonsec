@@ -1,15 +1,17 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
+import { ProgressionSystem } from '../systems/ProgressionSystem';
 
-const MAIN_OPTIONS  = ['START GAME', 'SELECT LEVEL', 'STORY', 'UPGRADES'];
-const LEVEL_OPTIONS = ['L1: SURFACE OPS', 'L2: DARK SIDE', '[ BACK ]'];
+const MAIN_OPTIONS    = ['START GAME', 'SELECT LEVEL', 'STORY', 'UPGRADES', 'RESET DATA'];
+const LEVEL_OPTIONS   = ['L1: SURFACE OPS', 'L2: DARK SIDE', '[ BACK ]'];
+const CONFIRM_OPTIONS = ['CONFIRM RESET', 'CANCEL'];
 
 export class TitleScene extends Phaser.Scene {
   private selectedIndex = 0;
   private optionTexts: Phaser.GameObjects.Text[] = [];
   private pulseTween?: Phaser.Tweens.Tween;
   private inputLocked = false;
-  private menuState: 'main' | 'levelSelect' = 'main';
+  private menuState: 'main' | 'levelSelect' | 'resetConfirm' = 'main';
   private currentOptions: string[] = [];
 
   constructor() {
@@ -80,15 +82,14 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-ENTER', () => this.confirmSelection());
     this.input.keyboard!.on('keydown-SPACE', () => this.confirmSelection());
 
-    // ESC — back to main menu from level select
+    // ESC — back to main menu from sub-menus
     this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).on('down', () => {
       if (this.inputLocked) return;
-      if (this.menuState === 'levelSelect') {
+      if (this.menuState === 'levelSelect' || this.menuState === 'resetConfirm') {
         this.menuState = 'main';
         this.currentOptions = [...MAIN_OPTIONS];
         this.renderOptions();
       }
-      // In 'main' state: ESC is a no-op
     });
 
     // Fade in
@@ -176,13 +177,47 @@ export class TitleScene extends Phaser.Scene {
           this.cameras.main.fadeOut(300, 0, 0, 0);
           this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
           break;
-        case 1: // L2: SUBSURFACE
+        case 1: // L2: DARK SIDE
           this.inputLocked = true;
           this.registry.set('currentLevel', 2);
           this.cameras.main.fadeOut(300, 0, 0, 0);
           this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
           break;
         case 2: // [ BACK ]
+          this.menuState = 'main';
+          this.currentOptions = [...MAIN_OPTIONS];
+          this.renderOptions();
+          break;
+      }
+      return;
+    }
+
+    if (this.menuState === 'resetConfirm') {
+      switch (this.selectedIndex) {
+        case 0: { // CONFIRM RESET
+          // Reset via registry instance if already created, else direct localStorage clear
+          const prog = this.registry.get('progression') as ProgressionSystem | undefined;
+          if (prog) {
+            prog.resetData();
+          } else {
+            localStorage.removeItem('moonsec-progression');
+            localStorage.removeItem('moonsec-highscore');
+          }
+          this.menuState = 'main';
+          this.currentOptions = [...MAIN_OPTIONS];
+          this.renderOptions();
+          // Brief flash to confirm
+          const flash = this.add.text(GAME_W / 2, GAME_H * 0.85, 'DATA RESET', {
+            fontFamily: 'monospace', fontSize: '14px', color: '#ff4444',
+          }).setOrigin(0.5).setDepth(20).setAlpha(0);
+          this.tweens.add({
+            targets: flash, alpha: { from: 1, to: 0 },
+            duration: 1200, ease: 'Power2',
+            onComplete: () => flash.destroy(),
+          });
+          break;
+        }
+        case 1: // CANCEL
           this.menuState = 'main';
           this.currentOptions = [...MAIN_OPTIONS];
           this.renderOptions();
@@ -213,6 +248,11 @@ export class TitleScene extends Phaser.Scene {
         this.inputLocked = true;
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('UpgradeTree'));
+        break;
+      case 4: // RESET DATA
+        this.menuState = 'resetConfirm';
+        this.currentOptions = [...CONFIRM_OPTIONS];
+        this.renderOptions();
         break;
     }
   }

@@ -45,15 +45,15 @@ export class StoryScene extends Phaser.Scene {
     }
 
     // Story text block — centered column, top-anchored
-    const startY = 80;
-    const lineH  = 28;
+    const startY = 90;
+    const lineH  = 42;
 
     STORY_LINES.forEach((line, i) => {
       const isHeader = i === 0;
       const isOrder  = line.startsWith('  SURFACE OPS') || line.startsWith('  DARK SIDE');
 
       const color = isHeader ? '#00ccff' : isOrder ? '#aaffcc' : '#8899aa';
-      const size  = isHeader ? '18px' : '14px';
+      const size  = isHeader ? '28px' : '20px';
 
       if (line !== '') {
         this.add.text(W/2, startY + i * lineH, line, {
@@ -67,7 +67,7 @@ export class StoryScene extends Phaser.Scene {
     // Continue prompt — pulsing at bottom
     const prompt = this.add.text(W/2, H - 80, '[ ENTER / SPACE  —  CONTINUE ]', {
       fontFamily: 'monospace',
-      fontSize: '11px',
+      fontSize: '16px',
       color: '#4488ff',
     }).setOrigin(0.5).setDepth(10);
 

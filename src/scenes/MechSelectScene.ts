@@ -58,13 +58,13 @@ export class MechSelectScene extends Phaser.Scene {
       this.borders.push(border);
 
       // Mech sprite — positioned in upper portion of box
-      const spriteY = centerY - 60;
+      const spriteY = centerY - 40;
       const sprite = this.add.sprite(cx, spriteY, mech.key);
       sprite.setOrigin(0.5, 0.75);
       if (mech.key === 'mech') {
-        sprite.setScale(0.3);
+        sprite.setScale(0.65);
       } else {
-        sprite.setScale(0.7);
+        sprite.setScale(1.4);
       }
       sprite.play({ key: mech.animKey, repeat: -1 });
       this.sprites.push(sprite);
