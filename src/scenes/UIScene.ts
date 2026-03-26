@@ -152,7 +152,7 @@ export class UIScene extends Phaser.Scene {
 
     // ── Controls hint (bottom-left) ───────────────────────────────
     this.add.text(PAD, H - PAD, 'A/D move  SPACE jump/jetpack  LMB turret  RMB rapid  SHIFT missile  ESC pause', {
-      fontFamily: 'monospace', fontSize: '9px', color: '#334455',
+      fontFamily: 'monospace', fontSize: '15px', color: '#556677',
     }).setOrigin(0, 1);
 
     // ── Wave announcement (big, fades out) ────────────────────────
@@ -238,10 +238,10 @@ export class UIScene extends Phaser.Scene {
       if (wave === 1) {
         const gameScene = this.scene.get('Game') as GameScene;
         const levelNum  = gameScene.currentLevel;
-        const levelName = levelNum === 2 ? 'SUBSURFACE' : 'SURFACE OPS';
+        const levelName = levelNum === 2 ? 'DARK SIDE' : 'SURFACE OPS';
         const t = this.add.text(W / 2, 80, levelName, {
           fontFamily: 'monospace', fontSize: '22px',
-          color: levelNum === 2 ? '#00ff66' : '#6699ff',
+          color: levelNum === 2 ? '#aa66ff' : '#6699ff',
           stroke: '#000000', strokeThickness: 3,
         }).setOrigin(0.5).setDepth(50).setAlpha(0);
         this.tweens.add({
@@ -406,7 +406,7 @@ export class UIScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '32px', color: '#00ff88',
     }).setOrigin(0.5).setDepth(61);
 
-    const nextName = level === 1 ? 'DESCENDING TO SUBSURFACE…' : 'ALL CLEAR';
+    const nextName = level === 1 ? 'DESCENDING TO DARK SIDE…' : 'ALL CLEAR';
     this.add.text(W / 2, H / 2 - 20, nextName, {
       fontFamily: 'monospace', fontSize: '16px', color: '#aaffcc',
     }).setOrigin(0.5).setDepth(61);
