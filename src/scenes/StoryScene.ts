@@ -19,7 +19,7 @@ const STORY_LINES = [
   'Your orders:',
   '',
   '  SURFACE OPS  —  Breach the perimeter. Clear the drones.',
-  '  SUBSURFACE   —  Find the core. End this.',
+  '  DARK SIDE    —  Find the core. End this.',
   '',
   'Reclaim what is ours.',
 ];
@@ -50,7 +50,7 @@ export class StoryScene extends Phaser.Scene {
 
     STORY_LINES.forEach((line, i) => {
       const isHeader = i === 0;
-      const isOrder  = line.startsWith('  SURFACE OPS') || line.startsWith('  SUBSURFACE');
+      const isOrder  = line.startsWith('  SURFACE OPS') || line.startsWith('  DARK SIDE');
 
       const color = isHeader ? '#00ccff' : isOrder ? '#aaffcc' : '#8899aa';
       const size  = isHeader ? '18px' : '14px';

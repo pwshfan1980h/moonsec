@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
 
 const MAIN_OPTIONS  = ['START GAME', 'SELECT LEVEL', 'STORY', 'UPGRADES'];
-const LEVEL_OPTIONS = ['L1: SURFACE OPS', 'L2: SUBSURFACE', '[ BACK ]'];
+const LEVEL_OPTIONS = ['L1: SURFACE OPS', 'L2: DARK SIDE', '[ BACK ]'];
 
 export class TitleScene extends Phaser.Scene {
   private selectedIndex = 0;

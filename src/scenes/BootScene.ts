@@ -56,8 +56,7 @@ export class BootScene extends Phaser.Scene {
     // Load new SVG assets for visual upgrades
     this.load.svg('logo', 'assets/logo.svg', { width: 600, height: 150 });
     this.load.svg('hud-bracket', 'assets/hud-bracket.svg', { width: 180, height: 20 });
-    this.load.svg('nebula-bg', 'assets/nebula-bg.svg', { width: GAME_W, height: GAME_H });
-    this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
+this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
   }
 
   create(): void {
