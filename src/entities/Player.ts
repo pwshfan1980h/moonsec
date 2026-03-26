@@ -54,6 +54,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dead = false;
   piloting = true;
 
+  private wasAirborne = false;
+  private prevVelocityY = 0;
+
   private animPrefix: string = '';
   readonly bodyConfig: { w: number; h: number; offX: number; offY: number };
 
@@ -209,6 +212,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (!this.piloting) return; // mech frozen while pilot is on foot
 
     const body = this.body as Phaser.Physics.Arcade.Body;
+    const airborne = !body.blocked.down;
+
+    if (this.wasAirborne && !airborne) {
+      // Landing frame: velocity.y is 0 now, use prev frame's value
+      const sound = this.prevVelocityY > 300 ? 'landing-heavy' : 'landing-soft';
+      this.scene.audio.play(sound);
+    }
+
+    this.wasAirborne = airborne;
+    this.prevVelocityY = body.velocity.y;
+
     this.onGround = body.blocked.down;
 
     const left  = this.cursors.left.isDown  || this.keyA.isDown;
