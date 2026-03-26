@@ -39,9 +39,9 @@ export class MechSelectScene extends Phaser.Scene {
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const boxW = 180;
-    const boxH = 320;
-    const centerY = Math.round(H * 0.49);
+    const boxW = 300;
+    const boxH = 440;
+    const centerY = Math.round(H * 0.50);
     const centerXs = [Math.round(W * 0.32), Math.round(W * 0.68)];
 
     for (let i = 0; i < mechs.length; i++) {
