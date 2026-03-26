@@ -72,6 +72,10 @@ private updateParallax(): void {
 
 **File:** `src/scenes/GameScene.ts` — new `makeBaseProps()` method called from `create()` after `makePlatforms()`
 
+Method signature: `private makeBaseProps(damageLevel: 'low' | 'high' = 'low'): void`
+
+L1 call: `this.makeBaseProps()` (default `'low'`). L2 call: `this.makeBaseProps('high')`.
+
 Places purely visual background structures (no physics) across the world. All at **depth 3.5** — above `bgHaze` (depth 3), below platforms (depth 4+) and players (depth 10+). These are world objects (not fixed); they scroll with the camera naturally.
 
 ### Prop Type 1: Habitat Domes
@@ -178,7 +182,24 @@ Replace current green-tinted shaft background with cold dark-side surface:
 
 **No dust haze layer** — the dark side is harsh, no atmospheric scattering.
 
-Both `makeBackgroundL2()` paths must assign `this.bgStars` and `this.bgTerrain` (the `!`-typed fields). `bgHaze` is left `undefined` for L2.
+`makeBackgroundL2()` must assign `this.bgStars` and `this.bgTerrain` (the `!`-typed fields). Use `generateTexture()` + `this.add.tileSprite()` the same way Change 2 does for L1. `bgHaze` is left `undefined` for L2. Template:
+
+```ts
+// Inside makeBackgroundL2():
+const starsGfx = this.make.graphics({ x: 0, y: 0, add: false });
+// ... draw 500+ dots tinted #aabbff ...
+starsGfx.generateTexture('bgStarsL2', GAME_W, GROUND_Y);
+starsGfx.destroy();
+this.bgStars = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'bgStarsL2').setDepth(1).setScrollFactor(0);
+
+const terrainGfx = this.make.graphics({ x: 0, y: 0, add: false });
+// ... draw crater terrain #080815 ...
+terrainGfx.generateTexture('bgTerrainL2', GAME_W, 200);
+terrainGfx.destroy();
+this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerrainL2').setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
+```
+
+L1 physics world bounds `+200` overage (`WORLD_HEIGHT + 200`) is intentional — allows bullets/enemies to travel slightly below the visible area — leave it unchanged.
 
 ### L2 Ground — `makeGroundL2()`
 Replace the entire method body with only these two elements (the existing code uses `GAME_W/2 = 960` as center-X, covering only a 1920px strip of a 6400px world):
@@ -201,12 +222,15 @@ L1 call: `makePlatforms()` (defaults). L2 call: `makePlatforms('purple', { low: 
 
 Remove `makeShaftLedges()` — it was L2-only shaft geometry, no longer needed after the surface-level rebuild.
 
-Update the internal `addStructure()` helper's palette type union (removing `'green'` which was only used by `makeShaftLedges()`):
+Update `addStructure()` (a **private class method**):
+- Change palette type: `palette: 'blue' | 'green'` → `palette: 'blue' | 'purple'`
+- Remove the `'green'` color branch from `addStructure()`'s internal color lookup (e.g., remove any `palette === 'green' ? ... : ...` conditionals)
+
 ```ts
 // Before:
-function addStructure(palette: 'blue' | 'green', ...): void
+private addStructure(x: number, y: number, w: number, palette: 'blue' | 'green' = 'blue'): void
 // After:
-function addStructure(palette: 'blue' | 'purple', ...): void
+private addStructure(x: number, y: number, w: number, palette: 'blue' | 'purple' = 'blue'): void
 ```
 
 ```ts
