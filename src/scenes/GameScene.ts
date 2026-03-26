@@ -58,6 +58,7 @@ export class GameScene extends Phaser.Scene {
     this.pilotBulletOverlap  = null;
     this.isBossDead      = false;
     this.cameraBoundMaxY = GAME_H;
+    this.bgHaze          = undefined;
     this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
 
@@ -449,7 +450,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Layer 1: starfield — 420+ 1px dots, random alpha 0.25–0.55
-    const starsGfx = this.add.graphics();
+    const starsGfx = this.make.graphics({ x: 0, y: 0 }, false);
     for (let i = 0; i < 420; i++) {
       starsGfx.fillStyle(0xffffff, 0.25 + Math.random() * 0.30);
       starsGfx.fillRect(
@@ -468,7 +469,7 @@ export class GameScene extends Phaser.Scene {
     // Each crater: upper-semicircle arc (slice PI→0 clockwise) centered at y=200 (bottom edge),
     // so the bowl shape cuts upward into the terrain.
     const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
-    const terrainGfx = this.add.graphics();
+    const terrainGfx = this.make.graphics({ x: 0, y: 0 }, false);
     terrainGfx.fillStyle(0x0d0d1e, 1);
     terrainGfx.fillRect(0, 0, GAME_W, 200);
     for (let i = 0; i < 7; i++) {
@@ -485,7 +486,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
 
     // Layer 3: dust haze — 8-strip vertical gradient (120px tall, bottom edge at GROUND_Y)
-    const hazeGfx = this.add.graphics();
+    const hazeGfx = this.make.graphics({ x: 0, y: 0 }, false);
     for (let i = 0; i < 8; i++) {
       hazeGfx.fillStyle(0x1a1a2e, (1 - i / 8) * 0.35);
       hazeGfx.fillRect(0, i * 15, GAME_W, 15);
@@ -519,7 +520,7 @@ export class GameScene extends Phaser.Scene {
     const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
 
     // Starfield — 520 dots, cold blue tint #aabbff
-    const starsGfx = this.add.graphics();
+    const starsGfx = this.make.graphics({ x: 0, y: 0 }, false);
     for (let i = 0; i < 520; i++) {
       starsGfx.fillStyle(0xaabbff, 0.20 + Math.random() * 0.25);
       starsGfx.fillRect(
@@ -534,7 +535,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(1).setScrollFactor(0);
 
     // Jagged terrain silhouette — larger craters (arc cuts), angular peaks, cold baseline #080815
-    const terrainGfx = this.add.graphics();
+    const terrainGfx = this.make.graphics({ x: 0, y: 0 }, false);
     terrainGfx.fillStyle(0x080815, 1);
     terrainGfx.fillRect(0, 0, GAME_W, 200);
     for (let i = 0; i < 8; i++) {
