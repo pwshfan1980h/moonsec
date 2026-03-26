@@ -31,8 +31,9 @@ export class GameScene extends Phaser.Scene {
 
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private spawner!: DroneSpawner;
-  private bgFar!: Phaser.GameObjects.TileSprite;
-  private bgNear!: Phaser.GameObjects.TileSprite;
+  private bgStars!: Phaser.GameObjects.TileSprite;
+  private bgTerrain!: Phaser.GameObjects.TileSprite;
+  private bgHaze?: Phaser.GameObjects.TileSprite;
   public currentLevel = 1;
   private isBossDead = false;
   private cameraBoundMaxY = GAME_H;
@@ -438,32 +439,61 @@ export class GameScene extends Phaser.Scene {
   }
 
   private makeBackground(): void {
-    // Solid deep space — fixed to screen
-    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x030318).setDepth(0).setScrollFactor(0);
+    // Sky
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x030318)
+      .setDepth(0).setScrollFactor(0);
 
-    // Generate star textures
-    const makeStar = (count: number, size: number, alpha: number, key: string) => {
-      const gfx = this.add.graphics();
-      gfx.fillStyle(0xffffff, alpha);
-      for (let i = 0; i < count; i++) {
-        gfx.fillRect(
-          Phaser.Math.Between(0, GAME_W),
-          Phaser.Math.Between(0, GROUND_Y),
-          size, size,
-        );
-      }
-      gfx.generateTexture(key, GAME_W, GROUND_Y);
-      gfx.destroy();
-    };
+    // Dedup texture keys on scene restart (instance is reused, not reconstructed)
+    for (const key of ['bgStars', 'bgTerrain', 'bgHaze']) {
+      if (this.textures.exists(key)) this.textures.remove(key);
+    }
 
-    makeStar(160, 1, 0.4, 'stars-far');
-    makeStar(60, 2, 0.7, 'stars-near');
+    // Layer 1: starfield — 420+ 1px dots, random alpha 0.25–0.55
+    const starsGfx = this.add.graphics();
+    for (let i = 0; i < 420; i++) {
+      starsGfx.fillStyle(0xffffff, 0.25 + Math.random() * 0.30);
+      starsGfx.fillRect(
+        Phaser.Math.Between(0, GAME_W - 1),
+        Phaser.Math.Between(0, GROUND_Y - 1),
+        1, 1,
+      );
+    }
+    starsGfx.generateTexture('bgStars', GAME_W, GROUND_Y);
+    starsGfx.destroy();
+    this.bgStars = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'bgStars')
+      .setDepth(1).setScrollFactor(0);
 
-    // Add nebula background (scrollFactor 0 — image is exactly GAME_W×GAME_H, any parallax would expose edges)
-    this.add.image(GAME_W / 2, GAME_H / 2, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
+    // Layer 2: crater terrain silhouette (200px tall, bottom edge at GROUND_Y)
+    // Craters are cut into the bottom edge using arc() — darker color overlaid on baseline.
+    // Each crater: upper-semicircle arc (slice PI→0 clockwise) centered at y=200 (bottom edge),
+    // so the bowl shape cuts upward into the terrain.
+    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+    const terrainGfx = this.add.graphics();
+    terrainGfx.fillStyle(0x0d0d1e, 1);
+    terrainGfx.fillRect(0, 0, GAME_W, 200);
+    for (let i = 0; i < 7; i++) {
+      const cx = hash(i + 200) * GAME_W;
+      const cr = 30 + hash(i + 400) * 50;
+      // Center at bottom edge (y=200); upper semicircle cuts upward into terrain
+      terrainGfx.fillStyle(0x070710, 1);
+      terrainGfx.slice(cx, 200, cr, Math.PI, 0, false); // clockwise PI→0 = upper semicircle
+      terrainGfx.fillPath();
+    }
+    terrainGfx.generateTexture('bgTerrain', GAME_W, 200);
+    terrainGfx.destroy();
+    this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerrain')
+      .setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
 
-    this.bgFar  = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-far').setDepth(1).setScrollFactor(0);
-    this.bgNear = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
+    // Layer 3: dust haze — 8-strip vertical gradient (120px tall, bottom edge at GROUND_Y)
+    const hazeGfx = this.add.graphics();
+    for (let i = 0; i < 8; i++) {
+      hazeGfx.fillStyle(0x1a1a2e, (1 - i / 8) * 0.35);
+      hazeGfx.fillRect(0, i * 15, GAME_W, 15);
+    }
+    hazeGfx.generateTexture('bgHaze', GAME_W, 120);
+    hazeGfx.destroy();
+    this.bgHaze = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 120, 'bgHaze')
+      .setDepth(3).setOrigin(0.5, 1).setScrollFactor(0);
   }
 
   private makeGroundL2(): void {
@@ -477,31 +507,54 @@ export class GameScene extends Phaser.Scene {
   }
 
   private makeBackgroundL2(): void {
-    // Solid dark green background — fixed to screen
-    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x001400).setDepth(0).setScrollFactor(0);
+    // Cold dark sky
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x010112)
+      .setDepth(0).setScrollFactor(0);
 
-    const makeStar = (count: number, size: number, alpha: number, key: string) => {
-      const gfx = this.add.graphics();
-      gfx.fillStyle(0x88ff88, alpha);
-      for (let i = 0; i < count; i++) {
-        gfx.fillRect(
-          Phaser.Math.Between(0, GAME_W),
-          Phaser.Math.Between(0, GROUND_Y),
-          size, size,
-        );
-      }
-      gfx.generateTexture(key, GAME_W, GROUND_Y);
-      gfx.destroy();
-    };
+    // Dedup texture keys on restart
+    for (const key of ['bgStarsL2', 'bgTerrainL2']) {
+      if (this.textures.exists(key)) this.textures.remove(key);
+    }
 
-    makeStar(120, 1, 0.3, 'stars-far-l2');
-    makeStar(40,  2, 0.6, 'stars-near-l2');
+    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
 
-    // Add nebula background (scrollFactor 0 — image is exactly GAME_W×GAME_H, any parallax would expose edges)
-    this.add.image(GAME_W / 2, GAME_H / 2, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
+    // Starfield — 520 dots, cold blue tint #aabbff
+    const starsGfx = this.add.graphics();
+    for (let i = 0; i < 520; i++) {
+      starsGfx.fillStyle(0xaabbff, 0.20 + Math.random() * 0.25);
+      starsGfx.fillRect(
+        Phaser.Math.Between(0, GAME_W - 1),
+        Phaser.Math.Between(0, GROUND_Y - 1),
+        1, 1,
+      );
+    }
+    starsGfx.generateTexture('bgStarsL2', GAME_W, GROUND_Y);
+    starsGfx.destroy();
+    this.bgStars = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'bgStarsL2')
+      .setDepth(1).setScrollFactor(0);
 
-    this.bgFar  = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-far-l2').setDepth(1).setScrollFactor(0);
-    this.bgNear = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-near-l2').setDepth(2).setScrollFactor(0);
+    // Jagged terrain silhouette — larger craters (arc cuts), angular peaks, cold baseline #080815
+    const terrainGfx = this.add.graphics();
+    terrainGfx.fillStyle(0x080815, 1);
+    terrainGfx.fillRect(0, 0, GAME_W, 200);
+    for (let i = 0; i < 8; i++) {
+      const cx = hash(i + 500) * GAME_W;
+      const cr = 40 + hash(i + 700) * 60;
+      // Crater: upper-semicircle arc cut into bottom edge (same pattern as L1, larger radius)
+      terrainGfx.fillStyle(0x040410, 1);
+      terrainGfx.slice(cx, 200, cr, Math.PI, 0, false);
+      terrainGfx.fillPath();
+      // Angular peak between craters — triangle protrusion from bottom edge
+      const px = hash(i + 800) * GAME_W;
+      const ph = 10 + hash(i + 900) * 10;
+      terrainGfx.fillStyle(0x0a0a18, 1);
+      terrainGfx.fillTriangle(px - 12, 200, px + 12, 200, px, 200 - ph);
+    }
+    terrainGfx.generateTexture('bgTerrainL2', GAME_W, 200);
+    terrainGfx.destroy();
+    this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerrainL2')
+      .setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
+    // bgHaze intentionally left undefined for L2 (no atmospheric scattering)
   }
 
   private makeShaftLedges(): void {
@@ -519,8 +572,9 @@ export class GameScene extends Phaser.Scene {
 
   private updateParallax(): void {
     const sx = this.cameras.main.scrollX;
-    this.bgFar.setTilePosition(sx * 0.15, 0);
-    this.bgNear.setTilePosition(sx * 0.45, 0);
+    this.bgStars.setTilePosition(sx * 0.05, 0);
+    this.bgTerrain.setTilePosition(sx * 0.20, 0);
+    if (this.bgHaze) this.bgHaze.setTilePosition(sx * 0.35, 0);
   }
 
   private makePlatforms(): void {
