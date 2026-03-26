@@ -19,8 +19,9 @@
 
 No position changes needed — the text is bottom-left anchored with `setOrigin(0, 1)`.
 
-Also update the L2 level name string to match the rebuilt surface layout:
-- `'SUBSURFACE'` → `'DARK SIDE'`
+Also update all L2 level name strings to match the rebuilt surface layout:
+- Level name in wave-start flash: `'SUBSURFACE'` → `'DARK SIDE'`
+- Level-complete transition text in `showLevelComplete()`: `'DESCENDING TO SUBSURFACE…'` → `'DESCENDING TO DARK SIDE…'`
 
 ---
 
@@ -69,7 +70,7 @@ private updateParallax(): void {
 
 **File:** `src/scenes/GameScene.ts` — new `makeBaseProps()` method called from `create()` after `makePlatforms()`
 
-Places purely visual background structures (no physics) across the world. All at **depth 2.5** — above `bgTerrain` (depth 2) and `bgHaze` (depth 3), below platforms (depth 4+) and players (depth 10+). These are world objects (not fixed); they scroll with the camera naturally.
+Places purely visual background structures (no physics) across the world. All at **depth 3.5** — above `bgHaze` (depth 3), below platforms (depth 4+) and players (depth 10+). These are world objects (not fixed); they scroll with the camera naturally.
 
 ### Prop Type 1: Habitat Domes
 **Count:** 8 across the world (X: 300 to 6100, spaced ~700px with hash variation ±200px)
@@ -140,6 +141,7 @@ In the `waveCleared` handler, remove only the L2 camera-expansion lines (keep th
 if (this.currentLevel === 2) {
   this.cameraBoundMaxY += 480;
   this.cameras.main.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
+  this.physics.world.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
 }
 ```
 Also remove the `cameraBoundMaxY` field declaration from GameScene.
@@ -172,9 +174,11 @@ Replace current green-tinted shaft background with cold dark-side surface:
 
 **No dust haze layer** — the dark side is harsh, no atmospheric scattering.
 
+Both `makeBackgroundL2()` paths must assign `this.bgStars` and `this.bgTerrain` (the `!`-typed fields). `bgHaze` is left `undefined` for L2.
+
 ### L2 Ground — `makeGroundL2()`
-Replace shaft/wall geometry:
-- Ground rect: `(WORLD_WIDTH/2, GROUND_Y + GROUND_HEIGHT/2)`, size `(WORLD_WIDTH, GROUND_HEIGHT)`, color `#0d0a20` (deep violet-navy)
+Replace shaft/wall geometry. The existing code uses `GAME_W/2` (960) as the center-X, which only covers a 1920px-wide strip of a 6400px world — this must change to `WORLD_WIDTH/2` (3200):
+- Ground rect: center at `(WORLD_WIDTH/2, GROUND_Y + GROUND_HEIGHT/2)`, size `(WORLD_WIDTH, GROUND_HEIGHT)`, color `#0d0a20` (deep violet-navy)
 - Glow line: Y = `GROUND_Y + 1`, color `#6633cc` (purple), height 2px
 - Remove left/right shaft walls entirely
 
@@ -189,6 +193,14 @@ private makePlatforms(
 ```
 
 L1 call: `makePlatforms()` (defaults). L2 call: `makePlatforms('purple', { low: 18, mid: 15, high: 10 })`.
+
+Also update the internal `addStructure()` helper's palette type union to include `'purple'`:
+```ts
+// Before:
+function addStructure(palette: 'blue' | 'green', ...): void
+// After:
+function addStructure(palette: 'blue' | 'green' | 'purple', ...): void
+```
 
 ```ts
 // Palette definitions (inside makePlatforms):
