@@ -138,8 +138,9 @@ Replace the current L2 branch in `create()` with these calls (in order):
 2. `this.makeGroundL2()`
 3. `this.makePlatforms('purple', { low: 18, mid: 15, high: 10 })`
 4. `this.makeBaseProps('high')`
-
-(Spawn player, camera setup, and physics bounds follow in the same block as currently structured.)
+5. Spawn player at `(WORLD_WIDTH * 0.05, GROUND_Y - 5)` (or equivalent surface spawn — see "Player spawn Y" section)
+6. `this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)` (see "Physics world bounds" section)
+7. `this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)` + `startFollow(...)` (see "Camera setup" section)
 
 ### World dimensions
 L2 uses identical dimensions to L1:
@@ -169,7 +170,7 @@ if (this.currentLevel === 2) {
   this.physics.world.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
 }
 ```
-Also remove the `cameraBoundMaxY` field declaration from GameScene.
+Remove `cameraBoundMaxY` entirely from GameScene: delete the field declaration, the reset assignment `this.cameraBoundMaxY = GAME_H` in `create()`, and the initial value `private cameraBoundMaxY = GAME_H` (or wherever it is declared).
 
 The `worldbounds` bounce event handler in `create()` (which lets bullets bounce off world edges for L2) should be **kept as-is** — it still applies to the surface-level layout since bullets can still reach world boundaries.
 
