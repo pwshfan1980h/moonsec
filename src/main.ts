@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_W, GAME_H } from './constants';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene }   from './scenes/TitleScene';
 import { StoryScene }   from './scenes/StoryScene';
@@ -10,8 +11,8 @@ import { UpgradeTreeScene } from './scenes/UpgradeTreeScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 1280,
-  height: 720,
+  width: GAME_W,
+  height: GAME_H,
   backgroundColor: '#030318',
   physics: {
     default: 'arcade',

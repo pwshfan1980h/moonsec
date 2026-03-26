@@ -4,7 +4,7 @@ import type { MechType } from '../entities/Player';
 import { Pilot } from '../entities/Pilot';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
-import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
 import { CARD_POOL } from '../data/upgradeCards';
@@ -35,7 +35,7 @@ export class GameScene extends Phaser.Scene {
   private bgNear!: Phaser.GameObjects.TileSprite;
   public currentLevel = 1;
   private isBossDead = false;
-  private cameraBoundMaxY = 720;
+  private cameraBoundMaxY = GAME_H;
 
   constructor() {
     super({ key: 'Game' });
@@ -56,7 +56,7 @@ export class GameScene extends Phaser.Scene {
     this.pilotGroundCollider = null;
     this.pilotBulletOverlap  = null;
     this.isBossDead      = false;
-    this.cameraBoundMaxY = 720;
+    this.cameraBoundMaxY = GAME_H;
     this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
 
@@ -107,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     fg.destroy();
 
     if (this.currentLevel === 2) {
-      this.physics.world.setBounds(0, 0, 1280, 4800);
+      this.physics.world.setBounds(0, 0, GAME_W, 4800);
       this.makeBackgroundL2();
       this.makeGroundL2();
       this.makeShaftLedges();
@@ -233,7 +233,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Camera ---
     if (this.currentLevel === 2) {
-      this.cameras.main.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+      this.cameras.main.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
       this.cameras.main.startFollow(this.player, false, 0.10, 0.10);
     } else {
       this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
@@ -293,8 +293,8 @@ export class GameScene extends Phaser.Scene {
       // L2 vertical camera expansion on each wave clear
       if (this.currentLevel === 2) {
         this.cameraBoundMaxY = Math.min(4800, this.cameraBoundMaxY + 480);
-        this.cameras.main.setBounds(0, 0, 1280, this.cameraBoundMaxY);
-        this.physics.world.setBounds(0, 0, 1280, this.cameraBoundMaxY);
+        this.cameras.main.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
+        this.physics.world.setBounds(0, 0, GAME_W, this.cameraBoundMaxY);
       }
 
       // Between-wave upgrade card picker (skip for boss wave)
