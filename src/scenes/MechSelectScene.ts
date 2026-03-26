@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { MechType } from '../entities/Player';
-import { MECH_STATS } from '../constants';
+import { MECH_STATS, GAME_W, GAME_H } from '../constants';
 
 interface MechConfig {
   key: MechType;
@@ -22,16 +22,17 @@ export class MechSelectScene extends Phaser.Scene {
   }
 
   create(): void {
+    const W = GAME_W, H = GAME_H;
     const mechs: MechConfig[] = [
       { key: 'mech',  name: 'STRIDER', desc: 'BATTLE MECH', animKey: 'idle' },
       { key: 'mech4', name: 'SCOUT',   desc: 'LIGHT MECH',  animKey: 'mech4-idle' },
     ];
 
     // Dark background
-    this.add.rectangle(640, 360, 1280, 720, 0x080818);
+    this.add.rectangle(W/2, H/2, W, H, 0x080818);
 
     // Title
-    this.add.text(640, 48, 'SELECT MECH', {
+    this.add.text(W/2, 48, 'SELECT MECH', {
       fontFamily: 'monospace',
       fontSize: '28px',
       color: '#00ccff',
@@ -40,8 +41,8 @@ export class MechSelectScene extends Phaser.Scene {
 
     const boxW = 180;
     const boxH = 320;
-    const centerY = 352;
-    const centerXs = [408, 872];
+    const centerY = Math.round(H * 0.49);
+    const centerXs = [Math.round(W * 0.32), Math.round(W * 0.68)];
 
     for (let i = 0; i < mechs.length; i++) {
       const mech = mechs[i];
@@ -96,7 +97,7 @@ export class MechSelectScene extends Phaser.Scene {
     // Stat bars
     const BAR_W = 130;
     const BAR_H = 5;
-    const barY0 = 480; // first stat bar row
+    const barY0 = centerY + 128; // first stat bar row
 
     const addStatBar = (
       cx: number, y: number,
@@ -137,7 +138,7 @@ export class MechSelectScene extends Phaser.Scene {
     });
 
     // Instruction text at bottom
-    this.add.text(640, 656, 'A/D — SELECT    ENTER — CONFIRM', {
+    this.add.text(W/2, H - 48, 'A/D — SELECT    ENTER — CONFIRM', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#446677',

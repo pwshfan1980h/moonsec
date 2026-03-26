@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_W, GAME_H } from '../constants';
 
 const STORY_LINES = [
   'YEAR 2187',
@@ -31,15 +32,16 @@ export class StoryScene extends Phaser.Scene {
   }
 
   create(): void {
+    const W = GAME_W, H = GAME_H;
     this.input.keyboard!.removeAllListeners();
     this.inputLocked = false;
 
     // Background — slightly darker than title for gravitas
-    this.add.rectangle(640, 360, 1280, 720, 0x010108).setDepth(0);
+    this.add.rectangle(W/2, H/2, W, H, 0x010108).setDepth(0);
 
     // Reuse star textures if already created by TitleScene
     if (this.textures.exists('title-stars-far')) {
-      this.add.image(640, 360, 'title-stars-far').setDepth(1).setAlpha(0.4);
+      this.add.image(W/2, H/2, 'title-stars-far').setDepth(1).setAlpha(0.4);
     }
 
     // Story text block — centered column, top-anchored
@@ -54,7 +56,7 @@ export class StoryScene extends Phaser.Scene {
       const size  = isHeader ? '18px' : '14px';
 
       if (line !== '') {
-        this.add.text(640, startY + i * lineH, line, {
+        this.add.text(W/2, startY + i * lineH, line, {
           fontFamily: 'monospace',
           fontSize: size,
           color,
@@ -63,7 +65,7 @@ export class StoryScene extends Phaser.Scene {
     });
 
     // Continue prompt — pulsing at bottom
-    const prompt = this.add.text(640, 686, '[ ENTER / SPACE  —  CONTINUE ]', {
+    const prompt = this.add.text(W/2, H - 80, '[ ENTER / SPACE  —  CONTINUE ]', {
       fontFamily: 'monospace',
       fontSize: '11px',
       color: '#4488ff',
@@ -79,7 +81,7 @@ export class StoryScene extends Phaser.Scene {
     });
 
     // ESC hint
-    this.add.text(16, 706, 'ESC — BACK', {
+    this.add.text(16, H - 16, 'ESC — BACK', {
       fontFamily: 'monospace',
       fontSize: '9px',
       color: '#334455',

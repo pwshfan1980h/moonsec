@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_W, GAME_H } from '../constants';
 
 const OPTIONS = ['START GAME', 'STORY', 'UPGRADES'] as const;
 
@@ -13,13 +14,14 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    const W = GAME_W, H = GAME_H;
     this.input.keyboard!.removeAllListeners();
     this.inputLocked = false;
     this.selectedIndex = 0;
     this.optionTexts = [];
 
     // Background
-    this.add.rectangle(640, 360, 1280, 720, 0x030318).setDepth(0);
+    this.add.rectangle(W/2, H/2, W, H, 0x030318).setDepth(0);
 
     // Star field (static — no scrolling needed on title screen)
     const makeStar = (count: number, size: number, alpha: number, key: string) => {
@@ -28,22 +30,22 @@ export class TitleScene extends Phaser.Scene {
       gfx.fillStyle(0xffffff, alpha);
       for (let i = 0; i < count; i++) {
         gfx.fillRect(
-          Phaser.Math.Between(0, 1280),
-          Phaser.Math.Between(0, 720),
+          Phaser.Math.Between(0, W),
+          Phaser.Math.Between(0, H),
           size, size,
         );
       }
-      gfx.generateTexture(key, 1280, 720);
+      gfx.generateTexture(key, W, H);
       gfx.destroy();
     };
     makeStar(180, 1, 0.35, 'title-stars-far');
     makeStar(70,  2, 0.65, 'title-stars-near');
 
-    this.add.image(640, 360, 'title-stars-far').setDepth(1);
-    this.add.image(640, 360, 'title-stars-near').setDepth(2);
+    this.add.image(W/2, H/2, 'title-stars-far').setDepth(1);
+    this.add.image(W/2, H/2, 'title-stars-near').setDepth(2);
 
     // Logo
-    const logoImage = this.add.image(640, 150, 'logo').setDepth(10);
+    const logoImage = this.add.image(W/2, 150, 'logo').setDepth(10);
     
     // Add floating animation to the logo
     this.tweens.add({
@@ -57,7 +59,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Menu options
     OPTIONS.forEach((label, i) => {
-      const t = this.add.text(640, 430 + i * 54, label, {
+      const t = this.add.text(W/2, H * 0.58 + i * 54, label, {
         fontFamily: 'monospace',
         fontSize: '22px',
         color: '#335566',
@@ -80,7 +82,7 @@ export class TitleScene extends Phaser.Scene {
     this.updateSelection();
 
     // Navigation hint
-    this.add.text(640, 694, '↑ ↓  NAVIGATE      ENTER / SPACE  SELECT', {
+    this.add.text(W/2, H - 26, '↑ ↓  NAVIGATE      ENTER / SPACE  SELECT', {
       fontFamily: 'monospace',
       fontSize: '10px',
       color: '#334455',
