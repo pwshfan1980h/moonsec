@@ -241,7 +241,7 @@ export class DroneSpawner {
 
     // Crawlers from wave 1 — 1 at wave 1, +1 every 2 waves, capped at 4
     if (this.waveIndex >= 1) {
-      const crawlerCount = Math.min(4, Math.floor((this.waveIndex - 2) / 2) + 1);
+      const crawlerCount = Math.min(4, Math.floor((this.waveIndex - 1) / 2) + 1);
       const crawlerCam = this.scene.cameras.main;
       const MARGIN = 150;
 

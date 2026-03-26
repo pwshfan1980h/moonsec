@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from './Drone';
 import type { DroneScaling } from '../systems/DroneSpawner';
+import { GAME_W } from '../constants';
 
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'HURT' | 'DEATH';
 
@@ -137,7 +138,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       case 'DRIFT': {
         body.setVelocityX(this.driftDir * DRIFT_SPEED);
         // Reverse at camera ±500px from centre
-        const camCentreX = this.scene.cameras.main.scrollX + 640;
+        const camCentreX = this.scene.cameras.main.scrollX + GAME_W / 2;
         if (this.x < camCentreX - 500) this.driftDir = 1;
         if (this.x > camCentreX + 500) this.driftDir = -1;
         this.setFlipX(this.driftDir > 0);

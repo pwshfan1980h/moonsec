@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME_W, GAME_H } from '../constants';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -8,14 +9,14 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     // Loading bar
     const bar = this.add.graphics();
-    const w = 300, h = 12, x = (1280 - w) / 2, y = 344;
+    const w = 300, h = 12, x = (GAME_W - w) / 2, y = Math.round(GAME_H * 0.48);
     this.add.graphics().fillStyle(0x222244).fillRect(x - 2, y - 2, w + 4, h + 4);
 
     this.load.on('progress', (v: number) => {
       bar.clear().fillStyle(0x4488ff).fillRect(x, y, w * v, h);
     });
 
-    this.add.text(640, 312, 'MOONSEC // LOADING', {
+    this.add.text(GAME_W / 2, Math.round(GAME_H * 0.43), 'MOONSEC // LOADING', {
       fontFamily: 'monospace', fontSize: '13px', color: '#6688bb',
     }).setOrigin(0.5);
 
@@ -55,7 +56,7 @@ export class BootScene extends Phaser.Scene {
     // Load new SVG assets for visual upgrades
     this.load.svg('logo', 'assets/logo.svg', { width: 600, height: 150 });
     this.load.svg('hud-bracket', 'assets/hud-bracket.svg', { width: 180, height: 20 });
-    this.load.svg('nebula-bg', 'assets/nebula-bg.svg', { width: 1280, height: 720 });
+    this.load.svg('nebula-bg', 'assets/nebula-bg.svg', { width: GAME_W, height: GAME_H });
     this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
   }
 

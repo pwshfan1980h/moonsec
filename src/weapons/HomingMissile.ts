@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
 import type { Drone } from '../entities/Drone';
-import { WORLD_WIDTH, MISSILE_SEEK_RANGE } from '../constants';
+import { WORLD_WIDTH, MISSILE_SEEK_RANGE, GROUND_Y } from '../constants';
 
 const COOLDOWN = 5000; // ms
 const SPEED = 480;
@@ -95,7 +95,7 @@ export class HomingMissile {
       obj.setRotation(state.angle);
 
       // Deactivate if off-world
-      if (obj.x < -100 || obj.x > WORLD_WIDTH + 100 || obj.y < -100 || obj.y > 820) {
+      if (obj.x < -100 || obj.x > WORLD_WIDTH + 100 || obj.y < -100 || obj.y > GROUND_Y + 100) {
         obj.setActive(false).setVisible(false);
         if (obj.body) (obj.body as Phaser.Physics.Arcade.Body).enable = false;
         // missile-launch is a one-shot; no loop to stop here

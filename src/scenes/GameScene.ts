@@ -438,7 +438,7 @@ export class GameScene extends Phaser.Scene {
 
   private makeBackground(): void {
     // Solid deep space — fixed to screen
-    this.add.rectangle(640, 360, 1280, 720, 0x030318).setDepth(0).setScrollFactor(0);
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x030318).setDepth(0).setScrollFactor(0);
 
     // Generate star textures
     const makeStar = (count: number, size: number, alpha: number, key: string) => {
@@ -446,61 +446,61 @@ export class GameScene extends Phaser.Scene {
       gfx.fillStyle(0xffffff, alpha);
       for (let i = 0; i < count; i++) {
         gfx.fillRect(
-          Phaser.Math.Between(0, 1280),
+          Phaser.Math.Between(0, GAME_W),
           Phaser.Math.Between(0, GROUND_Y),
           size, size,
         );
       }
-      gfx.generateTexture(key, 1280, GROUND_Y);
+      gfx.generateTexture(key, GAME_W, GROUND_Y);
       gfx.destroy();
     };
 
     makeStar(160, 1, 0.4, 'stars-far');
     makeStar(60, 2, 0.7, 'stars-near');
 
-    // Add nebula background (scrollFactor 0 — image is exactly 1280×720, any parallax would expose edges)
-    this.add.image(640, 360, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
+    // Add nebula background (scrollFactor 0 — image is exactly GAME_W×GAME_H, any parallax would expose edges)
+    this.add.image(GAME_W / 2, GAME_H / 2, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
 
-    this.bgFar  = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-far').setDepth(1).setScrollFactor(0);
-    this.bgNear = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
+    this.bgFar  = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-far').setDepth(1).setScrollFactor(0);
+    this.bgNear = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-near').setDepth(2).setScrollFactor(0);
   }
 
   private makeGroundL2(): void {
     this.ground = this.physics.add.staticGroup();
-    const groundRect = this.add.rectangle(640, 4760, 1280, 80, 0x0a2010).setDepth(4);
+    const groundRect = this.add.rectangle(GAME_W / 2, 4760, GAME_W, 80, 0x0a2010).setDepth(4);
     this.ground.add(groundRect);
-    this.add.rectangle(640, 4721, 1280, 2, 0x00ff66).setDepth(5);
+    this.add.rectangle(GAME_W / 2, 4721, GAME_W, 2, 0x00ff66).setDepth(5);
     // Left/right walls (visual only — world bounds handle physics)
     this.add.rectangle(4, 2400, 8, 4800, 0x0a2010).setDepth(4);
-    this.add.rectangle(1276, 2400, 8, 4800, 0x0a2010).setDepth(4);
+    this.add.rectangle(GAME_W - 4, 2400, 8, 4800, 0x0a2010).setDepth(4);
   }
 
   private makeBackgroundL2(): void {
     // Solid dark green background — fixed to screen
-    this.add.rectangle(640, 360, 1280, 720, 0x001400).setDepth(0).setScrollFactor(0);
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x001400).setDepth(0).setScrollFactor(0);
 
     const makeStar = (count: number, size: number, alpha: number, key: string) => {
       const gfx = this.add.graphics();
       gfx.fillStyle(0x88ff88, alpha);
       for (let i = 0; i < count; i++) {
         gfx.fillRect(
-          Phaser.Math.Between(0, 1280),
+          Phaser.Math.Between(0, GAME_W),
           Phaser.Math.Between(0, GROUND_Y),
           size, size,
         );
       }
-      gfx.generateTexture(key, 1280, GROUND_Y);
+      gfx.generateTexture(key, GAME_W, GROUND_Y);
       gfx.destroy();
     };
 
     makeStar(120, 1, 0.3, 'stars-far-l2');
     makeStar(40,  2, 0.6, 'stars-near-l2');
 
-    // Add nebula background (scrollFactor 0 — image is exactly 1280×720, any parallax would expose edges)
-    this.add.image(640, 360, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
+    // Add nebula background (scrollFactor 0 — image is exactly GAME_W×GAME_H, any parallax would expose edges)
+    this.add.image(GAME_W / 2, GAME_H / 2, 'nebula-bg').setDepth(0.5).setScrollFactor(0);
 
-    this.bgFar  = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-far-l2').setDepth(1).setScrollFactor(0);
-    this.bgNear = this.add.tileSprite(640, GROUND_Y / 2, 1280, GROUND_Y, 'stars-near-l2').setDepth(2).setScrollFactor(0);
+    this.bgFar  = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-far-l2').setDepth(1).setScrollFactor(0);
+    this.bgNear = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'stars-near-l2').setDepth(2).setScrollFactor(0);
   }
 
   private makeShaftLedges(): void {
@@ -510,7 +510,7 @@ export class GameScene extends Phaser.Scene {
 
     for (let i = 0; i < 18; i++) {
       const w = 200 + hash(i) * 140;
-      const x = i % 2 === 0 ? w / 2 : 1280 - w / 2;
+      const x = i % 2 === 0 ? w / 2 : GAME_W - w / 2;
       const y = 600 + i * 200 + hash(i + 100) * 80;
       this.addStructure(x, y, w, 'green');
     }
@@ -598,9 +598,9 @@ export class GameScene extends Phaser.Scene {
   private cullBullets(): void {
     const cam = this.cameras.main;
     const minX = cam.scrollX - 100;
-    const maxX = cam.scrollX + 1380;
+    const maxX = cam.scrollX + GAME_W + 100;
     const minY = cam.scrollY - 100;
-    const maxY = cam.scrollY + 820;
+    const maxY = cam.scrollY + GAME_H + 100;
 
     const cull = (group: Phaser.Physics.Arcade.Group) => {
       group.getChildren().forEach((go) => {
