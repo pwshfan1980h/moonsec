@@ -96,17 +96,17 @@ this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAM
 ```
 This expands the camera upward by 960px. Camera scrollY range becomes [-960, 0].
 
-**Effect**: When player is at world Y≈420 or above, camera scrollY ≈ -340 and the ground (world Y=960) is off the bottom of the screen. Background TileSprites at `scrollFactor(0)` always cover the viewport regardless of camera position.
+**Effect**: When player is at world Y≈420 or above, camera scrollY ≈ -340 and the ground (world Y=960) is off the bottom of the screen. Background TileSprites at `scrollFactor(0)` always cover the viewport regardless of camera position. This applies to both L1 and L2 — both levels use the same pattern (sky rectangle + bgStars + bgTerrain TileSprites all at scrollFactor(0)), so the expanded bounds are safe to apply unconditionally at line 236 without level branching.
 
 ### Fix — lerp values
-Replace `startFollow(this.player, false, 0.12, 0.08)` with:
+There are three `startFollow` calls in `GameScene.ts`. Update **only** lines 237 and 337 (player follow for initial setup and after level transition reenter). Leave line 344 (pilot follow during ejection sequence) unchanged.
+
+Replace both player-follow calls from `startFollow(this.player, false, 0.12, 0.08)` with:
 ```ts
 this.cameras.main.startFollow(this.player, false, 0.20, 0.18);
 ```
 - lerpX: 0.12 → 0.20 (tighter horizontal tracking)
 - lerpY: 0.08 → 0.18 (tighter vertical tracking, needed to follow player upward)
-
-This change applies to the single `startFollow` call that both levels now share (after the L2 rebuild).
 
 ---
 
@@ -151,14 +151,19 @@ Find the label text `'NNT'` (around line 106) and change to `'NANOHEAL'`.
 
 ## Change 5 — Player Hit Flash (src/entities/Player.ts)
 
-In `takeDamage()`, in the `else` branch (non-lethal damage, where `hurtLock = 600` is set), add:
+In `takeDamage()`, in the `else` branch (non-lethal damage), the existing code at lines 450–451 already has:
+```ts
+this.setTint(0xff4444);
+this.scene.time.delayedCall(200, () => this.clearTint());
+```
 
+**Replace** those two lines with:
 ```ts
 this.setTint(0xff3333);
 this.scene.time.delayedCall(150, () => { if (!this.dead) this.clearTint(); });
 ```
 
-Placed immediately after `this.hurtLock = 600`.
+Changes: tint `0xff4444` → `0xff3333` (slightly more red), delay `200ms` → `150ms`, add `!this.dead` guard before clearTint.
 
 ---
 
