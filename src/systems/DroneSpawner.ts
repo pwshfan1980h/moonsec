@@ -4,7 +4,7 @@ import { Drone } from '../entities/Drone';
 import { Crawler } from '../entities/Crawler';
 import { NexusBoss } from '../entities/NexusBoss';
 import type { DroneVariant, DroneType } from '../entities/Drone';
-import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, L2_SPEED_MULT, L2_INTERVAL_MULT } from '../constants';
+import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, L2_SPEED_MULT, L2_INTERVAL_MULT, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 
 export interface DroneScaling {
   attackSpeed: number;
@@ -15,8 +15,6 @@ export interface DroneScaling {
 
 const WAVE_DELAY    = 15000; // ms between waves
 const SPAWN_STAGGER = 700;   // ms between drones in a wave
-// Patrol Y positions — 100–260px above GROUND_Y=640 (same relative zone as before resize)
-const PATROL_LANES  = [380, 420, 460, 500, 540];
 
 export class DroneSpawner {
   private scene: GameScene;
@@ -88,7 +86,7 @@ export class DroneSpawner {
     // Boss wave — spawn NexusBoss instead of regular drones
     if (this.waveIndex === bossWave) {
       this.spawning = false;
-      const camCentreX = this.scene.cameras.main.scrollX + 640;
+      const camCentreX = this.scene.cameras.main.scrollX + GAME_W / 2;
       const spawnY     = currentLevel === 2 ? 200 : 180;
       const boss = new NexusBoss(this.scene, camCentreX, spawnY, bracket, currentLevel);
       this.scene.add.existing(boss);
@@ -134,6 +132,8 @@ export class DroneSpawner {
     const count = 3 + (this.waveIndex - 1) * 2;
     let spawned = 0;
 
+    const MARGIN = 150;
+
     const spawnNext = () => {
       if (spawned >= count) {
         this.spawning = false;
@@ -144,22 +144,49 @@ export class DroneSpawner {
         return;
       }
 
-      const i        = spawned;
-      const camRight = this.scene.cameras.main.scrollX + 1380;
-      const spawnX   = Math.min(camRight + 60 + Math.random() * 200, WORLD_WIDTH - 50);
-      const lane     = PATROL_LANES[i % PATROL_LANES.length];
-      const spawnY   = Math.min(lane, GROUND_Y - 40);
+      const i    = spawned;
+      const lane = PATROL_LANES[i % PATROL_LANES.length];
 
-      // Sentinel: every 4th drone from wave 7+
-      const isSentinel = this.waveIndex >= 7 && i % 4 === 3;
-      // Sniper: every 3rd drone from wave 5+ (only if not sentinel slot)
-      const isSniper   = !isSentinel && this.waveIndex >= 5 && i % 3 === 2;
+      // ── Viewport-relative spawn ──────────────────────────────────────────────
+      const cam   = this.scene.cameras.main;
+      const vx    = cam.scrollX;
+      const vy    = cam.scrollY;
+
+      // Pick side: 0=left, 1=right, 2=top  (40%/40%/20%)
+      const roll = Math.random();
+      const side = roll < 0.40 ? 0 : roll < 0.80 ? 1 : 2;
+
+      let spawnX: number, spawnY: number;
+      if (side === 0) {
+        spawnX = Phaser.Math.Clamp(vx - MARGIN, 0, WORLD_WIDTH);
+        spawnY = Phaser.Math.Between(vy, vy + GAME_H - 200);
+      } else if (side === 1) {
+        spawnX = Phaser.Math.Clamp(vx + GAME_W + MARGIN, 0, WORLD_WIDTH);
+        spawnY = Phaser.Math.Between(vy, vy + GAME_H - 200);
+      } else {
+        spawnX = Phaser.Math.Clamp(
+          Phaser.Math.Between(vx, vx + GAME_W), 0, WORLD_WIDTH
+        );
+        spawnY = vy - MARGIN;
+      }
+
+      // Clamp Y so drones don't spawn underground
+      spawnY = Phaser.Math.Clamp(spawnY, -200, GROUND_Y - 50);
+
+      // Sentinel: every 4th drone from wave 2+
+      const isSentinel = this.waveIndex >= 2 && i % 4 === 3;
+      // Sniper: every 3rd drone from wave 2+ (only if not sentinel slot)
+      const isSniper   = !isSentinel && this.waveIndex >= 2 && i % 3 === 2;
       const variant: DroneVariant = isSniper ? 'sniper' : 'normal';
       const type: DroneType       = isSentinel ? 'sentinel'
                                   : (isSniper || i % 2 === 0 ? 'drone-red' : 'drone-green');
 
+      // Use patrol lane Y for the drone's patrol height (override viewport-random Y for non-top spawns)
+      const patrolY = Math.min(lane, GROUND_Y - 40);
+      const finalSpawnY = side === 2 ? spawnY : patrolY;
+
       const forceHp = isSentinel ? 3 : undefined;
-      const drone   = new Drone(this.scene, spawnX, spawnY, type, bracket, variant, forceHp);
+      const drone   = new Drone(this.scene, spawnX, finalSpawnY, type, bracket, variant, forceHp);
       this.scene.add.existing(drone);
       this.scene.physics.add.existing(drone);
       this.scene.drones.add(drone);
@@ -169,6 +196,11 @@ export class DroneSpawner {
 
       (drone.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
       drone.startPatrol(i % 2 === 0 ? -1 : 1);
+
+      if (side === 2) {
+        const droneBody = drone.body as Phaser.Physics.Arcade.Body;
+        droneBody.setVelocityY(100);
+      }
 
       // Player bullet overlap
       this.scene.physics.add.overlap(
@@ -207,13 +239,16 @@ export class DroneSpawner {
 
     spawnNext();
 
-    // Crawlers from wave 3 — 1 at wave 3, +1 every 2 waves, capped at 4
-    if (this.waveIndex >= 3) {
+    // Crawlers from wave 1 — 1 at wave 1, +1 every 2 waves, capped at 4
+    if (this.waveIndex >= 1) {
       const crawlerCount = Math.min(4, Math.floor((this.waveIndex - 2) / 2) + 1);
-      const camRight = this.scene.cameras.main.scrollX + 1380;
+      const crawlerCam = this.scene.cameras.main;
+      const MARGIN = 150;
 
       for (let c = 0; c < crawlerCount; c++) {
-        const cx = Math.min(camRight + 80 + Math.random() * 200, WORLD_WIDTH - 100);
+        const cxLeft  = Phaser.Math.Clamp(crawlerCam.scrollX - MARGIN, 0, WORLD_WIDTH);
+        const cxRight = Phaser.Math.Clamp(crawlerCam.scrollX + GAME_W + MARGIN, 0, WORLD_WIDTH);
+        const cx = c % 2 === 0 ? cxLeft : cxRight;
         const crawler = new Crawler(this.scene, cx, GROUND_Y - 5, -1);
         this.scene.add.existing(crawler);
         this.scene.physics.add.existing(crawler);
