@@ -1,13 +1,16 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
 
-const OPTIONS = ['START GAME', 'STORY', 'UPGRADES'] as const;
+const MAIN_OPTIONS  = ['START GAME', 'SELECT LEVEL', 'STORY', 'UPGRADES'];
+const LEVEL_OPTIONS = ['L1: SURFACE OPS', 'L2: SUBSURFACE', '[ BACK ]'];
 
 export class TitleScene extends Phaser.Scene {
   private selectedIndex = 0;
   private optionTexts: Phaser.GameObjects.Text[] = [];
   private pulseTween?: Phaser.Tweens.Tween;
   private inputLocked = false;
+  private menuState: 'main' | 'levelSelect' = 'main';
+  private currentOptions: string[] = [];
 
   constructor() {
     super({ key: 'Title' });
@@ -19,6 +22,7 @@ export class TitleScene extends Phaser.Scene {
     this.inputLocked = false;
     this.selectedIndex = 0;
     this.optionTexts = [];
+    this.menuState = 'main';
 
     // Background
     this.add.rectangle(W/2, H/2, W, H, 0x030318).setDepth(0);
@@ -46,7 +50,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Logo
     const logoImage = this.add.image(W/2, 150, 'logo').setDepth(10);
-    
+
     // Add floating animation to the logo
     this.tweens.add({
       targets: logoImage,
@@ -58,8 +62,53 @@ export class TitleScene extends Phaser.Scene {
     });
 
     // Menu options
-    OPTIONS.forEach((label, i) => {
-      const t = this.add.text(W/2, H * 0.58 + i * 54, label, {
+    this.currentOptions = [...MAIN_OPTIONS];
+    this.renderOptions();
+
+    // Navigation hint
+    this.add.text(W/2, H - 26, '↑ ↓  NAVIGATE      ENTER / SPACE  SELECT', {
+      fontFamily: 'monospace',
+      fontSize: '10px',
+      color: '#334455',
+    }).setOrigin(0.5).setDepth(10);
+
+    // Input
+    this.input.keyboard!.on('keydown-UP',    () => this.navigate(-1));
+    this.input.keyboard!.on('keydown-DOWN',  () => this.navigate(1));
+    this.input.keyboard!.on('keydown-W',     () => this.navigate(-1));
+    this.input.keyboard!.on('keydown-S',     () => this.navigate(1));
+    this.input.keyboard!.on('keydown-ENTER', () => this.confirmSelection());
+    this.input.keyboard!.on('keydown-SPACE', () => this.confirmSelection());
+
+    // ESC — back to main menu from level select
+    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).on('down', () => {
+      if (this.inputLocked) return;
+      if (this.menuState === 'levelSelect') {
+        this.menuState = 'main';
+        this.currentOptions = [...MAIN_OPTIONS];
+        this.renderOptions();
+      }
+      // In 'main' state: ESC is a no-op
+    });
+
+    // Fade in
+    this.cameras.main.setAlpha(0);
+    this.tweens.add({
+      targets: this.cameras.main,
+      alpha: 1,
+      duration: 600,
+      ease: 'Power2',
+    });
+  }
+
+  private renderOptions(): void {
+    // Destroy existing option texts
+    this.optionTexts.forEach(t => t.destroy());
+    this.optionTexts = [];
+
+    const W = GAME_W, H = GAME_H;
+    this.currentOptions.forEach((label, i) => {
+      const t = this.add.text(W / 2, H * 0.58 + i * 54, label, {
         fontFamily: 'monospace',
         fontSize: '22px',
         color: '#335566',
@@ -79,36 +128,13 @@ export class TitleScene extends Phaser.Scene {
       this.optionTexts.push(t);
     });
 
+    this.selectedIndex = 0;
     this.updateSelection();
-
-    // Navigation hint
-    this.add.text(W/2, H - 26, '↑ ↓  NAVIGATE      ENTER / SPACE  SELECT', {
-      fontFamily: 'monospace',
-      fontSize: '10px',
-      color: '#334455',
-    }).setOrigin(0.5).setDepth(10);
-
-    // Input
-    this.input.keyboard!.on('keydown-UP',    () => this.navigate(-1));
-    this.input.keyboard!.on('keydown-DOWN',  () => this.navigate(1));
-    this.input.keyboard!.on('keydown-W',     () => this.navigate(-1));
-    this.input.keyboard!.on('keydown-S',     () => this.navigate(1));
-    this.input.keyboard!.on('keydown-ENTER', () => this.confirmSelection());
-    this.input.keyboard!.on('keydown-SPACE', () => this.confirmSelection());
-
-    // Fade in
-    this.cameras.main.setAlpha(0);
-    this.tweens.add({
-      targets: this.cameras.main,
-      alpha: 1,
-      duration: 600,
-      ease: 'Power2',
-    });
   }
 
   private navigate(dir: number): void {
     if (this.inputLocked) return;
-    this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + dir, 0, OPTIONS.length);
+    this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + dir, 0, this.currentOptions.length);
     this.updateSelection();
     this.sound.play('ui-nav', { volume: 0.25 });
   }
@@ -118,7 +144,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.optionTexts.forEach((t, i) => {
       if (i === this.selectedIndex) {
-        t.setText('▶  ' + OPTIONS[i] + '  ◀');
+        t.setText('▶  ' + this.currentOptions[i] + '  ◀');
         t.setStyle({ color: '#00ccff', fontSize: '22px' });
         t.setAlpha(1);
         this.pulseTween = this.tweens.add({
@@ -130,7 +156,7 @@ export class TitleScene extends Phaser.Scene {
           ease: 'Sine.easeInOut',
         });
       } else {
-        t.setText(OPTIONS[i]);
+        t.setText(this.currentOptions[i]);
         t.setStyle({ color: '#335566', fontSize: '18px' });
         t.setAlpha(0.8);
       }
@@ -139,23 +165,55 @@ export class TitleScene extends Phaser.Scene {
 
   private confirmSelection(): void {
     if (this.inputLocked) return;
-    this.inputLocked = true;
     this.sound.play('ui-confirm', { volume: 0.40 });
     this.pulseTween?.stop();
 
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
+    if (this.menuState === 'levelSelect') {
       switch (this.selectedIndex) {
-        case 0: // START GAME
-          this.scene.start('MechSelect');
+        case 0: // L1: SURFACE OPS
+          this.inputLocked = true;
+          this.registry.set('currentLevel', 1);
+          this.cameras.main.fadeOut(300, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
           break;
-        case 1: // STORY
-          this.scene.start('Story');
+        case 1: // L2: SUBSURFACE
+          this.inputLocked = true;
+          this.registry.set('currentLevel', 2);
+          this.cameras.main.fadeOut(300, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
           break;
-        case 2: // UPGRADES
-          this.scene.start('UpgradeTree');
+        case 2: // [ BACK ]
+          this.menuState = 'main';
+          this.currentOptions = [...MAIN_OPTIONS];
+          this.renderOptions();
           break;
       }
-    });
+      return;
+    }
+
+    // menuState === 'main'
+    switch (this.selectedIndex) {
+      case 0: // START GAME
+        this.inputLocked = true;
+        this.registry.set('currentLevel', 1);
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
+        break;
+      case 1: // SELECT LEVEL
+        this.menuState = 'levelSelect';
+        this.currentOptions = [...LEVEL_OPTIONS];
+        this.renderOptions();
+        break;
+      case 2: // STORY
+        this.inputLocked = true;
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Story'));
+        break;
+      case 3: // UPGRADES
+        this.inputLocked = true;
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('UpgradeTree'));
+        break;
+    }
   }
 }
