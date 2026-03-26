@@ -32,23 +32,25 @@ Also update all L2 level name strings and colors to match the rebuilt surface la
 
 Remove the current two-layer dot-scatter parallax. Replace with three procedural tileSprite layers:
 
+All three TileSprite layers use `setScrollFactor(0)` (screen-fixed) combined with `setTilePosition()` in `updateParallax()` to achieve parallax — this is the standard Phaser parallax-tileSprite pattern.
+
 ### Layer 1 — Starfield (scroll 0.05×)
 - Generate a `GAME_W × GROUND_Y` texture with 400+ white dots at random positions
 - Dot size: 1px only (no 2px blobs)
 - Alpha: random 0.25–0.55 per dot
-- Stored as `bgStars` tileSprite, depth 1
+- Stored as `bgStars` tileSprite: `this.add.tileSprite(GAME_W/2, GROUND_Y/2, GAME_W, GROUND_Y, 'bgStars').setDepth(1).setScrollFactor(0)`
 
 ### Layer 2 — Crater terrain silhouette (scroll 0.20×)
 - Generate a `GAME_W × 200` texture representing the mid-distance lunar surface
 - Draw a filled baseline rect `#0d0d1e` (full width, 200px tall)
 - Overlay a terrain silhouette: flat baseline with 6–8 shallow crater arcs cut in using `arc()` in erase/darker color `#070710`
 - Craters: radius 30–80px, deterministic positions from hash, along the bottom 80px of the texture
-- Stored as `bgTerrain` tileSprite at Y = `GROUND_Y`, `setOrigin(0.5, 1)` (bottom edge at ground line), depth 2
+- Stored as `bgTerrain` tileSprite: `this.add.tileSprite(GAME_W/2, GROUND_Y, GAME_W, 200, 'bgTerrain').setDepth(2).setOrigin(0.5, 1).setScrollFactor(0)`
 
 ### Layer 3 — Dust haze (scroll 0.35×)
 - Generate a `GAME_W × 120` texture
 - Fill with a vertical gradient: `#1a1a2e` at bottom fading to transparent at top (simulate with 8 horizontal rect strips decreasing alpha)
-- Stored as `bgHaze` tileSprite at Y = `GROUND_Y`, `setOrigin(0.5, 1)` (bottom edge at ground line), depth 3
+- Stored as `bgHaze` tileSprite: `this.add.tileSprite(GAME_W/2, GROUND_Y, GAME_W, 120, 'bgHaze').setDepth(3).setOrigin(0.5, 1).setScrollFactor(0)`
 
 ### updateParallax() — final version (handles both L1 and L2)
 Use this single canonical implementation (replaces the previous two-layer version):
@@ -121,6 +123,15 @@ Each cluster: 3–5 panels (count from hash)
 ## Change 4: L2 Rebuild as Surface Level
 
 **File:** `src/scenes/GameScene.ts`
+
+### L2 `create()` branch — complete call sequence
+Replace the current L2 branch in `create()` with these calls (in order):
+1. `this.makeBackgroundL2()`
+2. `this.makeGroundL2()`
+3. `this.makePlatforms('purple', { low: 18, mid: 15, high: 10 })`
+4. `this.makeBaseProps('high')`
+
+(Spawn player, camera setup, and physics bounds follow in the same block as currently structured.)
 
 ### World dimensions
 L2 uses identical dimensions to L1:
@@ -220,6 +231,10 @@ private makePlatforms(
 ```
 
 L1 call: `makePlatforms()` (defaults). L2 call: `makePlatforms('purple', { low: 18, mid: 15, high: 10 })`.
+
+Inside `makePlatforms()`:
+- Replace hardcoded band counts with `counts.low`, `counts.mid`, `counts.high`
+- Pass `palette` through to each `this.addStructure(x, y, w, palette)` call
 
 Remove `makeShaftLedges()` — it was L2-only shaft geometry, no longer needed after the surface-level rebuild.
 
