@@ -34,6 +34,14 @@ Remove the current two-layer dot-scatter parallax. Replace with three procedural
 
 All three TileSprite layers use `setScrollFactor(0)` (screen-fixed) combined with `setTilePosition()` in `updateParallax()` to achieve parallax — this is the standard Phaser parallax-tileSprite pattern.
 
+**Texture key deduplication:** `GameScene` is reused across `scene.restart()` calls (not reconstructed), so `generateTexture()` will be called again with keys that already exist in the Phaser texture cache. Destroy each key before regenerating:
+```ts
+if (this.textures.exists('bgStars'))   this.textures.remove('bgStars');
+if (this.textures.exists('bgTerrain')) this.textures.remove('bgTerrain');
+if (this.textures.exists('bgHaze'))    this.textures.remove('bgHaze');
+```
+Apply the same pattern in `makeBackgroundL2()` for its texture keys (`'bgStarsL2'`, `'bgTerrainL2'`).
+
 ### Layer 1 — Starfield (scroll 0.05×)
 - Generate a `GAME_W × GROUND_Y` texture with 400+ white dots at random positions
 - Dot size: 1px only (no 2px blobs)
