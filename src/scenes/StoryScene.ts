@@ -107,7 +107,8 @@ export class StoryScene extends Phaser.Scene {
     this.inputLocked = true;
     this.cameras.main.fadeOut(400, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('MechSelect');
+      this.scene.start('Game', { mechType: 'mech', level: 1 });
+      this.scene.launch('UI');
     });
   }
 

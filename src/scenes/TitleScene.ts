@@ -173,15 +173,19 @@ export class TitleScene extends Phaser.Scene {
       switch (this.selectedIndex) {
         case 0: // L1: SURFACE OPS
           this.inputLocked = true;
-          this.registry.set('currentLevel', 1);
           this.cameras.main.fadeOut(300, 0, 0, 0);
-          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
+          this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('Game', { mechType: 'mech', level: 1 });
+            this.scene.launch('UI');
+          });
           break;
         case 1: // L2: DARK SIDE
           this.inputLocked = true;
-          this.registry.set('currentLevel', 2);
           this.cameras.main.fadeOut(300, 0, 0, 0);
-          this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
+          this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('Game', { mechType: 'mech', level: 2 });
+            this.scene.launch('UI');
+          });
           break;
         case 2: // [ BACK ]
           this.menuState = 'main';
@@ -230,9 +234,11 @@ export class TitleScene extends Phaser.Scene {
     switch (this.selectedIndex) {
       case 0: // START GAME
         this.inputLocked = true;
-        this.registry.set('currentLevel', 1);
         this.cameras.main.fadeOut(300, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start('Game', { mechType: 'mech', level: 1 });
+          this.scene.launch('UI');
+        });
         break;
       case 1: // SELECT LEVEL
         this.menuState = 'levelSelect';

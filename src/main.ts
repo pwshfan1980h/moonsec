@@ -3,7 +3,6 @@ import { GAME_W, GAME_H } from './constants';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene }   from './scenes/TitleScene';
 import { StoryScene }   from './scenes/StoryScene';
-import { MechSelectScene } from './scenes/MechSelectScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 import { UpgradeCardScene } from './scenes/UpgradeCardScene';
@@ -21,7 +20,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, TitleScene, StoryScene, MechSelectScene, GameScene, UIScene, UpgradeCardScene, UpgradeTreeScene],
+  scene: [BootScene, TitleScene, StoryScene, GameScene, UIScene, UpgradeCardScene, UpgradeTreeScene],
   pixelArt: true,
   roundPixels: true,
 };
