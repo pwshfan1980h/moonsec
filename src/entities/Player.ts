@@ -144,7 +144,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       frequency: 80,
       blendMode: 'ADD',
       emitting:  false,
-    }).setDepth(11);  // above mech (depth 10)
+    }).setDepth(9);   // behind mech (depth 10)
 
     this.jetpackOuter = scene.add.particles(0, 0, 'flare', {
       speed:     { min: 50,  max: 130 },
@@ -156,7 +156,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       frequency: 60,
       blendMode: 'ADD',
       emitting:  false,
-    }).setDepth(11);  // above mech (depth 10)
+    }).setDepth(9);   // behind mech (depth 10)
 
     // Jetpack exhaust smoke — intentionally uses 'pixel' (1×1 square) for blocky wispy look;
     // switching to 'flare' would produce an undesirable ~110px soft circle per particle

@@ -455,7 +455,7 @@ export class UIScene extends Phaser.Scene {
 
     // Game over text
     this.add.text(W / 2, H / 2 - 120, 'GAME OVER', {
-      fontFamily: 'monospace', fontSize: '32px', color: '#ff2222',
+      fontFamily: 'monospace', fontSize: '96px', color: '#ff2222',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
