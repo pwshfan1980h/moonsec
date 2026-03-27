@@ -11,6 +11,12 @@ export class Pilot extends Phaser.Physics.Arcade.Sprite {
 
   private keyA: Phaser.Input.Keyboard.Key;
   private keyD: Phaser.Input.Keyboard.Key;
+  private fireCb: ((x: number, y: number, dirX: number) => void) | null = null;
+  private gunCooldown = 0;
+
+  setFireCallback(cb: (x: number, y: number, dirX: number) => void): void {
+    this.fireCb = cb;
+  }
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'pilot_sphere');
@@ -63,6 +69,14 @@ export class Pilot extends Phaser.Physics.Arcade.Sprite {
       this.jetpackFuel = Math.max(0, this.jetpackFuel - delta);
     } else {
       body.setAccelerationY(0);
+    }
+
+    // Pilot gun — LMB fires a bullet (300 ms cooldown)
+    this.gunCooldown = Math.max(0, this.gunCooldown - delta);
+    if (this.scene.input.activePointer.leftButtonDown() && this.gunCooldown <= 0 && this.fireCb) {
+      const dirX = this.flipX ? -1 : 1;
+      this.fireCb(this.x + dirX * 12, this.y - 2, dirX);
+      this.gunCooldown = 300;
     }
   }
 }

@@ -53,7 +53,7 @@ export class StoryScene extends Phaser.Scene {
       const isOrder  = line.startsWith('  SURFACE OPS') || line.startsWith('  DARK SIDE');
 
       const color = isHeader ? '#00ccff' : isOrder ? '#aaffcc' : '#8899aa';
-      const size  = isHeader ? '28px' : '20px';
+      const size  = isHeader ? '32px' : '22px';
 
       if (line !== '') {
         this.add.text(W/2, startY + i * lineH, line, {
@@ -67,7 +67,7 @@ export class StoryScene extends Phaser.Scene {
     // Continue prompt — pulsing at bottom
     const prompt = this.add.text(W/2, H - 80, '[ ENTER / SPACE  —  CONTINUE ]', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '20px',
       color: '#4488ff',
     }).setOrigin(0.5).setDepth(10);
 
@@ -83,7 +83,7 @@ export class StoryScene extends Phaser.Scene {
     // ESC hint
     this.add.text(16, H - 16, 'ESC — BACK', {
       fontFamily: 'monospace',
-      fontSize: '9px',
+      fontSize: '13px',
       color: '#334455',
     }).setOrigin(0, 1).setDepth(10);
 

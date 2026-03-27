@@ -34,7 +34,7 @@ export class MechSelectScene extends Phaser.Scene {
     // Title
     this.add.text(W/2, 48, 'SELECT MECH', {
       fontFamily: 'monospace',
-      fontSize: '28px',
+      fontSize: '34px',
       color: '#00ccff',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -72,16 +72,16 @@ export class MechSelectScene extends Phaser.Scene {
       // Mech name text
       const nameText = this.add.text(cx, centerY + 70, mech.name, {
         fontFamily: 'monospace',
-        fontSize: '16px',
+        fontSize: '20px',
         color: '#445566',
         fontStyle: 'bold',
       }).setOrigin(0.5);
       this.nameTexts.push(nameText);
 
       // Descriptor text
-      this.add.text(cx, centerY + 92, mech.desc, {
+      this.add.text(cx, centerY + 96, mech.desc, {
         fontFamily: 'monospace',
-        fontSize: '11px',
+        fontSize: '14px',
         color: '#334455',
       }).setOrigin(0.5);
 
@@ -94,6 +94,21 @@ export class MechSelectScene extends Phaser.Scene {
       });
     }
 
+    // Lock SCOUT (index 1) — not yet unlocked
+    const lockCx = centerXs[1];
+    this.boxes[1].removeInteractive();
+    this.add.rectangle(lockCx, centerY, boxW, boxH, 0x000000, 0.72).setDepth(5);
+    this.add.text(lockCx, centerY - 20, '[ X ]', {
+      fontFamily: 'monospace', fontSize: '36px', color: '#553333',
+    }).setOrigin(0.5).setDepth(6);
+    this.add.text(lockCx, centerY + 30, 'LOCKED', {
+      fontFamily: 'monospace', fontSize: '22px', color: '#ff4444',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(6);
+    this.add.text(lockCx, centerY + 60, 'COMING SOON', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#663333',
+    }).setOrigin(0.5).setDepth(6);
+
     // Stat bars
     const BAR_W = 130;
     const BAR_H = 5;
@@ -105,7 +120,7 @@ export class MechSelectScene extends Phaser.Scene {
       badge: string, badgeColor: string
     ) => {
       this.add.text(cx - BAR_W / 2, y - 13, label, {
-        fontFamily: 'monospace', fontSize: '9px', color: '#5588aa',
+        fontFamily: 'monospace', fontSize: '12px', color: '#5588aa',
       }).setOrigin(0, 0);
       // Track background
       this.add.rectangle(cx, y + BAR_H / 2, BAR_W, BAR_H, 0x0d1f2d).setOrigin(0.5, 0.5);
@@ -113,7 +128,7 @@ export class MechSelectScene extends Phaser.Scene {
       this.add.rectangle(cx - BAR_W / 2 + (BAR_W * ratio) / 2, y + BAR_H / 2, BAR_W * ratio, BAR_H, fill).setOrigin(0.5, 0.5);
       // Badge text
       this.add.text(cx + BAR_W / 2 + 6, y - 2, badge, {
-        fontFamily: 'monospace', fontSize: '8px', color: badgeColor,
+        fontFamily: 'monospace', fontSize: '11px', color: badgeColor,
       }).setOrigin(0, 0);
     };
 
@@ -140,7 +155,7 @@ export class MechSelectScene extends Phaser.Scene {
     // Instruction text at bottom
     this.add.text(W/2, H - 48, 'A/D — SELECT    ENTER — CONFIRM', {
       fontFamily: 'monospace',
-      fontSize: '13px',
+      fontSize: '16px',
       color: '#446677',
     }).setOrigin(0.5);
 
@@ -157,9 +172,7 @@ export class MechSelectScene extends Phaser.Scene {
       this.sound.play('ui-nav', { volume: 0.25 });
     });
     keyD.on('down', () => {
-      this.selectedIndex = 1;
-      this.updateSelection();
-      this.sound.play('ui-nav', { volume: 0.25 });
+      // SCOUT is locked — no-op
     });
     keyLeft.on('down', () => {
       this.selectedIndex = 0;
@@ -167,9 +180,7 @@ export class MechSelectScene extends Phaser.Scene {
       this.sound.play('ui-nav', { volume: 0.25 });
     });
     keyRight.on('down', () => {
-      this.selectedIndex = 1;
-      this.updateSelection();
-      this.sound.play('ui-nav', { volume: 0.25 });
+      // SCOUT is locked — no-op
     });
     keyEnter.on('down', () => {
       this.confirmSelection(mechs);
@@ -192,6 +203,7 @@ export class MechSelectScene extends Phaser.Scene {
   }
 
   private confirmSelection(mechs: MechConfig[]): void {
+    if (this.selectedIndex === 1) return; // SCOUT locked
     this.sound.play('ui-confirm', { volume: 0.40 });
     const mechType = mechs[this.selectedIndex].key;
     this.scene.start('Game', { mechType });

@@ -5,6 +5,7 @@ import { Pilot } from '../entities/Pilot';
 import { StunDart } from '../entities/StunDart';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
+import { MusicSystem } from '../systems/MusicSystem';
 import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
@@ -20,6 +21,7 @@ export class GameScene extends Phaser.Scene {
   crawlers!: Phaser.Physics.Arcade.Group;
   pickups!: Phaser.Physics.Arcade.Group;
   audio!: AudioSystem;
+  private music: MusicSystem | null = null;
   score = 0;
   platformData: { x: number; y: number; w: number }[] = [];
   private isGameOver = false;
@@ -75,6 +77,10 @@ export class GameScene extends Phaser.Scene {
     if (!this.registry.get('runUpgrades')) {
       this.registry.set('runUpgrades', [] as string[]);
     }
+
+    this.music?.destroy(); // stop music from previous run
+    this.music = new MusicSystem();
+    this.music.start(0.35);
 
     this.audio?.destroy(); // close old AudioContext before creating new one
     this.audio = new AudioSystem(this.sound);
@@ -355,6 +361,16 @@ export class GameScene extends Phaser.Scene {
         this.audio.play('eject');
         const spawnPos = this.player.eject();
         this.pilot = new Pilot(this, spawnPos.x, spawnPos.y);
+        this.pilot.setFireCallback((bx, by, dirX) => {
+          const b = this.playerBullets.get(bx, by, 'bullet-rapid') as Phaser.Physics.Arcade.Image;
+          if (!b) return;
+          b.setActive(true).setVisible(true).setDepth(14);
+          b.setBlendMode(Phaser.BlendModes.ADD);
+          const bb = b.body as Phaser.Physics.Arcade.Body;
+          if (bb) { bb.enable = true; bb.setAllowGravity(false); }
+          b.setVelocity(dirX * 400, 0);
+          this.audio.play('rapid');
+        });
         this.cameras.main.startFollow(this.pilot, false, 0.12, 0.08);
         this.pilotGroundCollider = this.physics.add.collider(this.pilot, this.ground);
         this.pilotBulletOverlap = this.physics.add.overlap(
@@ -385,6 +401,11 @@ export class GameScene extends Phaser.Scene {
     this.spawner.update(time, delta);
     this.cullBullets();
     this.updateParallax();
+  }
+
+  shutdown(): void {
+    this.music?.destroy();
+    this.music = null;
   }
 
   public triggerGameOver(): void {

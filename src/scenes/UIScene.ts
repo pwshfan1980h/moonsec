@@ -67,7 +67,7 @@ export class UIScene extends Phaser.Scene {
     const hy = PAD;
 
     this.healthLabel = this.add.text(hx, hy, 'HP', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#ff4444',
+      fontFamily: 'monospace', fontSize: '13px', color: '#ff4444',
     });
     this.healthBg   = this.add.rectangle(hx + BAR_W / 2 + 22, hy + 4, BAR_W, BAR_H, 0x330000).setOrigin(0.5, 0.5);
     this.healthFill = this.add.rectangle(hx + 22, hy, BAR_W, BAR_H, 0xff2222).setOrigin(0, 0);
@@ -77,7 +77,7 @@ export class UIScene extends Phaser.Scene {
     // ── Jetpack fuel (small bar below health) ─────────────────────
     const jy = hy + 18;
     this.add.text(hx, jy, 'JP', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#44aaff',
+      fontFamily: 'monospace', fontSize: '13px', color: '#44aaff',
     });
     this.add.rectangle(hx + BAR_W / 2 + 22, jy + 4, BAR_W, 6, 0x001133).setOrigin(0.5, 0.5);
     this.jetpackBar = this.add.rectangle(hx + 22, jy, BAR_W, 6, 0x2299ff).setOrigin(0, 0);
@@ -85,7 +85,7 @@ export class UIScene extends Phaser.Scene {
     // ── SUIT jetpack bar (pilot; hidden until ejected) ────────────
     const sy = jy + 14;
     this.suitLabel = this.add.text(hx, sy, 'SUIT', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#aaffaa',
+      fontFamily: 'monospace', fontSize: '13px', color: '#aaffaa',
     }).setVisible(false);
     this.suitBg = this.add.rectangle(hx + BAR_W / 2 + 22, sy + 4, BAR_W, 6, 0x001100)
       .setOrigin(0.5, 0.5).setVisible(false);
@@ -96,7 +96,7 @@ export class UIScene extends Phaser.Scene {
     this.pilotPip = this.add.rectangle(hx, sy + 12, 6, 6, 0xff4444)
       .setOrigin(0, 0).setVisible(false);
     this.pilotPipLabel = this.add.text(hx + 10, sy + 10, 'PILOT', {
-      fontFamily: 'monospace', fontSize: '9px', color: '#ff4444',
+      fontFamily: 'monospace', fontSize: '12px', color: '#ff4444',
     }).setVisible(false);
 
     // ── Nanite (NNT) bar ──────────────────────────────────────────
@@ -104,7 +104,7 @@ export class UIScene extends Phaser.Scene {
     const nx = PAD;
     const ny = sy + 26;
     this.naniteLabel = this.add.text(nx, ny, 'NANOHEAL', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#00cc66',
+      fontFamily: 'monospace', fontSize: '13px', color: '#00cc66',
     });
     this.naniteBg  = this.add.rectangle(nx + BAR_W / 2 + 22, ny + 4, BAR_W, 6, 0x001a0d).setOrigin(0.5, 0.5);
     this.naniteBar = this.add.rectangle(nx + 22, ny, BAR_W, 6, 0x00ff88).setOrigin(0, 0);
@@ -114,7 +114,7 @@ export class UIScene extends Phaser.Scene {
     const my = PAD;
 
     this.missileLabel = this.add.text(W - PAD, my, 'MSL', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#ffff44',
+      fontFamily: 'monospace', fontSize: '13px', color: '#ffff44',
       align: 'right',
     }).setOrigin(1, 0);
 
@@ -125,7 +125,7 @@ export class UIScene extends Phaser.Scene {
     // ── Turret cooldown bar (below missile) ───────────────────────
     const ty = my + 18;
     this.turretLabel = this.add.text(W - PAD, ty, 'TRT', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#ff8844',
+      fontFamily: 'monospace', fontSize: '13px', color: '#ff8844',
       align: 'right',
     }).setOrigin(1, 0);
     this.turretBg = this.add.rectangle(mx + BAR_W / 2, ty + 4, BAR_W, 6, 0x331100).setOrigin(0.5, 0.5);
@@ -134,19 +134,19 @@ export class UIScene extends Phaser.Scene {
 
     // ── Score (top-center) ────────────────────────────────────────
     this.scoreText = this.add.text(W / 2, PAD, '0', {
-      fontFamily: 'monospace', fontSize: '16px', color: '#ffffff',
+      fontFamily: 'monospace', fontSize: '20px', color: '#ffffff',
       align: 'center',
     }).setOrigin(0.5, 0);
 
     // ── Persistent wave counter (below score) ─────────────────────
-    this.waveCounter = this.add.text(W / 2, PAD + 20, '', {
-      fontFamily: 'monospace', fontSize: '9px', color: '#666688',
+    this.waveCounter = this.add.text(W / 2, PAD + 24, '', {
+      fontFamily: 'monospace', fontSize: '12px', color: '#666688',
       align: 'center',
     }).setOrigin(0.5, 0);
 
     // ── Drones remaining counter (below wave counter) ──────────────
-    this.dronesRemainingText = this.add.text(W / 2, PAD + 32, '', {
-      fontFamily: 'monospace', fontSize: '10px', color: '#ff4444',
+    this.dronesRemainingText = this.add.text(W / 2, PAD + 40, '', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#ff4444',
       align: 'center',
     }).setOrigin(0.5, 0).setAlpha(0);
 
@@ -157,7 +157,7 @@ export class UIScene extends Phaser.Scene {
 
     // ── Wave announcement (big, fades out) ────────────────────────
     this.waveText = this.add.text(W / 2, H / 2 - 40, '', {
-      fontFamily: 'monospace', fontSize: '28px', color: '#ff6666',
+      fontFamily: 'monospace', fontSize: '36px', color: '#ff6666',
       align: 'center',
     }).setOrigin(0.5, 0.5).setAlpha(0).setDepth(30);
 
@@ -165,7 +165,7 @@ export class UIScene extends Phaser.Scene {
     this.pauseBg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6)
       .setDepth(50).setVisible(false);
     this.pauseText = this.add.text(W / 2, H / 2, 'PAUSED\n\nESC to resume', {
-      fontFamily: 'monospace', fontSize: '20px', color: '#8888cc',
+      fontFamily: 'monospace', fontSize: '26px', color: '#8888cc',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(51).setVisible(false);
 
@@ -240,7 +240,7 @@ export class UIScene extends Phaser.Scene {
         const levelNum  = gameScene.currentLevel;
         const levelName = levelNum === 2 ? 'DARK SIDE' : 'SURFACE OPS';
         const t = this.add.text(W / 2, 80, levelName, {
-          fontFamily: 'monospace', fontSize: '22px',
+          fontFamily: 'monospace', fontSize: '28px',
           color: levelNum === 2 ? '#aa66ff' : '#6699ff',
           stroke: '#000000', strokeThickness: 3,
         }).setOrigin(0.5).setDepth(50).setAlpha(0);
@@ -261,7 +261,7 @@ export class UIScene extends Phaser.Scene {
 
     game.events.on('killStreak', (count: number, bonus: number) => {
       const t = this.add.text(W / 2, H / 2, `${count} KILLSTREAK!\n+${bonus}`, {
-        fontFamily: 'monospace', fontSize: '20px', color: '#ffff00',
+        fontFamily: 'monospace', fontSize: '26px', color: '#ffff00',
         align: 'center',
       }).setOrigin(0.5, 0.5).setDepth(30);
       this.tweens.add({
@@ -412,12 +412,12 @@ export class UIScene extends Phaser.Scene {
     const W = GAME_W, H = GAME_H;
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75).setDepth(60);
     this.add.text(W / 2, H / 2 - 80, 'LEVEL COMPLETE', {
-      fontFamily: 'monospace', fontSize: '32px', color: '#00ff88',
+      fontFamily: 'monospace', fontSize: '40px', color: '#00ff88',
     }).setOrigin(0.5).setDepth(61);
 
     const nextName = level === 1 ? 'DESCENDING TO DARK SIDE…' : 'ALL CLEAR';
     this.add.text(W / 2, H / 2 - 20, nextName, {
-      fontFamily: 'monospace', fontSize: '16px', color: '#aaffcc',
+      fontFamily: 'monospace', fontSize: '20px', color: '#aaffcc',
     }).setOrigin(0.5).setDepth(61);
 
     // Level complete stinger — low triumphant boom
@@ -470,13 +470,13 @@ export class UIScene extends Phaser.Scene {
 
     // Score
     this.add.text(W / 2, H / 2 - 40, `SCORE: ${this.currentScore}`, {
-      fontFamily: 'monospace', fontSize: '16px', color: '#ffffff',
+      fontFamily: 'monospace', fontSize: '22px', color: '#ffffff',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
     // Wave reached
     this.add.text(W / 2, H / 2, `WAVE: ${this.currentWave}`, {
-      fontFamily: 'monospace', fontSize: '12px', color: '#8888aa',
+      fontFamily: 'monospace', fontSize: '16px', color: '#8888aa',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
@@ -484,13 +484,13 @@ export class UIScene extends Phaser.Scene {
     const hsColor = isNew ? '#ffff00' : '#666688';
     const hsPrefix = isNew ? 'NEW HIGH SCORE: ' : 'HIGH SCORE: ';
     this.add.text(W / 2, H / 2 + 48, `${hsPrefix}${highScore}`, {
-      fontFamily: 'monospace', fontSize: '12px', color: hsColor,
+      fontFamily: 'monospace', fontSize: '16px', color: hsColor,
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
     // Restart prompt
     const restartText = this.add.text(W / 2, H / 2 + 136, 'PRESS R TO RESTART', {
-      fontFamily: 'monospace', fontSize: '14px', color: '#4488ff',
+      fontFamily: 'monospace', fontSize: '20px', color: '#4488ff',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 

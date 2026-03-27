@@ -70,7 +70,7 @@ export class TitleScene extends Phaser.Scene {
     // Navigation hint
     this.add.text(W/2, H - 26, '↑ ↓  NAVIGATE      ENTER / SPACE  SELECT', {
       fontFamily: 'monospace',
-      fontSize: '10px',
+      fontSize: '14px',
       color: '#334455',
     }).setOrigin(0.5).setDepth(10);
 
@@ -111,7 +111,7 @@ export class TitleScene extends Phaser.Scene {
     this.currentOptions.forEach((label, i) => {
       const t = this.add.text(W / 2, H * 0.58 + i * 54, label, {
         fontFamily: 'monospace',
-        fontSize: '22px',
+        fontSize: '26px',
         color: '#335566',
       }).setOrigin(0.5).setDepth(10)
         .setInteractive({ useHandCursor: true })
@@ -146,7 +146,7 @@ export class TitleScene extends Phaser.Scene {
     this.optionTexts.forEach((t, i) => {
       if (i === this.selectedIndex) {
         t.setText('▶  ' + this.currentOptions[i] + '  ◀');
-        t.setStyle({ color: '#00ccff', fontSize: '22px' });
+        t.setStyle({ color: '#00ccff', fontSize: '26px' });
         t.setAlpha(1);
         this.pulseTween = this.tweens.add({
           targets: t,
@@ -158,7 +158,7 @@ export class TitleScene extends Phaser.Scene {
         });
       } else {
         t.setText(this.currentOptions[i]);
-        t.setStyle({ color: '#335566', fontSize: '18px' });
+        t.setStyle({ color: '#335566', fontSize: '22px' });
         t.setAlpha(0.8);
       }
     });
@@ -208,7 +208,7 @@ export class TitleScene extends Phaser.Scene {
           this.renderOptions();
           // Brief flash to confirm
           const flash = this.add.text(GAME_W / 2, GAME_H * 0.85, 'DATA RESET', {
-            fontFamily: 'monospace', fontSize: '14px', color: '#ff4444',
+            fontFamily: 'monospace', fontSize: '18px', color: '#ff4444',
           }).setOrigin(0.5).setDepth(20).setAlpha(0);
           this.tweens.add({
             targets: flash, alpha: { from: 1, to: 0 },
@@ -232,7 +232,7 @@ export class TitleScene extends Phaser.Scene {
         this.inputLocked = true;
         this.registry.set('currentLevel', 1);
         this.cameras.main.fadeOut(300, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Prologue'));
         break;
       case 1: // SELECT LEVEL
         this.menuState = 'levelSelect';
