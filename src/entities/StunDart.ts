@@ -71,6 +71,14 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  /** Required by MinimapRenderer — maps dart states to Drone state shape */
+  getState(): 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH' {
+    if (this.dartState === 'CHARGE')   return 'ATTACK';
+    if (this.dartState === 'HURT')     return 'HURT';
+    if (this.dartState === 'DEATH')    return 'DEATH';
+    return 'HOVER';
+  }
+
   /** Called by GameScene overlap when dart hits the player body */
   onHitPlayer(player: Player): void {
     if (this.dartState === 'DEATH' || this.dartState === 'HURT') return;
