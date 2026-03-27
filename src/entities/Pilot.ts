@@ -9,6 +9,9 @@ import {
 export class Pilot extends Phaser.Physics.Arcade.Sprite {
   jetpackFuel = PILOT_JETPACK_MAX_FUEL; // ms remaining; public so UIScene can read it
 
+  private keyA: Phaser.Input.Keyboard.Key;
+  private keyD: Phaser.Input.Keyboard.Key;
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'pilot_sphere');
     scene.add.existing(this);
@@ -17,6 +20,11 @@ export class Pilot extends Phaser.Physics.Arcade.Sprite {
     body.setSize(12, 12);
     body.setCollideWorldBounds(true);
     this.setDepth(11); // Player is depth 10; pilot renders on top
+
+    // A/D support — addKey deduplicates so safe alongside Player's captures
+    const kb = scene.input.keyboard!;
+    this.keyA = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    this.keyD = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
   }
 
   update(
@@ -27,11 +35,13 @@ export class Pilot extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const onGround = body.blocked.down; // same pattern as Player.ts
 
-    // Horizontal movement
-    if (cursors.left.isDown) {
+    // Horizontal movement — accept both arrow keys and A/D
+    const left  = cursors.left.isDown  || this.keyA.isDown;
+    const right = cursors.right.isDown || this.keyD.isDown;
+    if (left) {
       body.setVelocityX(-PILOT_WALK_SPEED);
       this.setFlipX(true);
-    } else if (cursors.right.isDown) {
+    } else if (right) {
       body.setVelocityX(PILOT_WALK_SPEED);
       this.setFlipX(false);
     } else {

@@ -331,6 +331,15 @@ export class UIScene extends Phaser.Scene {
   }
 
   shutdown(): void {
+    // Remove all GameScene event listeners to prevent accumulation on scene restart
+    const gs = this.scene.get('Game');
+    if (gs) {
+      for (const ev of ['healthChange', 'missileCooldown', 'turretCooldown', 'jetpackFuel',
+                        'naniteChange', 'scoreChange', 'waveStart', 'dronesRemaining',
+                        'killStreak', 'gameOver', 'bossKilled']) {
+        gs.events.removeAllListeners(ev);
+      }
+    }
     if (this.nanitePulseTween) {
       this.nanitePulseTween.stop();
       this.nanitePulseTween = null;
