@@ -4,6 +4,7 @@ import { Drone } from '../entities/Drone';
 import { Crawler } from '../entities/Crawler';
 import { NexusBoss } from '../entities/NexusBoss';
 import { StunDart } from '../entities/StunDart';
+import { BomberDrone } from '../entities/BomberDrone';
 import type { DroneVariant, DroneType } from '../entities/Drone';
 import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, L2_SPEED_MULT, L2_INTERVAL_MULT, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 
@@ -130,8 +131,8 @@ export class DroneSpawner {
       return;
     }
 
-    // Normal wave — spawn drones (doubled from original formula)
-    const count = 8 + (this.waveIndex - 1) * 4;
+    // Normal wave — drone count scales with wave
+    const count = 10 + (this.waveIndex - 1) * 5;
     let spawned = 0;
 
     const MARGIN = 150;
@@ -284,6 +285,48 @@ export class DroneSpawner {
     };
 
     spawnNext();
+
+    // Bombers from wave 1 — 1 per wave, drive-by with ground telegraph
+    {
+      const cam    = this.scene.cameras.main;
+      const dir    = Math.random() < 0.5 ? 1 : -1;
+      const bx     = dir > 0
+        ? Phaser.Math.Clamp(cam.scrollX - 120, 0, WORLD_WIDTH)
+        : Phaser.Math.Clamp(cam.scrollX + GAME_W + 120, 0, WORLD_WIDTH);
+      const by     = cam.scrollY + Phaser.Math.Between(Math.round(GAME_H * 0.25), Math.round(GAME_H * 0.55));
+      const bomber = new BomberDrone(this.scene, bx, by, dir);
+      this.scene.add.existing(bomber);
+      this.scene.physics.add.existing(bomber);
+      this.scene.drones.add(bomber);
+      (bomber.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+
+      this.dronesAlive++;
+      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+
+      this.scene.physics.add.overlap(
+        this.scene.playerBullets, bomber,
+        (_b, bullet) => {
+          const b = bullet as Phaser.Physics.Arcade.Image;
+          b.setActive(false).setVisible(false);
+          if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+          (_b as unknown as BomberDrone).takeDamage(1);
+          this.scene.audio.play('hit');
+        },
+      );
+      this.scene.physics.add.overlap(
+        this.scene.missiles, bomber,
+        (_b, missile) => {
+          const m = missile as Phaser.Physics.Arcade.Image;
+          m.setData('hitTarget', true);
+          m.setActive(false).setVisible(false);
+          if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+          this.scene.spawnExplosion(m.x, m.y);
+          (_b as unknown as BomberDrone).takeDamage(3);
+          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.audio.play('explosion');
+        },
+      );
+    }
 
     // Crawlers from wave 1 — 1 at wave 1, +1 every 2 waves, capped at 4
     if (this.waveIndex >= 1) {

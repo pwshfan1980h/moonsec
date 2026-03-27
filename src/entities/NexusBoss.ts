@@ -4,16 +4,17 @@ import { Drone } from './Drone';
 import type { DroneScaling } from '../systems/DroneSpawner';
 import { GAME_W } from '../constants';
 
-type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'HURT' | 'DEATH';
+type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'TELEGRAPH' | 'BLAST' | 'HURT' | 'DEATH';
 
-const HP             = 18;
-const SCALE          = 8.0;
-const DRIFT_SPEED    = 50;
+const HP             = 24;
+const SCALE          = 5.0;
+const DRIFT_SPEED    = 55;
 const CHARGE_MS      = 1200;
 const DRIFT_MS       = 1800;
 const BULLET_SPEED   = 280;
 const SPREAD_ANGLES  = [-20, 0, 20] as const;
 const ESCORT_RESPAWN = 20000;
+const TELEGRAPH_MS   = 3000; // ms of warning before orbital blast fires
 
 export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   declare scene: GameScene;
@@ -22,6 +23,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private hp: number;
   private driftDir = -1;
   private phaseTimer = DRIFT_MS;
+  private attackCycle = 0; // increments each CHARGE; every 3rd → orbital blast
   private escortSlots: Array<{ drone: Drone | null; colliders: Phaser.Physics.Arcade.Collider[] }> = [
     { drone: null, colliders: [] },
     { drone: null, colliders: [] },
@@ -30,7 +32,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private level: number;
 
   constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, level = 1) {
-    super(scene, x, y, 'nexus');
+    super(scene, x, y, 'sentinel');
     this.scene   = scene;
     this.scaling = scaling;
     this.level   = level;
@@ -39,18 +41,16 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     this.setOrigin(0.5, 0.5);
     this.setScale(SCALE);
     this.setDepth(10);
-    this.play('nexus-hover');
+    this.play('sentinel-hover');
 
-    // Spawn escorts after a short delay to let physics settle
     scene.time.delayedCall(500, () => this.spawnEscort(0));
     scene.time.delayedCall(800, () => this.spawnEscort(1));
   }
 
-  // Called after physics.add.existing(this)
   initBody(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    body.setSize(22, 24, true); // hitbox scaled with sprite
+    body.setSize(28, 22, true);
     body.setCollideWorldBounds(true);
   }
 
@@ -58,20 +58,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     if (this.bossState === 'DEATH') return;
     if (!this.active) return;
 
-    // Destroy any stale colliders from a previous escort in this slot
-    for (const col of this.escortSlots[slot].colliders) {
-      col.destroy();
-    }
+    for (const col of this.escortSlots[slot].colliders) col.destroy();
     this.escortSlots[slot].colliders = [];
 
-    const dx  = slot === 0 ? -120 : 120;
+    const dx = slot === 0 ? -120 : 120;
     const escort = new Drone(
-      this.scene,
-      this.x + dx,
-      this.y,
-      'drone-red',
-      this.scaling,
-      'normal',
+      this.scene, this.x + dx, this.y,
+      'drone-red', this.scaling, 'normal',
     );
     this.scene.add.existing(escort);
     this.scene.physics.add.existing(escort);
@@ -81,10 +74,8 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     body.setAllowGravity(false);
     escort.startPatrol(-1);
 
-    // Register bullet overlaps for escort (same as DroneSpawner pattern)
     const c1 = this.scene.physics.add.overlap(
-      this.scene.playerBullets,
-      escort,
+      this.scene.playerBullets, escort,
       (e, bullet) => {
         const b = bullet as Phaser.Physics.Arcade.Image;
         b.setActive(false).setVisible(false);
@@ -95,8 +86,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       },
     );
     const c2 = this.scene.physics.add.overlap(
-      this.scene.missiles,
-      escort,
+      this.scene.missiles, escort,
       (e, missile) => {
         const m = missile as Phaser.Physics.Arcade.Image;
         m.setData('hitTarget', true);
@@ -112,15 +102,12 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     this.escortSlots[slot].colliders = [c1, c2];
     this.escortSlots[slot].drone = escort;
 
-    // Respawn logic — check if escort died
     const checkRespawn = () => {
       if (this.bossState === 'DEATH' || !this.active) return;
       if (!escort.active) {
         this.escortSlots[slot].drone = null;
         this.scene.time.delayedCall(ESCORT_RESPAWN, () => {
-          if (this.bossState !== 'DEATH' && this.active) {
-            this.spawnEscort(slot);
-          }
+          if (this.bossState !== 'DEATH' && this.active) this.spawnEscort(slot);
         });
       } else {
         this.scene.time.delayedCall(1000, checkRespawn);
@@ -137,16 +124,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     switch (this.bossState) {
       case 'DRIFT': {
         body.setVelocityX(this.driftDir * DRIFT_SPEED);
-        // Reverse at camera ±500px from centre
         const camCentreX = this.scene.cameras.main.scrollX + GAME_W / 2;
         if (this.x < camCentreX - 500) this.driftDir = 1;
         if (this.x > camCentreX + 500) this.driftDir = -1;
         this.setFlipX(this.driftDir > 0);
 
         this.phaseTimer -= delta;
-        if (this.phaseTimer <= 0) {
-          this.setBossState('CHARGE');
-        }
+        if (this.phaseTimer <= 0) this.setBossState('CHARGE');
         break;
       }
 
@@ -154,16 +138,22 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         body.setVelocityX(0);
         this.phaseTimer -= delta;
         if (this.phaseTimer <= 0) {
-          this.fire();
-          this.setBossState('FIRE');
+          // Every 3rd charge cycle → orbital blast instead of spread fire
+          if (this.attackCycle % 3 === 0) {
+            this.setBossState('TELEGRAPH');
+          } else {
+            this.fire();
+            this.setBossState('FIRE');
+          }
         }
         break;
       }
 
       case 'FIRE':
-        // Transition handled in fire() via delayedCall
+      case 'TELEGRAPH':
+      case 'BLAST':
+        // Transitions handled via delayedCall in setBossState
         break;
-
     }
   }
 
@@ -180,7 +170,6 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       const body = b.body as Phaser.Physics.Arcade.Body;
       if (body) {
         body.enable = true;
-        // Enable bouncing in L2
         if (this.level === 2) {
           body.setCollideWorldBounds(true);
           body.setBounce(1, 1);
@@ -188,24 +177,20 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
           b.setData('bounces', 0);
         }
       }
-      b.setVelocity(
-        Math.cos(angle) * BULLET_SPEED,
-        Math.sin(angle) * BULLET_SPEED,
-      );
+      b.setVelocity(Math.cos(angle) * BULLET_SPEED, Math.sin(angle) * BULLET_SPEED);
     }
 
-    // Boss fire sound — modulated drone-shoot (fat low blast)
     this.scene.audio.playAt('drone-shoot', { rate: 0.65, detune: -300, volume: 0.55 });
     this.scene.cameras.main.shake(80, 0.005);
 
-    // Return to DRIFT after attack animation completes
     this.scene.time.delayedCall(600, () => {
       if (this.bossState !== 'DEATH') this.setBossState('DRIFT');
     });
   }
 
   getState(): 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH' {
-    if (this.bossState === 'CHARGE' || this.bossState === 'FIRE') return 'ATTACK';
+    if (this.bossState === 'CHARGE' || this.bossState === 'FIRE' ||
+        this.bossState === 'TELEGRAPH' || this.bossState === 'BLAST') return 'ATTACK';
     if (this.bossState === 'HURT')  return 'HURT';
     if (this.bossState === 'DEATH') return 'DEATH';
     return 'HOVER';
@@ -216,9 +201,15 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     this.hp -= amount;
     if (this.hp <= 0) {
       this.setBossState('DEATH');
-    } else {
-      this.setBossState('HURT');
+      return;
     }
+    // Don't interrupt telegraph/blast with full hurt stun — just flash
+    if (this.bossState === 'TELEGRAPH' || this.bossState === 'BLAST') {
+      this.setTint(0xff8888);
+      this.scene.time.delayedCall(120, () => this.clearTint());
+      return;
+    }
+    this.setBossState('HURT');
   }
 
   private setBossState(newState: BossState): void {
@@ -227,23 +218,56 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
 
     switch (newState) {
       case 'DRIFT':
-        this.play('nexus-hover');
+        this.play('sentinel-hover');
         this.phaseTimer = DRIFT_MS;
         break;
 
       case 'CHARGE':
-        this.play('nexus-charge');
+        this.play('sentinel-attack');
         this.phaseTimer = CHARGE_MS;
-        // Telegraph sound — deep rumble
+        this.attackCycle++;
         this.scene.audio.playAt('hurt', { rate: 0.5, detune: -200, volume: 0.5 });
         break;
 
       case 'FIRE':
-        this.play('nexus-attack');
+        this.play('sentinel-attack');
         break;
 
+      case 'TELEGRAPH': {
+        this.play('sentinel-attack');
+        (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+
+        const target = this.scene.getPilotOrPlayer();
+        const camMid = this.scene.cameras.main.scrollX + GAME_W / 2;
+        const side: 'left' | 'right' = target.x < camMid ? 'left' : 'right';
+
+        // UIScene listens for this to show the warning overlay
+        this.scene.events.emit('bossTelegraph', { side, duration: TELEGRAPH_MS });
+
+        this.scene.time.delayedCall(TELEGRAPH_MS, () => {
+          if (this.bossState === 'TELEGRAPH') this.setBossState('BLAST');
+        });
+        break;
+      }
+
+      case 'BLAST': {
+        const target = this.scene.getPilotOrPlayer();
+        const camScrollX = this.scene.cameras.main.scrollX;
+        const camMid = camScrollX + GAME_W / 2;
+        const side: 'left' | 'right' = target.x < camMid ? 'left' : 'right';
+
+        this.scene.events.emit('bossBlastFired', { side, camScrollX });
+        this.scene.audio.playAt('explosion', { rate: 0.35, detune: -700, volume: 1.0 });
+        this.scene.cameras.main.shake(400, 0.025);
+
+        this.scene.time.delayedCall(700, () => {
+          if (this.bossState !== 'DEATH') this.setBossState('DRIFT');
+        });
+        break;
+      }
+
       case 'HURT':
-        this.play('nexus-hurt');
+        this.play('sentinel-hurt');
         this.setTint(0xff8888);
         this.scene.audio.playAt('hurt', { rate: 0.6, detune: -400, volume: 0.85 });
         this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
@@ -253,29 +277,25 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         break;
 
       case 'DEATH': {
-        this.play('nexus-death');
+        this.play('sentinel-death');
         (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
         (this.body as Phaser.Physics.Arcade.Body).enable = false;
 
-        // Destroy escort colliders to prevent stale callbacks
         for (const slot of this.escortSlots) {
           for (const col of slot.colliders) col.destroy();
           slot.colliders = [];
         }
 
-        // Three staggered explosions
+        // Clear any active telegraph
+        this.scene.events.emit('bossTelegraphCancel');
+
         const offsets = [{ x: 0, y: 0 }, { x: -40, y: 20 }, { x: 35, y: -15 }];
         offsets.forEach((off, i) => {
           this.scene.time.delayedCall(i * 150, () => {
             this.scene.spawnExplosion(this.x + off.x, this.y + off.y);
-            this.scene.audio.playAt('explosion', {
-              rate: 0.5,
-              detune: -200 - i * 200,
-              volume: 0.9,
-            });
+            this.scene.audio.playAt('explosion', { rate: 0.5, detune: -200 - i * 200, volume: 0.9 });
           });
         });
-        // Final death stinger
         this.scene.time.delayedCall(400, () => {
           this.scene.audio.playAt('death', { rate: 0.4, detune: -400, volume: 0.7 });
         });

@@ -113,8 +113,9 @@ this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
       repeat: 0,
     });
 
-    // Smooth nexus boss texture (bilinear) so scale-up doesn't look blocky
+    // Smooth boss textures (bilinear) so scale-up doesn't look blocky
     this.textures.get('nexus').source[0].setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.textures.get('sentinel').source[0].setFilter(Phaser.Textures.FilterMode.LINEAR);
 
     // Procedural bullet/effect textures
     this.makeTextures();
