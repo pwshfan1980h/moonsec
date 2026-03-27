@@ -135,42 +135,42 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Jetpack flame emitters — orange core + cyan outer glow
     this.jetpackInner = scene.add.particles(0, 0, 'flare', {
-      speed:    { min: 60, max: 120 },
-      angle:    { min: 80, max: 100 },  // downward ±10°
-      scale:    { start: 0.8, end: 0 },
-      alpha:    { start: 1, end: 0 },
-      tint:     [0xff6600, 0xff2200, 0xffaa00],
-      lifespan: 120,
-      frequency: 20,
+      speed:     { min: 80,  max: 200 },
+      angle:     { min: 80,  max: 100 },  // downward ±10°
+      scale:     { start: 2.5, end: 0 },
+      alpha:     { start: 1,   end: 0 },
+      tint:      [0xff6600, 0xff2200, 0xffaa00],
+      lifespan:  280,
+      frequency: 80,
       blendMode: 'ADD',
       emitting:  false,
-    }).setDepth(9);
+    }).setDepth(11);  // above mech (depth 10)
 
     this.jetpackOuter = scene.add.particles(0, 0, 'flare', {
-      speed:    { min: 40, max: 90 },
-      angle:    { min: 65, max: 115 }, // downward ±25°
-      scale:    { start: 1.2, end: 0 },
-      alpha:    { start: 0.7, end: 0 },
-      tint:     [0x00aaff, 0x0044ff, 0x44eeff],
-      lifespan: 180,
-      frequency: 25,
+      speed:     { min: 50,  max: 130 },
+      angle:     { min: 65,  max: 115 }, // downward ±25°
+      scale:     { start: 4.0, end: 0 },
+      alpha:     { start: 0.6, end: 0 },
+      tint:      [0x00aaff, 0x0044ff, 0x44eeff],
+      lifespan:  400,
+      frequency: 60,
       blendMode: 'ADD',
       emitting:  false,
-    }).setDepth(8);
+    }).setDepth(11);  // above mech (depth 10)
 
     // Jetpack exhaust smoke — intentionally uses 'pixel' (1×1 square) for blocky wispy look;
     // switching to 'flare' would produce an undesirable ~110px soft circle per particle
     this.jetpackSmoke = scene.add.particles(0, 0, 'pixel', {
-      speed:     { min: 10, max: 40 },
+      speed:     { min: 15, max: 55 },
       angle:     { min: 60, max: 120 }, // downward spread
-      scale:     { start: 3.5, end: 0 },
-      alpha:     { start: 0.22, end: 0 },
+      scale:     { start: 10.0, end: 0 },
+      alpha:     { start: 0.30, end: 0 },
       tint:      [0xaaaaaa, 0x888888, 0xcccccc, 0xffffff],
-      lifespan:  700,
-      frequency: 35,
+      lifespan:  1400,
+      frequency: 90,
       blendMode: Phaser.BlendModes.NORMAL,
       emitting:  false,
-    }).setDepth(7); // behind flame (depth 8,9), above background
+    }).setDepth(9); // behind flame (depth 11), visible below mech feet
 
     // Nanite heal emitters
     this.naniteAmbient = scene.add.particles(this.x, this.y - 56, 'flare', {
