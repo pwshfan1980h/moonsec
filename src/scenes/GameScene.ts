@@ -211,6 +211,7 @@ export class GameScene extends Phaser.Scene {
         bullet.setActive(false).setVisible(false);
         if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
         (playerObj as Player).takeDamage(1);
+        this.cameras.main.shake(80, 0.006);
       },
     );
 
@@ -233,8 +234,8 @@ export class GameScene extends Phaser.Scene {
     );
 
     // --- Camera ---
-    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
+    this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAME_H - 120));
+    this.cameras.main.startFollow(this.player, false, 0.20, 0.18);
 
     // --- Spawner ---
     this.spawner = new DroneSpawner(this);
@@ -334,7 +335,7 @@ export class GameScene extends Phaser.Scene {
           this.pilot.destroy();
           this.pilot = null;
           this.player.reenter();
-          this.cameras.main.startFollow(this.player, false, 0.12, 0.08);
+          this.cameras.main.startFollow(this.player, false, 0.20, 0.18);
         }
       } else {
         if (this.player.isDead() || this.player.isHurtLocked()) return;
