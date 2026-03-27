@@ -447,8 +447,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.hurtLock = 600;
       this.play({ key: this.animPrefix + 'hurt', repeat: 0 }, true);
       this.curAnim = 'hurt';
-      this.setTint(0xff4444);
-      this.scene.time.delayedCall(200, () => this.clearTint());
+      this.setTint(0xff3333);
+      this.scene.time.delayedCall(150, () => { if (!this.dead) this.clearTint(); });
       this.scene.audio.play('hurt');
     }
   }
