@@ -175,7 +175,7 @@ export class TitleScene extends Phaser.Scene {
           this.inputLocked = true;
           this.cameras.main.fadeOut(300, 0, 0, 0);
           this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('Game', { mechType: 'mech', level: 1 });
+            this.scene.start('Game', { mechType: 'mech4', level: 1 });
             this.scene.launch('UI');
           });
           break;
@@ -183,7 +183,7 @@ export class TitleScene extends Phaser.Scene {
           this.inputLocked = true;
           this.cameras.main.fadeOut(300, 0, 0, 0);
           this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('Game', { mechType: 'mech', level: 2 });
+            this.scene.start('Game', { mechType: 'mech4', level: 2 });
             this.scene.launch('UI');
           });
           break;
@@ -236,7 +236,7 @@ export class TitleScene extends Phaser.Scene {
         this.inputLocked = true;
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-          this.scene.start('Game', { mechType: 'mech', level: 1 });
+          this.scene.start('Game', { mechType: 'mech4', level: 1 });
           this.scene.launch('UI');
         });
         break;
