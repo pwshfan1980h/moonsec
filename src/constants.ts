@@ -27,10 +27,10 @@ export const WAVE_BRACKETS: {
   minWave: number; attackSpeed: number; shootInterval: number;
   extraHp: number; bulletSpeedMult: number;
 }[] = [
-  { minWave: 0,  attackSpeed: 160, shootInterval: 2200, extraHp: 0, bulletSpeedMult: 1.0 },
-  { minWave: 1,  attackSpeed: 200, shootInterval: 1800, extraHp: 0, bulletSpeedMult: 1.0 },
-  { minWave: 2,  attackSpeed: 240, shootInterval: 1500, extraHp: 1, bulletSpeedMult: 1.0 },
-  { minWave: 3,  attackSpeed: 280, shootInterval: 1200, extraHp: 1, bulletSpeedMult: 1.2 },
+  { minWave: 0,  attackSpeed: 185, shootInterval: 2200, extraHp: 0, bulletSpeedMult: 1.1  },
+  { minWave: 1,  attackSpeed: 230, shootInterval: 1800, extraHp: 0, bulletSpeedMult: 1.15 },
+  { minWave: 2,  attackSpeed: 275, shootInterval: 1500, extraHp: 1, bulletSpeedMult: 1.2  },
+  { minWave: 3,  attackSpeed: 320, shootInterval: 1200, extraHp: 1, bulletSpeedMult: 1.4  },
 ];
 
 // Pilot (on-foot) movement
