@@ -11,8 +11,8 @@ const SCALE          = 5.0;
 const DRIFT_SPEED    = 55;
 const CHARGE_MS      = 1200;
 const DRIFT_MS       = 1800;
-const BULLET_SPEED   = 280;
-const SPREAD_ANGLES  = [-20, 0, 20] as const;
+const BULLET_SPEED   = 340;
+const SPREAD_ANGLES  = [-12, 0, 12] as const;
 const ESCORT_RESPAWN = 20000;
 const TELEGRAPH_MS   = 3000; // ms of warning before orbital blast fires
 
@@ -159,7 +159,14 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
 
   private fire(): void {
     const target = this.scene.getPilotOrPlayer();
-    const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+    const targetBody = (target as unknown as { body: Phaser.Physics.Arcade.Body }).body;
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
+    const travelTime = dist / BULLET_SPEED;
+    const vx = targetBody?.velocity?.x ?? 0;
+    const vy = targetBody?.velocity?.y ?? 0;
+    const predictedX = target.x + vx * travelTime * 0.6;
+    const predictedY = target.y + vy * travelTime * 0.3;
+    const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, predictedX, predictedY);
 
     for (const offsetDeg of SPREAD_ANGLES) {
       const angle = baseAngle + Phaser.Math.DegToRad(offsetDeg);
