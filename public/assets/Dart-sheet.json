@@ -1,0 +1,142 @@
+{ "frames": {
+   "Dart 0.aseprite": {
+    "frame": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 150
+   },
+   "Dart 1.aseprite": {
+    "frame": { "x": 28, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 150
+   },
+   "Dart 2.aseprite": {
+    "frame": { "x": 56, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 200
+   },
+   "Dart 3.aseprite": {
+    "frame": { "x": 84, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 150
+   },
+   "Dart 4.aseprite": {
+    "frame": { "x": 112, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 100
+   },
+   "Dart 5.aseprite": {
+    "frame": { "x": 140, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 60
+   },
+   "Dart 6.aseprite": {
+    "frame": { "x": 168, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 80
+   },
+   "Dart 7.aseprite": {
+    "frame": { "x": 196, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 150
+   },
+   "Dart 8.aseprite": {
+    "frame": { "x": 224, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 80
+   },
+   "Dart 9.aseprite": {
+    "frame": { "x": 252, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 150
+   },
+   "Dart 10.aseprite": {
+    "frame": { "x": 280, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 100
+   },
+   "Dart 11.aseprite": {
+    "frame": { "x": 308, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 130
+   },
+   "Dart 12.aseprite": {
+    "frame": { "x": 336, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 160
+   },
+   "Dart 13.aseprite": {
+    "frame": { "x": 364, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 200
+   },
+   "Dart 14.aseprite": {
+    "frame": { "x": 392, "y": 0, "w": 28, "h": 24 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 28, "h": 24 },
+    "sourceSize": { "w": 28, "h": 24 },
+    "duration": 300
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.17-arm64",
+  "image": "Dart-sheet.png",
+  "format": "RGBA8888",
+  "size": { "w": 420, "h": 24 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "hover", "from": 0, "to": 3, "direction": "pingpong", "color": "#000000ff" },
+   { "name": "attack", "from": 4, "to": 7, "direction": "forward", "color": "#000000ff" },
+   { "name": "hurt", "from": 8, "to": 9, "direction": "forward", "color": "#000000ff" },
+   { "name": "death", "from": 10, "to": 14, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "sprite", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

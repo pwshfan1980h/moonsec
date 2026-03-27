@@ -7,7 +7,7 @@ import { GAME_W } from '../constants';
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'HURT' | 'DEATH';
 
 const HP             = 18;
-const SCALE          = 4.5;
+const SCALE          = 8.0;
 const DRIFT_SPEED    = 50;
 const CHARGE_MS      = 1200;
 const DRIFT_MS       = 1800;
@@ -50,7 +50,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   initBody(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    body.setSize(20, 22, true);
+    body.setSize(22, 24, true); // hitbox scaled with sprite
     body.setCollideWorldBounds(true);
   }
 

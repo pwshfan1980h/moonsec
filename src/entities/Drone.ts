@@ -6,7 +6,7 @@ type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH';
 export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
 export type DroneVariant = 'normal' | 'sniper';
 
-const BASE_HOVER_SPEED      = 70;
+const BASE_HOVER_SPEED      = 110;
 const BASE_ATTACK_RANGE     = 320;
 const BASE_BULLET_SPEED     = 300;
 const HP_MAP                = { 'drone-red': 2, 'drone-green': 3, 'sentinel': 3 };

@@ -48,6 +48,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   damageShield      = false;  // reactive-armor card: absorb next hit
 
   private curAnim: AnimState = 'idle';
+  private empStunned = false;
   private onGround = false;
   private jetpackFuel = 0;
   private hurtLock = 0;
@@ -210,6 +211,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   update(time: number, delta: number): void {
     if (this.dead) return;
     if (!this.piloting) return; // mech frozen while pilot is on foot
+    if (this.empStunned) return; // EMP shutdown — no input, gravity still applies
 
     const body = this.body as Phaser.Physics.Arcade.Body;
     const airborne = !body.blocked.down;
@@ -451,6 +453,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.scene.time.delayedCall(150, () => { if (!this.dead) this.clearTint(); });
       this.scene.audio.play('hurt');
     }
+  }
+
+  empStun(duration: number): void {
+    if (this.dead || this.empStunned) return;
+    this.empStunned = true;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    body.setVelocity(0, 0);
+    body.setAcceleration(0, 0);
+    this.scene.audio.stopLoop('jetpack');
+    this.jetpackInner.emitting = false;
+    this.jetpackOuter.emitting = false;
+    // Play death animation to simulate shutdown (mech goes dark)
+    this.play(this.animPrefix + 'death', true);
+    this.curAnim = 'death'; // reset so updateAnim() re-triggers anim on recovery
+    this.setTint(0x44aaff);
+    // Deep EMP crackle — very low-pitched hurt sound
+    this.scene.audio.playAt('hurt', { rate: 0.15, detune: -1200, volume: 1.0 });
+    this.scene.cameras.main.flash(300, 0, 160, 255, false);
+    this.scene.time.delayedCall(duration, () => {
+      if (!this.dead) {
+        this.empStunned = false;
+        this.clearTint();
+        // curAnim stays 'death'; updateAnim() next frame will restart idle/walk
+      }
+    });
   }
 
   destroy(fromScene?: boolean): void {

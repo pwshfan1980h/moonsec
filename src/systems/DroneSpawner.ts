@@ -3,6 +3,7 @@ import type { GameScene } from '../scenes/GameScene';
 import { Drone } from '../entities/Drone';
 import { Crawler } from '../entities/Crawler';
 import { NexusBoss } from '../entities/NexusBoss';
+import { StunDart } from '../entities/StunDart';
 import type { DroneVariant, DroneType } from '../entities/Drone';
 import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, L2_SPEED_MULT, L2_INTERVAL_MULT, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 
@@ -129,8 +130,8 @@ export class DroneSpawner {
       return;
     }
 
-    // Normal wave — spawn drones
-    const count = 4 + (this.waveIndex - 1) * 2;
+    // Normal wave — spawn drones (doubled from original formula)
+    const count = 8 + (this.waveIndex - 1) * 4;
     let spawned = 0;
 
     const MARGIN = 150;
@@ -176,8 +177,10 @@ export class DroneSpawner {
 
       // Sentinel: every 4th drone from wave 2+
       const isSentinel = this.waveIndex >= 2 && i % 4 === 3;
-      // Sniper: every 3rd drone from wave 2+ (only if not sentinel slot)
-      const isSniper   = !isSentinel && this.waveIndex >= 2 && i % 3 === 2;
+      // StunDart: every 6th drone from wave 2+ (not sentinel slot)
+      const isStunDart = !isSentinel && this.waveIndex >= 2 && i % 6 === 5;
+      // Sniper: every 3rd drone from wave 2+ (only if not sentinel/stundart slot)
+      const isSniper   = !isSentinel && !isStunDart && this.waveIndex >= 2 && i % 3 === 2;
       const variant: DroneVariant = isSniper ? 'sniper' : 'normal';
       const type: DroneType       = isSentinel ? 'sentinel'
                                   : (isSniper || i % 2 === 0 ? 'drone-red' : 'drone-green');
@@ -185,6 +188,48 @@ export class DroneSpawner {
       // Use patrol lane Y for the drone's patrol height (override viewport-random Y for non-top spawns)
       const patrolY = Math.min(lane, GROUND_Y - 40);
       const finalSpawnY = side === 2 ? spawnY : patrolY;
+
+      // ── StunDart — EMP kamikaze ──────────────────────────────────
+      if (isStunDart) {
+        const dart = new StunDart(this.scene, spawnX, finalSpawnY);
+        this.scene.add.existing(dart);
+        this.scene.physics.add.existing(dart);
+        this.scene.drones.add(dart);
+        (dart.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+
+        this.dronesAlive++;
+        this.scene.events.emit('dronesRemaining', this.dronesAlive);
+
+        this.scene.physics.add.overlap(
+          this.scene.playerBullets,
+          dart,
+          (_d, bullet) => {
+            const b = bullet as Phaser.Physics.Arcade.Image;
+            b.setActive(false).setVisible(false);
+            if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+            (_d as unknown as StunDart).takeDamage(1);
+            this.scene.audio.play('hit');
+          },
+        );
+        this.scene.physics.add.overlap(
+          this.scene.missiles,
+          dart,
+          (_d, missile) => {
+            const m = missile as Phaser.Physics.Arcade.Image;
+            m.setData('hitTarget', true);
+            m.setActive(false).setVisible(false);
+            if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+            this.scene.spawnExplosion(m.x, m.y);
+            (_d as unknown as StunDart).takeDamage(3);
+            this.scene.cameras.main.shake(150, 0.01);
+            this.scene.audio.play('explosion');
+          },
+        );
+
+        spawned++;
+        this.scene.time.delayedCall(SPAWN_STAGGER, spawnNext);
+        return;
+      }
 
       const forceHp = isSentinel ? 3 : undefined;
       const drone   = new Drone(this.scene, spawnX, finalSpawnY, type, bracket, variant, forceHp);

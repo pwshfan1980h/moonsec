@@ -52,6 +52,9 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('nexus', 'assets/Nexus-sheet.png', {
       frameWidth: 25, frameHeight: 27,
     });
+    this.load.spritesheet('dart', 'assets/Dart-sheet.png', {
+      frameWidth: 28, frameHeight: 24,
+    });
 
     // Load new SVG assets for visual upgrades
     this.load.svg('logo', 'assets/logo.svg', { width: 600, height: 150 });
@@ -71,6 +74,9 @@ this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
 
     // Sentinel — 4 standard animations (same layout as Viper/Hornet)
     this.buildDroneAnims('sentinel');
+
+    // Dart — StunDart kamikaze (same 4-anim layout)
+    this.buildDroneAnims('dart');
 
     // Nexus Boss — 5 animations, built inline (non-standard layout)
     const fps = (ms: number) => Math.round(1000 / ms);
@@ -106,6 +112,9 @@ this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
       frameRate: fps(120),
       repeat: 0,
     });
+
+    // Smooth nexus boss texture (bilinear) so scale-up doesn't look blocky
+    this.textures.get('nexus').source[0].setFilter(Phaser.Textures.FilterMode.LINEAR);
 
     // Procedural bullet/effect textures
     this.makeTextures();
