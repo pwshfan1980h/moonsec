@@ -54,6 +54,7 @@ export class DroneSpawner {
 
   update(time: number, _delta: number): void {
     if (this.spawning || this.isBossDead) return;
+    if (this.isBossWave()) return;   // hold spawner once boss wave begins
     if (time < this.nextWaveTime) return;
 
     this.nextWaveTime = time + WAVE_DELAY;
@@ -91,8 +92,8 @@ export class DroneSpawner {
       const boss = new NexusBoss(this.scene, camCentreX, spawnY, bracket, currentLevel);
       this.scene.add.existing(boss);
       this.scene.physics.add.existing(boss);
-      boss.initBody();
       this.scene.drones.add(boss);
+      boss.initBody(); // must come after drones.add() — group.add() resets body defaults
 
       // Register bullet overlaps for boss
       this.scene.physics.add.overlap(
