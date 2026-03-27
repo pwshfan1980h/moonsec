@@ -232,7 +232,7 @@ export class TitleScene extends Phaser.Scene {
         this.inputLocked = true;
         this.registry.set('currentLevel', 1);
         this.cameras.main.fadeOut(300, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('Prologue'));
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MechSelect'));
         break;
       case 1: // SELECT LEVEL
         this.menuState = 'levelSelect';
