@@ -103,7 +103,7 @@ export class UIScene extends Phaser.Scene {
     // Sits below the pilot pip block (sy + 12 for pip + 6 pip height + 8 gap = sy + 26)
     const nx = PAD;
     const ny = sy + 26;
-    this.naniteLabel = this.add.text(nx, ny, 'NNT', {
+    this.naniteLabel = this.add.text(nx, ny, 'NANOHEAL', {
       fontFamily: 'monospace', fontSize: '10px', color: '#00cc66',
     });
     this.naniteBg  = this.add.rectangle(nx + BAR_W / 2 + 22, ny + 4, BAR_W, 6, 0x001a0d).setOrigin(0.5, 0.5);

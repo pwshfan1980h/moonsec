@@ -174,26 +174,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Nanite heal emitters
     this.naniteAmbient = scene.add.particles(this.x, this.y - 56, 'flare', {
-      tint: [0x00ff88, 0x44ffcc, 0x00ccff],
-      speed: { min: 20, max: 50 },
-      angle: { min: 250, max: 290 },
-      lifespan: 800,
-      scale: { start: 0.8, end: 0 },
-      frequency: 60,
+      tint:      [0x00ff88, 0x44ffcc, 0x00ccff],
+      speed:     { min: 30, max: 80 },
+      angle:     { min: 250, max: 290 }, // upward drift
+      lifespan:  600,
+      scale:     { start: 2.0, end: 0 },
+      frequency: 40,
       blendMode: Phaser.BlendModes.ADD,
-      emitting: false,
-    }).setDepth(9);
+      emitting:  false,
+    }).setDepth(12);  // above mech (depth 10)
 
     this.naniteSpark = scene.add.particles(this.x, this.y - 56, 'flare', {
-      tint: [0x00ffff, 0xffffff],
-      speed: { min: 60, max: 120 },
-      angle: { min: 0, max: 360 },
-      lifespan: 300,
-      scale: { start: 1, end: 0 },
-      quantity: 6,
+      tint:      [0x00ffff, 0xffffff, 0x44ff88],
+      speed:     { min: 80, max: 160 },
+      angle:     { min: 0, max: 360 },
+      lifespan:  350,
+      scale:     { start: 2.0, end: 0 },
+      quantity:  12,
       blendMode: Phaser.BlendModes.ADD,
-      emitting: false,
-    }).setDepth(9);
+      emitting:  false,
+    }).setDepth(12);  // above mech (depth 10)
 
     // Nanite Q key listener
     this.keyQ.on('down', () => {
@@ -350,7 +350,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       loop: true,
       callback: () => {
         if (this.naniteActive) {
-          this.naniteSpark.emitParticle(6, this.x, this.y - 56);
+          this.naniteSpark.emitParticle(12, this.x, this.y - 56);
           this.scene.audio.play('nanite-tick');
         }
       },
