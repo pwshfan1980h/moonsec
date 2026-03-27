@@ -78,7 +78,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
     // Drop after warning period
     this.scene.time.delayedCall(WARN_MS, () => {
       pulse.remove();
-      this.drop();
+      if (this.active && this.scene) this.drop();
     });
   }
 
@@ -115,7 +115,9 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
     const offsets = [{ x: 0, y: -20 }, { x: -28, y: -45 }, { x: 28, y: -45 }];
     offsets.forEach((off, i) => {
       this.scene.time.delayedCall(i * 80, () => {
-        this.scene.spawnExplosion(this.targetX + off.x, GROUND_Y + off.y);
+        if (this.scene?.sys.isActive()) {
+          this.scene.spawnExplosion(this.targetX + off.x, GROUND_Y + off.y);
+        }
       });
     });
     this.scene.cameras.main.shake(280, 0.018);
