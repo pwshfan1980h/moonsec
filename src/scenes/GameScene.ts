@@ -10,6 +10,7 @@ import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLA
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
 import { CARD_POOL } from '../data/upgradeCards';
+import { buildLevel1Map } from '../data/levelData';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -33,6 +34,7 @@ export class GameScene extends Phaser.Scene {
   private spaceKey!: Phaser.Input.Keyboard.Key;
 
   private ground!: Phaser.Physics.Arcade.StaticGroup;
+  private groundLayer?: Phaser.Tilemaps.TilemapLayer;
   private spawner!: DroneSpawner;
   private bgStars!: Phaser.GameObjects.TileSprite;
   private bgTerrain!: Phaser.GameObjects.TileSprite;
@@ -127,17 +129,10 @@ export class GameScene extends Phaser.Scene {
       // --- Background ---
       this.makeBackground();
 
-      // --- Ground ---
+      // --- Ground (tilemap) ---
       this.ground = this.physics.add.staticGroup();
-      const groundRect = this.add.rectangle(
-        WORLD_WIDTH / 2,
-        GROUND_Y + GROUND_HEIGHT / 2,
-        WORLD_WIDTH,
-        GROUND_HEIGHT,
-        0x1a1a3a,
-      ).setDepth(4);
-      this.ground.add(groundRect);
-      this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 2, 0x4444cc).setDepth(5);
+      this.groundLayer = undefined;
+      this.makeTilemapGround();
 
       // --- Platforms ---
       this.makePlatforms();
@@ -207,9 +202,11 @@ export class GameScene extends Phaser.Scene {
 
     // Player lands on ground
     this.physics.add.collider(this.player, this.ground);
+    if (this.groundLayer) this.physics.add.collider(this.player, this.groundLayer);
 
     // Crawlers land on ground
     this.physics.add.collider(this.crawlers, this.ground);
+    if (this.groundLayer) this.physics.add.collider(this.crawlers, this.groundLayer);
 
     // Drone bullets hit player
     this.physics.add.overlap(
@@ -373,6 +370,7 @@ export class GameScene extends Phaser.Scene {
         });
         this.cameras.main.startFollow(this.pilot, false, 0.12, 0.08);
         this.pilotGroundCollider = this.physics.add.collider(this.pilot, this.ground);
+        if (this.groundLayer) this.physics.add.collider(this.pilot, this.groundLayer);
         this.pilotBulletOverlap = this.physics.add.overlap(
           this.droneBullets,
           this.pilot,
@@ -769,6 +767,26 @@ export class GameScene extends Phaser.Scene {
       this.add.rectangle(cx - w / 2 + 3, top + h / 2, 3, h, edgeColor).setDepth(5);
       this.add.rectangle(cx + w / 2 - 3, top + h / 2, 3, h, edgeColor).setDepth(5);
     }
+  }
+
+  private makeTilemapGround(): void {
+    const map = this.make.tilemap({
+      data: buildLevel1Map(),
+      tileWidth: 32,
+      tileHeight: 32,
+    });
+
+    const tileset = map.addTilesetImage('industrial-tileset', 'industrial-tileset');
+    if (!tileset) {
+      console.warn('[GameScene] industrial-tileset not found — ground tilemap skipped');
+      return;
+    }
+
+    this.groundLayer = map.createLayer(0, tileset, 0, 0) ?? undefined;
+    if (!this.groundLayer) return;
+
+    this.groundLayer.setCollisionByExclusion([-1]);
+    this.groundLayer.setDepth(4);
   }
 
   private makePlatforms(

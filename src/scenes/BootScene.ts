@@ -56,6 +56,9 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 28, frameHeight: 24,
     });
 
+    // Tilemap tileset
+    this.load.image('industrial-tileset', 'assets/industrial-tileset.png');
+
     // Load new SVG assets for visual upgrades
     this.load.svg('logo', 'assets/logo.svg', { width: 600, height: 150 });
     this.load.svg('hud-bracket', 'assets/hud-bracket.svg', { width: 180, height: 20 });
