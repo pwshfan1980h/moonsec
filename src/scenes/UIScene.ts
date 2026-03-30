@@ -40,6 +40,7 @@ export class UIScene extends Phaser.Scene {
   // Boss telegraph overlay
   private telegraphOverlay: Phaser.GameObjects.Rectangle | null = null;
   private telegraphLabel: Phaser.GameObjects.Text | null = null;
+  private telegraphMoveLabel: Phaser.GameObjects.Text | null = null;
   private telegraphPulse: Phaser.Tweens.Tween | null = null;
 
   // Pause elements
@@ -295,7 +296,7 @@ export class UIScene extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: '30px', color: '#ff4444',
         stroke: '#000000', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(56).setScrollFactor(0);
-      this.add.text(halfX + W / 4, H / 2 + 20, 'MOVE!', {
+      this.telegraphMoveLabel = this.add.text(halfX + W / 4, H / 2 + 20, 'MOVE!', {
         fontFamily: 'monospace', fontSize: '18px', color: '#ffaa44',
       }).setOrigin(0.5).setDepth(56).setScrollFactor(0);
       this.telegraphPulse = this.tweens.add({
@@ -386,9 +387,10 @@ export class UIScene extends Phaser.Scene {
   }
 
   private clearTelegraph(): void {
-    this.telegraphOverlay?.destroy(); this.telegraphOverlay = null;
-    this.telegraphLabel?.destroy();   this.telegraphLabel   = null;
-    this.telegraphPulse?.stop();      this.telegraphPulse   = null;
+    this.telegraphOverlay?.destroy();   this.telegraphOverlay   = null;
+    this.telegraphLabel?.destroy();     this.telegraphLabel     = null;
+    this.telegraphMoveLabel?.destroy(); this.telegraphMoveLabel = null;
+    this.telegraphPulse?.stop();        this.telegraphPulse     = null;
   }
 
   shutdown(): void {

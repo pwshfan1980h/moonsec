@@ -24,6 +24,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private driftDir = -1;
   private phaseTimer = DRIFT_MS;
   private attackCycle = 0; // increments each CHARGE; every 3rd → orbital blast
+  private telegraphSide: 'left' | 'right' = 'left';
   private escortSlots: Array<{ drone: Drone | null; colliders: Phaser.Physics.Arcade.Collider[] }> = [
     { drone: null, colliders: [] },
     { drone: null, colliders: [] },
@@ -246,10 +247,10 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
 
         const target = this.scene.getPilotOrPlayer();
         const camMid = this.scene.cameras.main.scrollX + GAME_W / 2;
-        const side: 'left' | 'right' = target.x < camMid ? 'left' : 'right';
+        this.telegraphSide = target.x < camMid ? 'left' : 'right';
 
         // UIScene listens for this to show the warning overlay
-        this.scene.events.emit('bossTelegraph', { side, duration: TELEGRAPH_MS });
+        this.scene.events.emit('bossTelegraph', { side: this.telegraphSide, duration: TELEGRAPH_MS });
 
         this.scene.time.delayedCall(TELEGRAPH_MS, () => {
           if (this.bossState === 'TELEGRAPH') this.setBossState('BLAST');
@@ -258,12 +259,10 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       }
 
       case 'BLAST': {
-        const target = this.scene.getPilotOrPlayer();
         const camScrollX = this.scene.cameras.main.scrollX;
-        const camMid = camScrollX + GAME_W / 2;
-        const side: 'left' | 'right' = target.x < camMid ? 'left' : 'right';
 
-        this.scene.events.emit('bossBlastFired', { side, camScrollX });
+        // Use the side locked in at telegraph time — recalculating here made escape impossible
+        this.scene.events.emit('bossBlastFired', { side: this.telegraphSide, camScrollX });
         this.scene.audio.playAt('explosion', { rate: 0.35, detune: -700, volume: 1.0 });
         this.scene.cameras.main.shake(400, 0.025);
 
