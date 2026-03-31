@@ -44,15 +44,15 @@ describe('constants', () => {
     expect(selectBracket(3)).toBe(WAVE_BRACKETS[3]);
   });
 
-  it('WAVE_BRACKETS attackSpeed and bulletSpeedMult at new difficulty values', () => {
-    expect(WAVE_BRACKETS[0].attackSpeed).toBe(185);
-    expect(WAVE_BRACKETS[1].attackSpeed).toBe(230);
-    expect(WAVE_BRACKETS[2].attackSpeed).toBe(275);
-    expect(WAVE_BRACKETS[3].attackSpeed).toBe(320);
-    expect(WAVE_BRACKETS[0].bulletSpeedMult).toBe(1.1);
-    expect(WAVE_BRACKETS[1].bulletSpeedMult).toBe(1.15);
-    expect(WAVE_BRACKETS[2].bulletSpeedMult).toBe(1.2);
-    expect(WAVE_BRACKETS[3].bulletSpeedMult).toBe(1.4);
+  it('WAVE_BRACKETS attackSpeed and bulletSpeedMult at current difficulty values', () => {
+    expect(WAVE_BRACKETS[0].attackSpeed).toBe(270);
+    expect(WAVE_BRACKETS[1].attackSpeed).toBe(360);
+    expect(WAVE_BRACKETS[2].attackSpeed).toBe(460);
+    expect(WAVE_BRACKETS[3].attackSpeed).toBe(580);
+    expect(WAVE_BRACKETS[0].bulletSpeedMult).toBe(1.2);
+    expect(WAVE_BRACKETS[1].bulletSpeedMult).toBe(1.3);
+    expect(WAVE_BRACKETS[2].bulletSpeedMult).toBe(1.45);
+    expect(WAVE_BRACKETS[3].bulletSpeedMult).toBe(1.65);
   });
 
   it('RADAR_X near right edge of 1920 screen', () => {
