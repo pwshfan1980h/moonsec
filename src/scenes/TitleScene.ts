@@ -3,7 +3,7 @@ import { GAME_W, GAME_H } from '../constants';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 
 const MAIN_OPTIONS    = ['START GAME', 'SELECT LEVEL', 'STORY', 'UPGRADES', 'RESET DATA'];
-const LEVEL_OPTIONS   = ['L1: SURFACE OPS', 'L2: DARK SIDE', '[ BACK ]'];
+const LEVEL_OPTIONS   = ['L1: SURFACE OPS', 'L2: DARK SIDE', 'L3: ICE CAVERNS', '[ BACK ]'];
 const CONFIRM_OPTIONS = ['CONFIRM RESET', 'CANCEL'];
 
 export class TitleScene extends Phaser.Scene {
@@ -73,6 +73,13 @@ export class TitleScene extends Phaser.Scene {
       fontSize: '14px',
       color: '#334455',
     }).setOrigin(0.5).setDepth(10);
+
+    // Version watermark
+    this.add.text(W - 16, H - 16, `ALPHA v${__APP_VERSION__}`, {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#334455',
+    }).setOrigin(1, 1).setDepth(10);
 
     // Input
     this.input.keyboard!.on('keydown-UP',    () => this.navigate(-1));
@@ -187,7 +194,15 @@ export class TitleScene extends Phaser.Scene {
             this.scene.launch('UI');
           });
           break;
-        case 2: // [ BACK ]
+        case 2: // L3: ICE CAVERNS
+          this.inputLocked = true;
+          this.cameras.main.fadeOut(300, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete', () => {
+            this.scene.start('Game', { mechType: 'mech4', level: 3 });
+            this.scene.launch('UI');
+          });
+          break;
+        case 3: // [ BACK ]
           this.menuState = 'main';
           this.currentOptions = [...MAIN_OPTIONS];
           this.renderOptions();
