@@ -1,4 +1,7 @@
 import { defineConfig } from 'vitest/config';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as { version: string };
 
 export default defineConfig({
   test: {
@@ -7,6 +10,6 @@ export default defineConfig({
     globals: false,
   },
   define: {
-    __APP_VERSION__: JSON.stringify('0.6.0'),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
 });
