@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
-import { GAME_W, GROUND_Y } from '../constants';
+import { GAME_W } from '../constants';
 
 const FLY_SPEED    = 240;  // px/s horizontal
 const BOMB_RADIUS  = 85;   // px — damage zone radius
@@ -15,6 +15,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
   private targetX    = 0;
   private marker: Phaser.GameObjects.Graphics | null = null;
   private hp = 3;
+  private groundY = 0;
 
   constructor(scene: GameScene, x: number, y: number, direction: number) {
     super(scene, x, y, 'kodiak');
@@ -57,6 +58,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
   }
 
   private startTelegraph(): void {
+    this.groundY = this.scene.getApproxGroundY();
     this.marker = this.scene.add.graphics();
     this.marker.setDepth(15);
     this.drawMarker(1.0);
@@ -87,7 +89,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
     this.marker.clear();
 
     const cx = this.targetX;
-    const cy = GROUND_Y - 8;
+    const cy = this.groundY - 8;
 
     // Filled zone
     this.marker.fillStyle(0xff2200, alpha * 0.22);
@@ -116,7 +118,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
     offsets.forEach((off, i) => {
       this.scene.time.delayedCall(i * 80, () => {
         if (this.scene?.sys.isActive()) {
-          this.scene.spawnExplosion(this.targetX + off.x, GROUND_Y + off.y);
+          this.scene.spawnExplosion(this.targetX + off.x, this.groundY + off.y);
         }
       });
     });

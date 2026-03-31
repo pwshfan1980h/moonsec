@@ -419,6 +419,19 @@ export class GameScene extends Phaser.Scene {
     return { x: this.player.x, y: this.player.y };
   }
 
+  public getApproxGroundY(): number {
+    // L1 — tilemap ground, GROUND_Y is the surface
+    if (this.groundLayer) return GROUND_Y;
+    // L2 — physics static group; find the topmost static body Y
+    let topY = GROUND_Y;
+    this.ground.getChildren().forEach((go) => {
+      const sprite = go as Phaser.Physics.Arcade.Sprite;
+      const bodyTop = sprite.y - (sprite.displayHeight ?? 0) / 2;
+      if (bodyTop < topY) topY = bodyTop;
+    });
+    return topY;
+  }
+
   spawnFloatingText(x: number, y: number, text: string, color = '#ffffff'): void {
     const t = this.add.text(x, y, text, { fontFamily: 'monospace', fontSize: '14px', color })
       .setDepth(25).setOrigin(0.5, 1);
