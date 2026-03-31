@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
 import type { Drone } from '../entities/Drone';
+import { NexusBoss } from '../entities/NexusBoss';
 import { WORLD_WIDTH, MISSILE_SEEK_RANGE, GROUND_Y } from '../constants';
 
 const COOLDOWN = 5000; // ms
@@ -114,11 +115,15 @@ export class HomingMissile {
     this.scene.drones.getChildren().forEach((go) => {
       const drone = go as unknown as Drone;
       if (!drone.active) return;
-      const dist = Phaser.Math.Distance.Between(x, y, drone.x, drone.y);
-      if (dist < bestDist) {
-        bestDist = dist;
+      // Always prefer the boss — escorts are closer but the player wants missiles on the boss
+      if (go instanceof NexusBoss) {
         nearest = drone;
+        bestDist = 0; // zero so no escort can displace it
+        return;
       }
+      if (bestDist === 0) return; // boss already selected
+      const dist = Phaser.Math.Distance.Between(x, y, drone.x, drone.y);
+      if (dist < bestDist) { bestDist = dist; nearest = drone; }
     });
 
     return nearest;
