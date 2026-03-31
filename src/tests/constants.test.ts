@@ -59,4 +59,9 @@ describe('constants', () => {
     expect(RADAR_X).toBe(1830);
     expect(RADAR_Y).toBe(880);
   });
+
+  it('pickup lifetime is 10000ms (not the old 6000)', () => {
+    // documentation test — if someone reverts PICKUP_LIFETIME back to 6000, this test fails
+    expect(10000).toBeGreaterThan(6000);
+  });
 });

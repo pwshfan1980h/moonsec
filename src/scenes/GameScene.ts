@@ -238,6 +238,8 @@ export class GameScene extends Phaser.Scene {
       (_p, pickup) => {
         const pk = pickup as Phaser.Physics.Arcade.Image;
         if (!pk.active) return;
+        this.tweens.killTweensOf(pk);
+        pk.setAlpha(1);
         pk.setActive(false).setVisible(false);
         if (pk.body) (pk.body as Phaser.Physics.Arcade.Body).enable = false;
         if (pk.getData('type') === 'health') {
@@ -427,16 +429,32 @@ export class GameScene extends Phaser.Scene {
     const key = type === 'health' ? 'pickup-health' : 'pickup-fuel';
     const p = this.pickups.get(x, y, key) as Phaser.Physics.Arcade.Image;
     if (!p) return;
-    p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y);
+    p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1);
     p.setData('type', type);
     if (p.body) {
       const pb = p.body as Phaser.Physics.Arcade.Body;
       pb.enable = true;
       pb.setVelocity(0, 0);
     }
-    // Despawn if uncollected after 6s
-    this.time.delayedCall(6000, () => {
+
+    // Start pulse warning 3s before despawn (at t=7s)
+    this.time.delayedCall(7000, () => {
+      if (!p.active) return;
+      this.tweens.add({
+        targets: p,
+        alpha: { from: 1, to: 0.25 },
+        duration: 350,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    });
+
+    // Despawn after 10s
+    this.time.delayedCall(10000, () => {
       if (p.active) {
+        this.tweens.killTweensOf(p);
+        p.setAlpha(1);
         p.setActive(false).setVisible(false);
         if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
       }
