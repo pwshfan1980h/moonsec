@@ -5,6 +5,7 @@ import { ShieldedTank } from '../entities/ShieldedTank';
 import { NexusBoss } from '../entities/NexusBoss';
 import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
+import { Mine } from '../entities/Mine';
 import type { DroneVariant, DroneType } from '../entities/Drone';
 import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, L2_SPEED_MULT, L2_INTERVAL_MULT, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 
@@ -326,6 +327,53 @@ export class DroneSpawner {
           this.scene.audio.play('explosion');
         },
       );
+    }
+
+    // Mines from wave 2 — 1-2 per wave, placed at random ground positions
+    if (this.waveIndex >= 2) {
+      const mineCount = Math.random() < 0.5 ? 1 : 2;
+      const groundY = this.scene.getApproxGroundY();
+      for (let m = 0; m < mineCount; m++) {
+        const cam    = this.scene.cameras.main;
+        const mineX  = Phaser.Math.Between(
+          cam.scrollX + 200,
+          cam.scrollX + GAME_W - 200,
+        );
+        const mine = new Mine(this.scene, mineX, groundY);
+        this.scene.add.existing(mine);
+        this.scene.physics.add.existing(mine);
+        this.scene.drones.add(mine);
+        mine.initBody();
+
+        this.dronesAlive++;
+        this.scene.events.emit('dronesRemaining', this.dronesAlive);
+
+        // Player bullets detonate/destroy the mine
+        this.scene.physics.add.overlap(
+          this.scene.playerBullets,
+          mine,
+          (_m, bullet) => {
+            const b = bullet as Phaser.Physics.Arcade.Image;
+            b.setActive(false).setVisible(false);
+            if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+            (_m as unknown as Mine).takeDamage(1);
+          },
+        );
+
+        // Missiles also detonate mines
+        this.scene.physics.add.overlap(
+          this.scene.missiles,
+          mine,
+          (_m, missile) => {
+            const ms = missile as Phaser.Physics.Arcade.Image;
+            ms.setData('hitTarget', true);
+            ms.setActive(false).setVisible(false);
+            if (ms.body) (ms.body as Phaser.Physics.Arcade.Body).enable = false;
+            this.scene.spawnExplosion(ms.x, ms.y);
+            (_m as unknown as Mine).takeDamage(1);
+          },
+        );
+      }
     }
 
     // ShieldedTanks from wave 1 — 1 on first wave, +1 every 2 waves (max 3)
