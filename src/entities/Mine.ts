@@ -82,7 +82,7 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
   private detonate(): void {
     if (this.mineState === 'DEAD' || this.mineState === 'DETONATING') return;
     this.mineState = 'DETONATING';
-    this.ledPulse?.stop();
+    this.ledPulse?.destroy();
     this.ledGfx.destroy();
 
     // Disable body immediately
@@ -111,6 +111,12 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
       if (!this.scene?.sys.isActive()) return;
       this.destroy();
     });
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.ledPulse?.destroy();
+    if (this.ledGfx?.active) this.ledGfx.destroy();
+    super.destroy(fromScene);
   }
 
   private drawLed(color: number, alpha: number): void {
