@@ -216,7 +216,8 @@ export class GameScene extends Phaser.Scene {
         const bullet = b as Phaser.Physics.Arcade.Image;
         bullet.setActive(false).setVisible(false);
         if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
-        (playerObj as Player).takeDamage(1);
+        const dmg = (bullet.getData('damage') as number | undefined) ?? 1;
+        (playerObj as Player).takeDamage(dmg);
         this.cameras.main.shake(80, 0.006);
       },
     );

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from '../entities/Drone';
-import { Crawler } from '../entities/Crawler';
+import { ShieldedTank } from '../entities/ShieldedTank';
 import { NexusBoss } from '../entities/NexusBoss';
 import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
@@ -328,60 +328,51 @@ export class DroneSpawner {
       );
     }
 
-    // Crawlers from wave 1 — 1 at wave 1, +1 every 2 waves, capped at 4
-    if (this.waveIndex >= 1) {
-      const crawlerCount = Math.min(4, Math.floor((this.waveIndex - 1) / 2) + 1);
-      const crawlerCam = this.scene.cameras.main;
-      const MARGIN = 150;
+    // ShieldedTanks from wave 1 — 1 on first wave, +1 every 2 waves (max 3)
+    const tankCount = Math.min(3, 1 + Math.floor((this.waveIndex - 1) / 2));
+    const tankCam = this.scene.cameras.main;
+    const tankVx  = tankCam.scrollX;
+    for (let c = 0; c < tankCount; c++) {
+      const side   = Math.random() < 0.5 ? -1 : 1;
+      const spawnX = side < 0
+        ? Phaser.Math.Clamp(tankVx - MARGIN, 0, WORLD_WIDTH)
+        : Phaser.Math.Clamp(tankVx + GAME_W + MARGIN, 0, WORLD_WIDTH);
+      const groundY = this.scene.getApproxGroundY();
+      const tank = new ShieldedTank(this.scene, spawnX, groundY, side < 0 ? 1 : -1);
+      this.scene.add.existing(tank);
+      this.scene.physics.add.existing(tank);
+      this.scene.crawlers.add(tank);
+      tank.initBody();
 
-      for (let c = 0; c < crawlerCount; c++) {
-        const cxLeft  = Phaser.Math.Clamp(crawlerCam.scrollX - MARGIN, 0, WORLD_WIDTH);
-        const cxRight = Phaser.Math.Clamp(crawlerCam.scrollX + GAME_W + MARGIN, 0, WORLD_WIDTH);
-        const cx = c % 2 === 0 ? cxLeft : cxRight;
-        const crawler = new Crawler(this.scene, cx, GROUND_Y - 5, -1);
-        this.scene.add.existing(crawler);
-        this.scene.physics.add.existing(crawler);
-        crawler.initBody();
-        this.scene.crawlers.add(crawler);
+      this.dronesAlive++;
+      this.scene.events.emit('dronesRemaining', this.dronesAlive);
 
-        this.scene.physics.add.overlap(
-          this.scene.playerBullets,
-          crawler,
-          (cr, bullet) => {
-            const b = bullet as Phaser.Physics.Arcade.Image;
-            b.setActive(false).setVisible(false);
-            if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
-            (cr as unknown as Crawler).takeDamage(1);
-            this.scene.audio.play('hit');
-            this.scene.spawnFloatingText(
-              (cr as Phaser.GameObjects.Sprite).x,
-              (cr as Phaser.GameObjects.Sprite).y - 40, '-1', '#ffffff',
-            );
-          },
-        );
+      this.scene.physics.add.overlap(
+        this.scene.playerBullets,
+        tank,
+        (_t, bullet) => {
+          const b = bullet as Phaser.Physics.Arcade.Image;
+          b.setActive(false).setVisible(false);
+          if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+          (_t as unknown as ShieldedTank).takeDamage(1);
+          this.scene.audio.play('hit');
+        },
+      );
 
-        this.scene.physics.add.overlap(
-          this.scene.missiles,
-          crawler,
-          (cr, missile) => {
-            const m = missile as Phaser.Physics.Arcade.Image;
-            m.setData('hitTarget', true);
-            m.setActive(false).setVisible(false);
-            if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-            this.scene.spawnExplosion(m.x, m.y);
-            (cr as unknown as Crawler).takeDamage(3);
-            this.scene.cameras.main.shake(150, 0.01);
-            this.scene.audio.play('explosion');
-            this.scene.spawnFloatingText(
-              (cr as Phaser.GameObjects.Sprite).x,
-              (cr as Phaser.GameObjects.Sprite).y - 40, '-3', '#ffff00',
-            );
-          },
-        );
-
-        this.dronesAlive++;
-        this.scene.events.emit('dronesRemaining', this.dronesAlive);
-      }
+      this.scene.physics.add.overlap(
+        this.scene.missiles,
+        tank,
+        (_t, missile) => {
+          const m = missile as Phaser.Physics.Arcade.Image;
+          m.setData('hitTarget', true);
+          m.setActive(false).setVisible(false);
+          if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+          this.scene.spawnExplosion(m.x, m.y);
+          (_t as unknown as ShieldedTank).takeDamage(3);
+          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.audio.play('explosion');
+        },
+      );
     }
   }
 }

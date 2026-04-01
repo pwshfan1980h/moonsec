@@ -26,7 +26,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
   private spawnX: number;
   private patrolDir: number;
   private fireTimer = FIRE_INTERVAL_1;
-  private shieldGfx: Phaser.GameObjects.Graphics;
+  private shieldGfx: Phaser.GameObjects.Graphics | null;
   private reticleGfx: Phaser.GameObjects.Graphics | null = null;
   private telegraphing = false;
 
@@ -181,6 +181,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
   }
 
   private flashShield(): void {
+    if (!this.shieldGfx) return;
     this.shieldGfx.setAlpha(1);
     this.scene.tweens.add({
       targets: this.shieldGfx,
@@ -192,6 +193,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
   }
 
   private drawShield(alpha: number): void {
+    if (!this.shieldGfx) return;
     this.shieldGfx.clear();
     const cx = this.x;
     const cy = this.y - 30;
@@ -216,7 +218,8 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
 
       case 'SHIELD_BREAK': {
         // Pop shield with a flash burst
-        this.shieldGfx.destroy();
+        this.shieldGfx?.destroy();
+        this.shieldGfx = null;
         this.scene.spawnExplosion(this.x, this.y - 30);
         this.scene.cameras.main.shake(180, 0.012);
         this.scene.audio.play('explosion');
@@ -245,7 +248,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
 
       case 'DEATH': {
         if (this.reticleGfx) { this.reticleGfx.destroy(); this.reticleGfx = null; }
-        this.shieldGfx.destroy();
+        if (this.shieldGfx) { this.shieldGfx.destroy(); this.shieldGfx = null; }
         const body = this.body as Phaser.Physics.Arcade.Body;
         body.setVelocity(0, 0);
         body.enable = false;
