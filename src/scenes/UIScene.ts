@@ -118,20 +118,22 @@ export class UIScene extends Phaser.Scene {
     this.naniteBg  = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x001a0d).setOrigin(0, 0);
     this.naniteBar = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x00ff88).setOrigin(0, 0);
 
-    // ── SUIT jetpack bar (pilot; hidden until ejected) ────────────
-    const sy = r2BarY + BAR_H2 + ROW_GAP;
+    // ── SUIT jetpack bar / Pilot pip (below left panel, hidden until ejected) ──
+    const panelBotY = PAD + panelH;    // 130 — bottom edge of left panel
+    const sy = panelBotY + 8;          // 138 — first row below panel
+
     this.suitLabel = this.add.text(barX, sy, 'SUIT', {
       fontFamily: 'monospace', fontSize: '13px', color: '#aaffaa',
     }).setVisible(false);
-    this.suitBg = this.add.rectangle(barX + BAR_W / 2, sy + 4, BAR_W, 6, 0x001100)
-      .setOrigin(0.5, 0.5).setVisible(false);
-    this.suitBar = this.add.rectangle(barX, sy, BAR_W, 6, 0x44ff44)
+    this.suitBg = this.add.rectangle(barX, sy + LABEL_H, BAR_W, BAR_H2, 0x001100)
+      .setOrigin(0, 0).setVisible(false);
+    this.suitBar = this.add.rectangle(barX, sy + LABEL_H, BAR_W, BAR_H2, 0x44ff44)
       .setOrigin(0, 0).setVisible(false);
 
-    // ── Pilot pip (hidden until ejected) ──────────────────────────
-    this.pilotPip = this.add.rectangle(barX, sy + 12, 6, 6, 0xff4444)
+    const pipY = sy + LABEL_H + BAR_H2 + 6;
+    this.pilotPip = this.add.rectangle(barX, pipY, 6, 6, 0xff4444)
       .setOrigin(0, 0).setVisible(false);
-    this.pilotPipLabel = this.add.text(barX + 10, sy + 10, 'PILOT', {
+    this.pilotPipLabel = this.add.text(barX + 10, pipY - 2, 'PILOT', {
       fontFamily: 'monospace', fontSize: '12px', color: '#ff4444',
     }).setVisible(false);
 
@@ -391,7 +393,7 @@ export class UIScene extends Phaser.Scene {
 
     if (pilotActive) {
       this.suitBar.setVisible(true);
-      this.suitBar.setDisplaySize(BAR_W * (game.pilot!.jetpackFuel / PILOT_JETPACK_MAX_FUEL), 6);
+      this.suitBar.setDisplaySize(BAR_W * (game.pilot!.jetpackFuel / PILOT_JETPACK_MAX_FUEL), BAR_H2);
     } else {
       this.suitBar.setVisible(false);
     }
