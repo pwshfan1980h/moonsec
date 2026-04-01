@@ -4,9 +4,13 @@ import type { GameScene } from './GameScene';
 import type { ProgressionSystem } from '../systems/ProgressionSystem';
 import { PILOT_JETPACK_MAX_FUEL, GAME_W, GAME_H } from '../constants';
 
-const BAR_W = 140;
-const BAR_H = 10;
-const PAD = 12;
+const BAR_W   = 200;   // bar width (was 140)
+const BAR_H   = 14;    // primary bar height: HP, MSL (was 10)
+const BAR_H2  = 10;    // secondary bar height: JP, Nanoheal, TRT (was 6)
+const PAD     = 12;
+const PP      = 10;    // panel internal padding
+const LABEL_H = 16;    // vertical space reserved for a label text row
+const ROW_GAP = 8;     // gap between bar bottom and next label
 
 export class UIScene extends Phaser.Scene {
   private healthFill!: Phaser.GameObjects.Rectangle;
