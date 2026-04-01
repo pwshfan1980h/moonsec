@@ -169,25 +169,25 @@ export class UIScene extends Phaser.Scene {
 
     // ── Score (top-center) ────────────────────────────────────────
     this.scoreText = this.add.text(W / 2, PAD, '0', {
-      fontFamily: 'monospace', fontSize: '20px', color: '#ffffff',
+      fontFamily: 'monospace', fontSize: '28px', color: '#ffffff',
       align: 'center',
     }).setOrigin(0.5, 0);
 
     // ── Persistent wave counter (below score) ─────────────────────
-    this.waveCounter = this.add.text(W / 2, PAD + 24, '', {
+    this.waveCounter = this.add.text(W / 2, PAD + 32, '', {
       fontFamily: 'monospace', fontSize: '12px', color: '#666688',
       align: 'center',
     }).setOrigin(0.5, 0);
 
     // ── Drones remaining counter (below wave counter) ──────────────
-    this.dronesRemainingText = this.add.text(W / 2, PAD + 40, '', {
+    this.dronesRemainingText = this.add.text(W / 2, PAD + 52, '', {
       fontFamily: 'monospace', fontSize: '13px', color: '#ff4444',
       align: 'center',
     }).setOrigin(0.5, 0).setAlpha(0);
 
     // ── Controls hint (bottom-left) ───────────────────────────────
     this.add.text(PAD, H - PAD, 'A/D move  SPACE jump/jetpack  LMB turret  RMB rapid  SHIFT missile  ESC pause', {
-      fontFamily: 'monospace', fontSize: '15px', color: '#556677',
+      fontFamily: 'monospace', fontSize: '18px', color: '#556677',
     }).setOrigin(0, 1);
 
     // ── Wave announcement (big, fades out) ────────────────────────
