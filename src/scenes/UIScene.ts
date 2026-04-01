@@ -35,6 +35,7 @@ export class UIScene extends Phaser.Scene {
   private naniteBg!:    Phaser.GameObjects.Rectangle;
   private naniteLabel!: Phaser.GameObjects.Text;
   private naniteActive = false;
+  private healthValueText!: Phaser.GameObjects.Text;
   private levelCompleteActive = false;
   private nanitePulseTween: Phaser.Tweens.Tween | null = null;
 
@@ -72,52 +73,67 @@ export class UIScene extends Phaser.Scene {
     this.currentScore = 0;
     this.lastHp = 0;
 
-    // ── Health bar (top-left) ──────────────────────────────────────
-    const hx = PAD;
-    const hy = PAD;
+    // ── LEFT STAT PANEL (top-left) ────────────────────────────────
+    // Vertical rhythm — same offsets reused by the right panel
+    const panelX = PAD;                               // 12
+    const barX   = panelX + PP;                       // 22
 
-    this.healthLabel = this.add.text(hx, hy, 'HP', {
+    const r0LblY = PAD + PP;                          // 22  — row 0 label (HP / MSL)
+    const r0BarY = r0LblY + LABEL_H;                  // 38  — row 0 bar
+    const r1LblY = r0BarY + BAR_H + ROW_GAP;          // 60  — row 1 label (JP / TRT)
+    const r1BarY = r1LblY + LABEL_H;                  // 76  — row 1 bar
+    const r2LblY = r1BarY + BAR_H2 + ROW_GAP;         // 94  — row 2 label (Nanoheal)
+    const r2BarY = r2LblY + LABEL_H;                  // 110 — row 2 bar
+
+    const panelW = PP + BAR_W + PP;                   // 220
+    const panelH = r2BarY + BAR_H2 + PP - PAD;        // 118
+
+    const leftPanel = this.add.graphics();
+    leftPanel.fillStyle(0x000812, 0.85);
+    leftPanel.fillRect(panelX, PAD, panelW, panelH);
+    leftPanel.lineStyle(1, 0x1a3d5a, 0.8);
+    leftPanel.strokeRect(panelX, PAD, panelW, panelH);
+
+    // HP row
+    this.healthLabel = this.add.text(barX, r0LblY, 'HP', {
       fontFamily: 'monospace', fontSize: '13px', color: '#ff4444',
     });
-    this.healthBg   = this.add.rectangle(hx + BAR_W / 2 + 22, hy + 4, BAR_W, BAR_H, 0x330000).setOrigin(0.5, 0.5);
-    this.healthFill = this.add.rectangle(hx + 22, hy, BAR_W, BAR_H, 0xff2222).setOrigin(0, 0);
-    // border
-    this.add.image(hx + 22 - 20, hy - 4, 'hud-bracket').setOrigin(0, 0).setDepth(1);
+    this.healthValueText = this.add.text(barX + BAR_W, r0LblY, '', {
+      fontFamily: 'monospace', fontSize: '11px', color: '#ff4444',
+    }).setOrigin(1, 0);
+    this.healthBg   = this.add.rectangle(barX, r0BarY, BAR_W, BAR_H, 0x330000).setOrigin(0, 0);
+    this.healthFill = this.add.rectangle(barX, r0BarY, BAR_W, BAR_H, 0xff2222).setOrigin(0, 0);
 
-    // ── Jetpack fuel (small bar below health) ─────────────────────
-    const jy = hy + 18;
-    this.add.text(hx, jy, 'JP', {
+    // JP row
+    this.add.text(barX, r1LblY, 'JETPACK', {
       fontFamily: 'monospace', fontSize: '13px', color: '#44aaff',
     });
-    this.add.rectangle(hx + BAR_W / 2 + 22, jy + 4, BAR_W, 6, 0x001133).setOrigin(0.5, 0.5);
-    this.jetpackBar = this.add.rectangle(hx + 22, jy, BAR_W, 6, 0x2299ff).setOrigin(0, 0);
+    this.add.rectangle(barX, r1BarY, BAR_W, BAR_H2, 0x001133).setOrigin(0, 0);
+    this.jetpackBar = this.add.rectangle(barX, r1BarY, BAR_W, BAR_H2, 0x2299ff).setOrigin(0, 0);
+
+    // Nanoheal row
+    this.naniteLabel = this.add.text(barX, r2LblY, 'NANOHEAL', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#00cc66',
+    });
+    this.naniteBg  = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x001a0d).setOrigin(0, 0);
+    this.naniteBar = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x00ff88).setOrigin(0, 0);
 
     // ── SUIT jetpack bar (pilot; hidden until ejected) ────────────
-    const sy = jy + 14;
-    this.suitLabel = this.add.text(hx, sy, 'SUIT', {
+    const sy = r2BarY + BAR_H2 + ROW_GAP;
+    this.suitLabel = this.add.text(barX, sy, 'SUIT', {
       fontFamily: 'monospace', fontSize: '13px', color: '#aaffaa',
     }).setVisible(false);
-    this.suitBg = this.add.rectangle(hx + BAR_W / 2 + 22, sy + 4, BAR_W, 6, 0x001100)
+    this.suitBg = this.add.rectangle(barX + BAR_W / 2, sy + 4, BAR_W, 6, 0x001100)
       .setOrigin(0.5, 0.5).setVisible(false);
-    this.suitBar = this.add.rectangle(hx + 22, sy, BAR_W, 6, 0x44ff44)
+    this.suitBar = this.add.rectangle(barX, sy, BAR_W, 6, 0x44ff44)
       .setOrigin(0, 0).setVisible(false);
 
     // ── Pilot pip (hidden until ejected) ──────────────────────────
-    this.pilotPip = this.add.rectangle(hx, sy + 12, 6, 6, 0xff4444)
+    this.pilotPip = this.add.rectangle(barX, sy + 12, 6, 6, 0xff4444)
       .setOrigin(0, 0).setVisible(false);
-    this.pilotPipLabel = this.add.text(hx + 10, sy + 10, 'PILOT', {
+    this.pilotPipLabel = this.add.text(barX + 10, sy + 10, 'PILOT', {
       fontFamily: 'monospace', fontSize: '12px', color: '#ff4444',
     }).setVisible(false);
-
-    // ── Nanite (NNT) bar ──────────────────────────────────────────
-    // Sits below the pilot pip block (sy + 12 for pip + 6 pip height + 8 gap = sy + 26)
-    const nx = PAD;
-    const ny = sy + 26;
-    this.naniteLabel = this.add.text(nx, ny, 'NANOHEAL', {
-      fontFamily: 'monospace', fontSize: '13px', color: '#00cc66',
-    });
-    this.naniteBg  = this.add.rectangle(nx + BAR_W / 2 + 22, ny + 4, BAR_W, 6, 0x001a0d).setOrigin(0.5, 0.5);
-    this.naniteBar = this.add.rectangle(nx + 22, ny, BAR_W, 6, 0x00ff88).setOrigin(0, 0);
 
     // ── Missile cooldown bar (top-right) ──────────────────────────
     const mx = W - BAR_W - PAD - 22;
@@ -184,11 +200,11 @@ export class UIScene extends Phaser.Scene {
 
     game.events.on('healthChange', (hp: number, maxHp: number) => {
       this.healthFill.setDisplaySize(BAR_W * (hp / maxHp), BAR_H);
+      this.healthValueText.setText(`${hp} / ${maxHp}`);
       if (!this.naniteActive) {
         const t = hp / maxHp;
         this.healthFill.setFillStyle(t > 0.5 ? 0xff2222 : t > 0.25 ? 0xff8800 : 0xff0000);
       }
-      // Screen-edge flash on damage
       if (hp < this.lastHp) {
         this.cameras.main.flash(200, 220, 30, 30, false);
       }
@@ -218,7 +234,7 @@ export class UIScene extends Phaser.Scene {
     });
 
     game.events.on('jetpackFuel', (fuel: number, max: number) => {
-      this.jetpackBar.setDisplaySize(BAR_W * (fuel / max), 6);
+      this.jetpackBar.setDisplaySize(BAR_W * (fuel / max), BAR_H2);
     });
 
     game.events.on('naniteChange', (state: string, progress: number) => {
@@ -431,7 +447,7 @@ export class UIScene extends Phaser.Scene {
     if (state === 'active') {
       this.naniteActive = true;
       this.healthFill.setFillStyle(0x00ff88);
-      this.naniteBar.setDisplaySize(BAR_W, 6);
+      this.naniteBar.setDisplaySize(BAR_W, BAR_H2);
       this.naniteBar.setFillStyle(0x00ff88);
       if (!this.nanitePulseTween) {
         this.nanitePulseTween = this.tweens.add({
@@ -456,7 +472,7 @@ export class UIScene extends Phaser.Scene {
         this.nanitePulseTween = null;
       }
       this.naniteBar.setAlpha(1);
-      this.naniteBar.setDisplaySize(BAR_W * progress, 6);
+      this.naniteBar.setDisplaySize(BAR_W * progress, BAR_H2);
       this.naniteBar.setFillStyle(0x003311);
     } else if (state === 'ready') {
       this.naniteActive = false;
@@ -465,7 +481,7 @@ export class UIScene extends Phaser.Scene {
         this.nanitePulseTween = null;
       }
       this.naniteBar.setAlpha(1);
-      this.naniteBar.setDisplaySize(BAR_W, 6);
+      this.naniteBar.setDisplaySize(BAR_W, BAR_H2);
       this.naniteBar.setFillStyle(0x00ff88);
     }
   }
