@@ -18,6 +18,7 @@ export class UIScene extends Phaser.Scene {
   private missileBar!: Phaser.GameObjects.Rectangle;
   private missileBg!: Phaser.GameObjects.Rectangle;
   private missileLabel!: Phaser.GameObjects.Text;
+  private missileStateLabel!: Phaser.GameObjects.Text;
   private healthLabel!: Phaser.GameObjects.Text;
   private jetpackBar!: Phaser.GameObjects.Rectangle;
   private waveText!: Phaser.GameObjects.Text;
@@ -137,28 +138,34 @@ export class UIScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '12px', color: '#ff4444',
     }).setVisible(false);
 
-    // ── Missile cooldown bar (top-right) ──────────────────────────
-    const mx = W - BAR_W - PAD - 22;
-    const my = PAD;
+    // ── RIGHT STAT PANEL (top-right) ──────────────────────────────
+    // Reuses r0LblY, r0BarY, r1LblY, r1BarY from the left-panel block above
+    const panelRX     = W - PAD - panelW;             // 1688
+    const barRX       = panelRX + PP;                 // 1698
+    const rightPanelH = r1BarY + BAR_H2 + PP - PAD;  // 84  (2 rows: MSL + TRT)
 
-    this.missileLabel = this.add.text(W - PAD, my, 'MSL', {
+    const rightPanel = this.add.graphics();
+    rightPanel.fillStyle(0x000812, 0.85);
+    rightPanel.fillRect(panelRX, PAD, panelW, rightPanelH);
+    rightPanel.lineStyle(1, 0x1a3d5a, 0.8);
+    rightPanel.strokeRect(panelRX, PAD, panelW, rightPanelH);
+
+    // MSL row
+    this.missileLabel = this.add.text(barRX, r0LblY, 'MISSILE', {
       fontFamily: 'monospace', fontSize: '13px', color: '#ffff44',
-      align: 'right',
+    });
+    this.missileStateLabel = this.add.text(barRX + BAR_W, r0LblY, 'READY', {
+      fontFamily: 'monospace', fontSize: '11px', color: '#00ffff',
     }).setOrigin(1, 0);
+    this.missileBg  = this.add.rectangle(barRX, r0BarY, BAR_W, BAR_H, 0x333300).setOrigin(0, 0);
+    this.missileBar = this.add.rectangle(barRX, r0BarY, BAR_W, BAR_H, 0xffff00).setOrigin(0, 0);
 
-    this.missileBg   = this.add.rectangle(mx + BAR_W / 2, my + 4, BAR_W, BAR_H, 0x333300).setOrigin(0.5, 0.5);
-    this.missileBar  = this.add.rectangle(mx, my, BAR_W, BAR_H, 0xffff00).setOrigin(0, 0);
-    this.add.image(mx - 20, my - 4, 'hud-bracket').setOrigin(0, 0).setDepth(1);
-
-    // ── Turret cooldown bar (below missile) ───────────────────────
-    const ty = my + 18;
-    this.turretLabel = this.add.text(W - PAD, ty, 'TRT', {
+    // TRT row
+    this.turretLabel = this.add.text(barRX, r1LblY, 'TURRET', {
       fontFamily: 'monospace', fontSize: '13px', color: '#ff8844',
-      align: 'right',
-    }).setOrigin(1, 0);
-    this.turretBg = this.add.rectangle(mx + BAR_W / 2, ty + 4, BAR_W, 6, 0x331100).setOrigin(0.5, 0.5);
-    this.turretBar = this.add.rectangle(mx, ty, BAR_W, 6, 0xff6600).setOrigin(0, 0);
-    this.add.image(mx - 20, ty - 6, 'hud-bracket').setOrigin(0, 0).setDepth(1).setAlpha(0.6);
+    });
+    this.turretBg  = this.add.rectangle(barRX, r1BarY, BAR_W, BAR_H2, 0x331100).setOrigin(0, 0);
+    this.turretBar = this.add.rectangle(barRX, r1BarY, BAR_W, BAR_H2, 0xff6600).setOrigin(0, 0);
 
     // ── Score (top-center) ────────────────────────────────────────
     this.scoreText = this.add.text(W / 2, PAD, '0', {
@@ -218,14 +225,16 @@ export class UIScene extends Phaser.Scene {
       if (progress >= 1) {
         this.missileBar.setFillStyle(0x00ffff);
         this.missileLabel.setColor('#00ffff');
+        this.missileStateLabel.setText('READY').setColor('#00ffff');
       } else {
         this.missileBar.setFillStyle(0xffff00);
         this.missileLabel.setColor('#888844');
+        this.missileStateLabel.setText('recharging').setColor('#554400');
       }
     });
 
     game.events.on('turretCooldown', (progress: number) => {
-      this.turretBar.setDisplaySize(BAR_W * progress, 6);
+      this.turretBar.setDisplaySize(BAR_W * progress, BAR_H2);
       if (progress >= 1) {
         this.turretBar.setFillStyle(0xff8844);
         this.turretLabel.setColor('#ff8844');
@@ -403,6 +412,7 @@ export class UIScene extends Phaser.Scene {
     this.missileBar.setAlpha(weaponAlpha);
     this.missileBg.setAlpha(weaponAlpha);
     this.missileLabel.setAlpha(weaponAlpha);
+    this.missileStateLabel.setAlpha(weaponAlpha);
     this.turretBar.setAlpha(weaponAlpha);
     this.turretBg.setAlpha(weaponAlpha);
     this.turretLabel.setAlpha(weaponAlpha);
