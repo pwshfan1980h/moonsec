@@ -110,6 +110,7 @@ export class MinimapRenderer {
     game.drones.getChildren().forEach((go) => {
       const drone = go as unknown as Drone;
       if (!drone.active) return;
+      if (typeof drone.getState !== 'function') return;
 
       const worldDist = Phaser.Math.Distance.Between(px, py, drone.x, drone.y);
       if (worldDist > RADAR_WORLD_RADIUS) return;
