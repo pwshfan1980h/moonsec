@@ -53,6 +53,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jetpackFuel = 0;
   private hurtLock = 0;
   private dead = false;
+  private naniteBurstActive = false;
+  private overloadActive    = false;
+  private regenFieldWaves   = 0;
+  private lastLeftTap       = 0;
+  private lastRightTap      = 0;
+  private dashCooldown      = 0;
   piloting = true;
 
   private wasAirborne = false;
@@ -204,7 +210,48 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         this.naniteHealStart = this.hp;
         this.startNaniteParticles();
         this.scene.audio.play('nanite-heal');
+        if (this.hasNaniteBurst) {
+          this.naniteBurstActive = true;
+          this.scene.time.delayedCall(1000, () => { this.naniteBurstActive = false; });
+        }
       }
+    });
+
+    // Air dash — double-tap direction while airborne
+    const registerDash = (key: Phaser.Input.Keyboard.Key, dir: -1 | 1) => {
+      key.on('down', () => {
+        if (!this.hasAirDash || this.onGround || this.dashCooldown > 0) return;
+        const now = this.scene.time.now;
+        const lastTap = dir === -1 ? this.lastLeftTap : this.lastRightTap;
+        if (now - lastTap < 250) {
+          (this.body as Phaser.Physics.Arcade.Body).setVelocityX(dir * 620);
+          this.dashCooldown = 800;
+        }
+        if (dir === -1) this.lastLeftTap = now; else this.lastRightTap = now;
+      });
+    };
+    registerDash(this.keyA, -1);
+    registerDash(this.keyD, 1);
+    registerDash(this.cursors.left as Phaser.Input.Keyboard.Key, -1);
+    registerDash(this.cursors.right as Phaser.Input.Keyboard.Key, 1);
+
+    // Overload — 2s invincibility on 10-kill streak
+    scene.events.on('killStreak', (count: number) => {
+      if (!this.hasOverload || count !== 10) return;
+      this.overloadActive = true;
+      this.setTint(0xffff00);
+      this.scene.cameras.main.flash(200, 255, 255, 0, false);
+      this.scene.time.delayedCall(2000, () => {
+        this.overloadActive = false;
+        if (!this.dead) this.clearTint();
+      });
+    });
+
+    // Regen Field — +1 HP every 2 waves cleared
+    scene.events.on('waveCleared', () => {
+      if (!this.hasRegenField) return;
+      this.regenFieldWaves++;
+      if (this.regenFieldWaves % 2 === 0) this.heal(1);
     });
   }
 
@@ -276,6 +323,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jetpackOuter.emitting = jetpackActive;
     this.jetpackSmoke.setPosition(thrustX, thrustY);
     this.jetpackSmoke.emitting = jetpackActive;
+
+    // Grav boost: halve effective gravity while jetting
+    body.setGravityY(jetpackActive && this.hasGravBoost ? -300 : 0);
+
+    // --- Dash cooldown ---
+    if (this.dashCooldown > 0) this.dashCooldown -= delta;
 
     // --- Hurt timeout ---
     if (this.hurtLock > 0) {
@@ -423,6 +476,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.damageShield = false;
       return; // absorb one hit
     }
+    if (this.naniteBurstActive || this.overloadActive) return; // temporary invincibility
     if (this.naniteActive) {
       this.naniteActive = false;
       this.naniteCooldown = this.naniteCooldownMs;
