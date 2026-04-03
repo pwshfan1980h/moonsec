@@ -56,6 +56,7 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
     body.setAllowGravity(false);
     body.setSize(28, 22, true);
     body.setCollideWorldBounds(true);
+    // Caller must invoke initBody() after add.existing + physics.add.existing — timer starts from that point
     this.scene.time.delayedCall(INTRO_DELAY_MS, () => this.startLineTimer());
   }
 
@@ -128,31 +129,29 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
       c1 = this.scene.physics.add.overlap(
         this.scene.playerBullets,
         ld,
-        (_ld, bullet) => {
+        (_bullet_ld, bullet) => {
           const b = bullet as Phaser.Physics.Arcade.Image;
           b.setActive(false).setVisible(false);
           if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
-          (_ld as unknown as LineDrone).die();
-          c1.destroy();
-          c2.destroy();
+          ld.die();
         },
       );
 
       c2 = this.scene.physics.add.overlap(
         this.scene.missiles,
         ld,
-        (_ld, missile) => {
+        (_missile_ld, missile) => {
           const m = missile as Phaser.Physics.Arcade.Image;
           m.setData('hitTarget', true);
           m.setActive(false).setVisible(false);
           if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
           this.scene.spawnExplosion(m.x, m.y);
           this.scene.audio.play('explosion');
-          (_ld as unknown as LineDrone).die();
-          c1.destroy();
-          c2.destroy();
+          ld.die();
         },
       );
+
+      ld.registerColliders(c1, c2);
     }
 
     // Decrement activeLines once the last drone has cleared the screen
@@ -193,6 +192,7 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
     if (this.bossState === 'SPAWN_LINE') return 'ATTACK';
     if (this.bossState === 'HURT')       return 'HURT';
     if (this.bossState === 'DEATH')      return 'DEATH';
+    // DRIFT and REPOSITION both appear as HOVER on the minimap — no separate indicator needed
     return 'HOVER';
   }
 
