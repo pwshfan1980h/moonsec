@@ -21,6 +21,7 @@ export class GameScene extends Phaser.Scene {
   drones!: Phaser.Physics.Arcade.Group;
   crawlers!: Phaser.Physics.Arcade.Group;
   pickups!: Phaser.Physics.Arcade.Group;
+  bossProjectiles!: Phaser.Physics.Arcade.Group;
   audio!: AudioSystem;
   private music: MusicSystem | null = null;
   score = 0;
