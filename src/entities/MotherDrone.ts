@@ -14,6 +14,8 @@ const REPOSITION_MS      = 600;
 const REPOSITION_DIST    = 300;
 const LINE_DRONE_SPEED   = 400;  // px/s — crosses 1920px screen in ~4.8s
 const LINE_DRONE_SPACING = 90;
+const LINE_Y_OFFSET      = 85;   // px below MotherDrone centre for line spawn row
+const INTRO_DELAY_MS     = 1500; // ms before first line timer starts
 
 interface LineConfig {
   spawnInterval:     number;
@@ -54,7 +56,7 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
     body.setAllowGravity(false);
     body.setSize(28, 22, true);
     body.setCollideWorldBounds(true);
-    this.scene.time.delayedCall(1500, () => this.startLineTimer());
+    this.scene.time.delayedCall(INTRO_DELAY_MS, () => this.startLineTimer());
   }
 
   // ── Ramp-up ──────────────────────────────────────────────────────────────────
@@ -108,7 +110,7 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
     const startX = dir > 0
       ? cam.scrollX - LINE_DRONE_SPACING * cfg.dronesPerLine
       : cam.scrollX + GAME_W + LINE_DRONE_SPACING * cfg.dronesPerLine;
-    const lineY = this.y + 85;
+    const lineY = this.y + LINE_Y_OFFSET;
 
     this.activeLines++;
 
@@ -131,7 +133,6 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
           b.setActive(false).setVisible(false);
           if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
           (_ld as unknown as LineDrone).die();
-          this.scene.audio.play('hit');
           c1.destroy();
           c2.destroy();
         },
@@ -232,7 +233,7 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
 
       case 'HURT':
         this.setTint(0xff8888);
-        body.setVelocityX(0);
+        body.setVelocity(0, 0);
         this.scene.audio.playAt('hurt', { rate: 0.5, detune: -300, volume: 0.8 });
         this.scene.cameras.main.shake(200, 0.015);
         this.scene.time.delayedCall(HURT_MS, () => {
@@ -256,7 +257,7 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
           duration: REPOSITION_MS,
           ease: 'Quad.easeOut',
           onComplete: () => {
-            if (this.bossState !== 'DEATH') this.setState('SPAWN_LINE');
+            if (this.bossState !== 'DEATH') this.setBossState('SPAWN_LINE');
           },
         });
         break;
