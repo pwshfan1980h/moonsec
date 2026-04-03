@@ -127,15 +127,26 @@ export class MinimapRenderer {
       const screenDist = Phaser.Math.Distance.Between(dp.x, dp.y, RADAR_X, RADAR_Y);
       if (screenDist > R) return;
 
-      // Blip size pulses when attacking
       const state = drone.getState();
-      const dotR = state === 'ATTACK'
-        ? 2.5 + Math.sin(time * 0.012) * 1.5
-        : 3;
 
-      const color = drone.texture.key === 'drone-red' ? 0xff4444 : 0x44ff88;
-      gfx.fillStyle(color, 1);
-      gfx.fillCircle(dp.x, dp.y, dotR);
+      // Boss renders as three pulsing concentric rings — stands out from drone dots
+      if ((drone as unknown as { isBoss?: boolean }).isBoss) {
+        const r = 6 + Math.sin(time * 0.008) * 2;
+        gfx.lineStyle(2, 0xff4444, 0.9);
+        gfx.strokeCircle(dp.x, dp.y, r);
+        gfx.lineStyle(1, 0xff4444, 0.5);
+        gfx.strokeCircle(dp.x, dp.y, r + 6);
+        gfx.lineStyle(0.5, 0xff4444, 0.2);
+        gfx.strokeCircle(dp.x, dp.y, r + 12);
+      } else {
+        // Blip size pulses when attacking
+        const dotR = state === 'ATTACK'
+          ? 2.5 + Math.sin(time * 0.012) * 1.5
+          : 3;
+        const color = drone.texture.key === 'drone-red' ? 0xff4444 : 0x44ff88;
+        gfx.fillStyle(color, 1);
+        gfx.fillCircle(dp.x, dp.y, dotR);
+      }
 
       // Missile lock: cyan diamond outline over the lock target
       if (drone === lockTarget) {
