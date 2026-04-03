@@ -117,6 +117,15 @@ export class GameScene extends Phaser.Scene {
     fg.generateTexture('pickup-fuel', 14, 14);
     fg.destroy();
 
+    // Boss projectile — large orange orb
+    const bpg = this.add.graphics();
+    bpg.fillStyle(0xff6600, 0.9);
+    bpg.fillCircle(16, 16, 16);
+    bpg.fillStyle(0xffaa44, 0.6);
+    bpg.fillCircle(16, 16, 9);
+    bpg.generateTexture('boss-projectile', 32, 32);
+    bpg.destroy();
+
     if (this.currentLevel === 2) {
       this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
       this.makeBackgroundL2();
@@ -169,6 +178,13 @@ export class GameScene extends Phaser.Scene {
 
     this.pickups = this.physics.add.group({
       maxSize: 20,
+      runChildUpdate: false,
+      allowGravity: false,
+    });
+
+    this.bossProjectiles = this.physics.add.group({
+      defaultKey: 'boss-projectile',
+      maxSize: 10,
       runChildUpdate: false,
       allowGravity: false,
     });
@@ -250,6 +266,52 @@ export class GameScene extends Phaser.Scene {
           this.player.restoreJetpackFuel(1000);
         }
         this.audio.play('pickup');
+      },
+    );
+
+    // Player bullets destroy boss projectiles
+    this.physics.add.overlap(
+      this.playerBullets,
+      this.bossProjectiles,
+      (_proj, bullet) => {
+        const b = bullet as Phaser.Physics.Arcade.Image;
+        b.setActive(false).setVisible(false);
+        if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+        const p = _proj as Phaser.Physics.Arcade.Image;
+        p.setActive(false).setVisible(false);
+        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
+        this.audio.play('hit');
+      },
+    );
+
+    // Boss projectiles hit player
+    this.physics.add.overlap(
+      this.bossProjectiles,
+      this.player,
+      (projObj, playerObj) => {
+        const p = projObj as Phaser.Physics.Arcade.Image;
+        if (!p.active) return;
+        p.setActive(false).setVisible(false);
+        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
+        (playerObj as Player).takeDamage(1);
+        this.cameras.main.shake(100, 0.008);
+      },
+    );
+
+    // Missiles are intercepted by boss projectiles
+    this.physics.add.overlap(
+      this.missiles,
+      this.bossProjectiles,
+      (projObj, missile) => {
+        const m = missile as Phaser.Physics.Arcade.Image;
+        m.setData('hitTarget', true);
+        m.setActive(false).setVisible(false);
+        if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+        const p = projObj as Phaser.Physics.Arcade.Image;
+        p.setActive(false).setVisible(false);
+        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
+        this.spawnExplosion(m.x, m.y);
+        this.audio.play('explosion');
       },
     );
 
