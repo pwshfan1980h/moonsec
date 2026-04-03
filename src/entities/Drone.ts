@@ -205,6 +205,9 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
       case 'ATTACK':
       case 'FLEE':
         this.play(`${this.droneType}-attack`);
+        if (newState === 'ATTACK') {
+          this.scene.debugLog?.log('[DRONE] ' + this.droneType + (this.droneVariant === 'sniper' ? '/sniper' : '') + ' → ATTACK');
+        }
         break;
       case 'HURT': {
         this.play(`${this.droneType}-hurt`);

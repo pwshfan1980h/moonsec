@@ -215,6 +215,7 @@ export class MotherDrone extends Phaser.Physics.Arcade.Sprite {
   private setBossState(newState: MotherState): void {
     if (this.bossState === 'DEATH') return;
     this.bossState = newState;
+    this.scene.debugLog?.log('[BOSS] MotherDrone → ' + newState + '  hp=' + this.hp);
     const body = this.body as Phaser.Physics.Arcade.Body;
 
     switch (newState) {

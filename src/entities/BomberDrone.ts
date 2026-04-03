@@ -59,6 +59,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
 
   private startTelegraph(): void {
     this.groundY = this.scene.getApproxGroundY();
+    this.scene.debugLog?.log('[BOMB] armed @ x=' + Math.round(this.targetX));
     this.marker = this.scene.add.graphics();
     this.marker.setDepth(15);
     this.drawMarker(1.0);
@@ -112,6 +113,8 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
 
   private drop(): void {
     this.cleanupMarker();
+    const target2 = this.scene.getPilotOrPlayer();
+    this.scene.debugLog?.log('[BOMB] drop — in range: ' + (Math.abs(target2.x - this.targetX) < BOMB_RADIUS));
 
     // Three staggered explosions at drop zone
     const offsets = [{ x: 0, y: -20 }, { x: -28, y: -45 }, { x: 28, y: -45 }];

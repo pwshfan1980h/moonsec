@@ -11,6 +11,7 @@ import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
 import { CARD_POOL } from '../data/upgradeCards';
 import { buildLevel1Map } from '../data/levelData';
+import { DebugLog } from '../systems/DebugLog';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -22,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   crawlers!: Phaser.Physics.Arcade.Group;
   pickups!: Phaser.Physics.Arcade.Group;
   bossProjectiles!: Phaser.Physics.Arcade.Group;
+  debugLog?: DebugLog;
   audio!: AudioSystem;
   private music: MusicSystem | null = null;
   score = 0;
@@ -63,6 +65,8 @@ export class GameScene extends Phaser.Scene {
     this.pilotBulletOverlap  = null;
     this.isBossDead      = false;
     this.bgHaze          = undefined;
+    this.debugLog?.destroy();
+    this.debugLog        = undefined;
     this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
 
@@ -92,6 +96,10 @@ export class GameScene extends Phaser.Scene {
     const kb = this.input.keyboard!;
     this.cursors  = kb.createCursorKeys();
     this.spaceKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Debug log — toggle with backtick (`)
+    this.debugLog = new DebugLog(this);
+    kb.addKey(Phaser.Input.Keyboard.KeyCodes.BACKTICK).on('down', () => this.debugLog?.toggle());
 
     // Pilot sphere placeholder texture
     const g = this.add.graphics();

@@ -71,6 +71,7 @@ export class DroneSpawner {
     this.spawning = true;
     this.waveIndex++;
     this.scene.events.emit('waveStart', this.waveIndex);
+    this.scene.debugLog?.log('[WAVE] Wave ' + this.waveIndex + ' start (L' + ((this.scene.registry.get('currentLevel') as number) ?? 1) + ')');
 
     const currentLevel = (this.scene.registry.get('currentLevel') as number) ?? 1;
     const bossWave     = currentLevel === 3 ? BOSS_WAVE_L3
@@ -104,6 +105,7 @@ export class DroneSpawner {
         this.scene.physics.add.existing(boss);
         this.scene.drones.add(boss);
         boss.initBody();
+        this.scene.debugLog?.log('[BOSS] MotherDrone spawned — missiles only');
 
         // Only missiles damage her — no playerBullets overlap registered
         this.scene.physics.add.overlap(
@@ -138,6 +140,7 @@ export class DroneSpawner {
       this.scene.physics.add.existing(boss);
       this.scene.drones.add(boss);
       boss.initBody(); // must come after drones.add() — group.add() resets body defaults
+      this.scene.debugLog?.log('[BOSS] NexusBoss spawned (L' + currentLevel + ')');
 
       // Register bullet overlaps for boss
       this.scene.physics.add.overlap(
