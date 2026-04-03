@@ -47,6 +47,8 @@ export const MAX_WAVES_L2     = 3;
 export const BOSS_WAVE_L2     = 3;
 export const L2_SPEED_MULT    = 1.2;
 export const L2_INTERVAL_MULT = 0.85;
+export const MAX_WAVES_L3     = 3;
+export const BOSS_WAVE_L3     = 3;
 
 export const MECH_STATS: Record<string, {
   maxHp: number;
