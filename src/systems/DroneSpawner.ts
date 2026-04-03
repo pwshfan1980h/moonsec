@@ -3,11 +3,12 @@ import type { GameScene } from '../scenes/GameScene';
 import { Drone } from '../entities/Drone';
 import { ShieldedTank } from '../entities/ShieldedTank';
 import { NexusBoss } from '../entities/NexusBoss';
+import { MotherDrone } from '../entities/MotherDrone';
 import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
 import { Mine } from '../entities/Mine';
 import type { DroneVariant, DroneType } from '../entities/Drone';
-import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, L2_SPEED_MULT, L2_INTERVAL_MULT, GAME_W, GAME_H, PATROL_LANES } from '../constants';
+import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, BOSS_WAVE_L3, L2_SPEED_MULT, L2_INTERVAL_MULT, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 
 export interface DroneScaling {
   attackSpeed: number;
@@ -51,7 +52,9 @@ export class DroneSpawner {
 
   isBossWave(): boolean {
     const currentLevel = (this.scene.registry.get('currentLevel') as number) ?? 1;
-    const bossWave = currentLevel === 2 ? BOSS_WAVE_L2 : BOSS_WAVE_L1;
+    const bossWave = currentLevel === 3 ? BOSS_WAVE_L3
+                   : currentLevel === 2 ? BOSS_WAVE_L2
+                   : BOSS_WAVE_L1;
     return this.waveIndex >= bossWave;
   }
 
@@ -70,7 +73,9 @@ export class DroneSpawner {
     this.scene.events.emit('waveStart', this.waveIndex);
 
     const currentLevel = (this.scene.registry.get('currentLevel') as number) ?? 1;
-    const bossWave     = currentLevel === 2 ? BOSS_WAVE_L2 : BOSS_WAVE_L1;
+    const bossWave     = currentLevel === 3 ? BOSS_WAVE_L3
+                       : currentLevel === 2 ? BOSS_WAVE_L2
+                       : BOSS_WAVE_L1;
 
     // Determine bracket
     let bracket = WAVE_BRACKETS[0];
@@ -87,10 +92,46 @@ export class DroneSpawner {
       };
     }
 
-    // Boss wave — spawn NexusBoss instead of regular drones
+    // Boss wave — spawn boss instead of regular drones
     if (this.waveIndex === bossWave) {
       this.spawning = false;
       const camCentreX = this.scene.cameras.main.scrollX + GAME_W / 2;
+
+      // ── Level 3: Mother Drone ────────────────────────────────────────────────
+      if (currentLevel === 3) {
+        const boss = new MotherDrone(this.scene, camCentreX, 180, bracket);
+        this.scene.add.existing(boss);
+        this.scene.physics.add.existing(boss);
+        this.scene.drones.add(boss);
+        boss.initBody();
+
+        // Only missiles damage her — no playerBullets overlap registered
+        this.scene.physics.add.overlap(
+          this.scene.missiles,
+          boss,
+          (b, missile) => {
+            const m = missile as Phaser.Physics.Arcade.Image;
+            m.setData('hitTarget', true);
+            m.setActive(false).setVisible(false);
+            if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+            this.scene.spawnExplosion(m.x, m.y);
+            (b as unknown as MotherDrone).takeDamage(1);
+            this.scene.cameras.main.shake(200, 0.015);
+            this.scene.audio.play('explosion');
+            this.scene.spawnFloatingText(
+              (b as Phaser.GameObjects.Sprite).x,
+              (b as Phaser.GameObjects.Sprite).y - 30,
+              '-1', '#ffaa44',
+            );
+          },
+        );
+
+        this.dronesAlive++;
+        this.scene.events.emit('dronesRemaining', this.dronesAlive);
+        return;
+      }
+
+      // ── Level 1 / 2: NexusBoss ───────────────────────────────────────────────
       const spawnY     = currentLevel === 2 ? 200 : 180;
       const boss = new NexusBoss(this.scene, camCentreX, spawnY, bracket, currentLevel);
       this.scene.add.existing(boss);
