@@ -8,7 +8,7 @@ import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
 import { Mine } from '../entities/Mine';
 import type { DroneVariant, DroneType } from '../entities/Drone';
-import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, BOSS_WAVE_L3, L2_SPEED_MULT, L2_INTERVAL_MULT, GAME_W, GAME_H, PATROL_LANES } from '../constants';
+import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, BOSS_WAVE_L3, L2_SPEED_MULT, L2_INTERVAL_MULT, L3_SPEED_MULT, L3_INTERVAL_MULT, L3_ENCOUNTER_SIZE, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 
 export interface DroneScaling {
   attackSpeed: number;
@@ -90,6 +90,15 @@ export class DroneSpawner {
         ...bracket,
         attackSpeed:   Math.round(bracket.attackSpeed   * L2_SPEED_MULT),
         shootInterval: Math.round(bracket.shootInterval * L2_INTERVAL_MULT),
+      };
+    }
+
+    // Apply L3 difficulty multiplier — faster, more aggressive
+    if (currentLevel === 3) {
+      bracket = {
+        ...bracket,
+        attackSpeed:   Math.round(bracket.attackSpeed   * L3_SPEED_MULT),
+        shootInterval: Math.round(bracket.shootInterval * L3_INTERVAL_MULT),
       };
     }
 
@@ -176,8 +185,10 @@ export class DroneSpawner {
       return;
     }
 
-    // Normal wave — drone count scales with wave
-    const count = 10 + (this.waveIndex - 1) * 5;
+    // Normal wave — drone count scales with wave (L3 uses fixed smaller encounter size)
+    const count = currentLevel === 3
+      ? L3_ENCOUNTER_SIZE
+      : 10 + (this.waveIndex - 1) * 5;
     let spawned = 0;
 
     const MARGIN = 150;
@@ -277,8 +288,9 @@ export class DroneSpawner {
         return;
       }
 
-      const forceHp = isSentinel ? 3 : undefined;
-      const drone   = new Drone(this.scene, spawnX, finalSpawnY, type, bracket, variant, forceHp);
+      const forceHp   = isSentinel ? 3 : undefined;
+      const resilience = currentLevel === 3 ? 2 : 0;
+      const drone      = new Drone(this.scene, spawnX, finalSpawnY, type, bracket, variant, forceHp, resilience);
       this.scene.add.existing(drone);
       this.scene.physics.add.existing(drone);
       this.scene.drones.add(drone);
@@ -373,8 +385,9 @@ export class DroneSpawner {
       );
     }
 
-    // Mines from wave 2 — 1-2 per wave, placed at random ground positions
-    if (this.waveIndex >= 2) {
+    // Mines from wave 2 (or wave 1 on L3) — 1-2 per wave, placed at random ground positions
+    const mineStartWave = currentLevel === 3 ? 1 : 2;
+    if (this.waveIndex >= mineStartWave) {
       const mineCount = Math.random() < 0.5 ? 1 : 2;
       const groundY = this.scene.getApproxGroundY();
       for (let m = 0; m < mineCount; m++) {
