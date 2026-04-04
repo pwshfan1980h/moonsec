@@ -169,7 +169,7 @@ export class TitleScene extends Phaser.Scene {
     this.optionTexts.forEach((t, i) => {
       if (i === this.selectedIndex) {
         t.setText('▶  ' + this.currentOptions[i] + '  ◀');
-        t.setStyle({ color: '#00ccff', fontSize: '26px' });
+        t.setStyle({ color: '#ff3311', fontSize: '26px' });
         t.setAlpha(1);
         this.pulseTween = this.tweens.add({
           targets: t,
