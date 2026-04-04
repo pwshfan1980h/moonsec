@@ -117,16 +117,6 @@ export class GameScene extends Phaser.Scene {
     g.generateTexture('pilot_sphere', 16, 16);
     g.destroy();
 
-    // Health pack — wrench (open-end, golden)
-    const hg = this.add.graphics();
-    hg.fillStyle(0xddcc44, 1);
-    hg.fillRect(2, 0, 10, 3); // top bar connecting jaws
-    hg.fillRect(2, 0, 3, 6);  // left jaw
-    hg.fillRect(9, 0, 3, 6);  // right jaw
-    hg.fillRect(5, 5, 4, 9);  // handle
-    hg.generateTexture('pickup-health', 14, 14);
-    hg.destroy();
-
     // Fuel canister — yellow body with orange nozzle
     const fg = this.add.graphics();
     fg.fillStyle(0xffff00, 1);
@@ -513,10 +503,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnPickup(x: number, y: number, type: 'health' | 'fuel'): void {
-    const key = type === 'health' ? 'pickup-health' : 'pickup-fuel';
-    const p = this.pickups.get(x, y, key) as Phaser.Physics.Arcade.Image;
+    const [key, frame] = type === 'health' ? ['collectables', 36] : ['pickup-fuel', undefined];
+    const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
-    p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1);
+    p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
+      .setDisplaySize(14, 14);
     p.setData('type', type);
     if (p.body) {
       const pb = p.body as Phaser.Physics.Arcade.Body;
