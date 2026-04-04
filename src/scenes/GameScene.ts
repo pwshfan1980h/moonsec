@@ -503,7 +503,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnPickup(x: number, y: number, type: 'health' | 'fuel'): void {
-    const [key, frame] = type === 'health' ? ['collectables', 36] : ['pickup-fuel', undefined];
+    const [key, frame] = type === 'health'
+      ? ['collectables', Math.random() < 0.5 ? 36 : 44]
+      : ['pickup-fuel', undefined];
     const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
     p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
