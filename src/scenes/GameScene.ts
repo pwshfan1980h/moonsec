@@ -6,11 +6,11 @@ import { StunDart } from '../entities/StunDart';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS, L3_GROUND_Y } from '../constants';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
 import { CARD_POOL } from '../data/upgradeCards';
-import { buildLevel1Map, buildLevel2Map } from '../data/levelData';
+import { buildLevel1Map, buildLevel2Map, buildLevel3Map } from '../data/levelData';
 import { DebugLog } from '../systems/DebugLog';
 
 export class GameScene extends Phaser.Scene {
@@ -126,7 +126,9 @@ export class GameScene extends Phaser.Scene {
     bpg.generateTexture('boss-projectile', 32, 32);
     bpg.destroy();
 
-    if (this.currentLevel === 2) {
+    if (this.currentLevel === 3) {
+      this.setupLevel3();
+    } else if (this.currentLevel === 2) {
       this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
       this.makeBackgroundL2();
       this.makeGroundL2();
@@ -455,6 +457,11 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (this.isGameOver) return;
     this.player.update(time, delta);
+    // L3 death pits — falling off the bottom of the world triggers instant death
+    if (this.currentLevel === 3 && !this.isGameOver) {
+      if (this.player.y > WORLD_HEIGHT - 50) this.triggerGameOver();
+      if (this.pilot?.active && this.pilot.y > WORLD_HEIGHT - 50) this.triggerGameOver();
+    }
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     this.audio.update({
       onGround:  pb.blocked.down,
@@ -732,6 +739,25 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private setupLevel3(): void {
+    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
+    this.makeBackgroundL3();
+
+    this.ground = this.physics.add.staticGroup();
+    this.makeTilemapGround(buildLevel3Map());
+
+    this.makePlatforms('blue', { low: 3, mid: 2, high: 2 });
+    this.makeBaseProps('low');
+    this.makeTerrainObstacles('blue');
+
+    // Notify player of ice physics after wave starts
+    this.time.delayedCall(1500, () => {
+      if (this.scene?.isActive('UI')) {
+        this.events.emit('hudMessage', 'Slippery terrain');
+      }
+    });
+  }
+
   private makeBackgroundL2(): void {
     // Deep void — dark crimson sky (distinct from L1 blue-black)
     this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x0d0005)
@@ -817,6 +843,49 @@ export class GameScene extends Phaser.Scene {
 
     // ── Ground glow — vivid magenta instead of blue ───────────────────
     this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 3, 0xcc0055).setDepth(5);
+  }
+
+  private makeBackgroundL3(): void {
+    // Deep blue/black cavern background
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x010510)
+      .setDepth(0).setScrollFactor(0);
+
+    // Dedup texture keys on restart
+    for (const key of ['bgStarsL3', 'bgCrystalsL3']) {
+      if (this.textures.exists(key)) this.textures.remove(key);
+    }
+
+    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+
+    // Crystal cluster layer — soft cyan glows
+    const crystalGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    for (let i = 0; i < 5; i++) {
+      const nx = hash(i + 2000) * GAME_W;
+      const ny = 100 + hash(i + 2100) * (L3_GROUND_Y - 300);
+      const nr = 80 + hash(i + 2200) * 120;
+      crystalGfx.fillStyle(0x002244, 0.4 + hash(i + 2300) * 0.3);
+      crystalGfx.fillCircle(nx, ny, nr);
+    }
+    crystalGfx.generateTexture('bgCrystalsL3', GAME_W, L3_GROUND_Y);
+    crystalGfx.destroy();
+    this.add.tileSprite(GAME_W / 2, L3_GROUND_Y / 2, GAME_W, L3_GROUND_Y, 'bgCrystalsL3')
+      .setDepth(1).setScrollFactor(0);
+
+    // Starfield — cold blue/white
+    const starsGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    for (let i = 0; i < 400; i++) {
+      const col = i % 3 === 0 ? 0x99ccff : (i % 3 === 1 ? 0xffffff : 0x66aaff);
+      starsGfx.fillStyle(col, 0.1 + Math.random() * 0.3);
+      starsGfx.fillRect(
+        Phaser.Math.Between(0, GAME_W - 1),
+        Phaser.Math.Between(0, L3_GROUND_Y - 1),
+        1, 1,
+      );
+    }
+    starsGfx.generateTexture('bgStarsL3', GAME_W, L3_GROUND_Y);
+    starsGfx.destroy();
+    this.bgStars = this.add.tileSprite(GAME_W / 2, L3_GROUND_Y / 2, GAME_W, L3_GROUND_Y, 'bgStarsL3')
+      .setDepth(2).setScrollFactor(0);
   }
 
   private updateParallax(): void {
