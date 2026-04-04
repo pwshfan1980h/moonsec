@@ -275,10 +275,12 @@ export class UIScene extends Phaser.Scene {
       if (wave === 1) {
         const gameScene = this.scene.get('Game') as GameScene;
         const levelNum  = gameScene.currentLevel;
-        const levelName = levelNum === 2 ? 'DARK SIDE' : 'SURFACE OPS';
+        const levelName = levelNum === 3 ? 'ICE CAVERNS'
+                        : levelNum === 2 ? 'DARK SIDE'
+                        : 'SURFACE OPS';
         const t = this.add.text(W / 2, 80, levelName, {
           fontFamily: 'monospace', fontSize: '28px',
-          color: levelNum === 2 ? '#aa66ff' : '#6699ff',
+          color: levelNum === 3 ? '#88ddff' : levelNum === 2 ? '#aa66ff' : '#6699ff',
           stroke: '#000000', strokeThickness: 3,
         }).setOrigin(0.5).setDepth(50).setAlpha(0);
         this.tweens.add({
@@ -365,6 +367,17 @@ export class UIScene extends Phaser.Scene {
           }
         }
       }
+    });
+
+    game.events.on('hudMessage', (message: string) => {
+      const t = this.add.text(W / 2, H / 2 - 60, message, {
+        fontFamily: 'monospace', fontSize: '22px', color: '#aaddff',
+        stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(55).setAlpha(0);
+      this.tweens.add({
+        targets: t, alpha: 1, duration: 400, yoyo: true, hold: 1500,
+        onComplete: () => t.destroy(),
+      });
     });
 
     // ── Keyboard handlers ─────────────────────────────────────────
