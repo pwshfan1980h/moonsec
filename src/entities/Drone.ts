@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { DroneScaling } from '../systems/DroneSpawner';
 
-type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DEATH';
+type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DOWNED' | 'DEATH';
 export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
 export type DroneVariant = 'normal' | 'sniper';
 
@@ -31,6 +31,11 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   private shootTimer = 0;
   private patrolDir = -1;
 
+  resilience: number;
+  private maxHp = 0;
+  private reviveTimer?: Phaser.Time.TimerEvent;
+  private reviveIndicator?: Phaser.GameObjects.Text;
+
   // Instance stats (set per-variant in constructor)
   private attackSpeed: number;
   private shootInterval: number;
@@ -46,6 +51,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     scaling: DroneScaling,
     variant: DroneVariant = 'normal',
     forceHp?: number,
+    resilience = 0,
   ) {
     super(scene, x, y, type);
     this.scene = scene;
@@ -70,6 +76,9 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
       this.setScale(2.42);
     }
 
+    this.maxHp = this.hp;
+    this.resilience = resilience;
+
     this.sinOffset = Math.random() * Math.PI * 2;
     this.setDepth(8);
     this.play(`${type}-hover`);
@@ -84,7 +93,10 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   }
 
   update(time: number, delta: number): void {
-    if (!this.active || this.droneState === 'DEATH') return;
+    if (this.reviveIndicator) {
+      this.reviveIndicator.setPosition(this.x, this.y - 50);
+    }
+    if (!this.active || this.droneState === 'DEATH' || this.droneState === 'DOWNED') return;
 
     const body   = this.body as Phaser.Physics.Arcade.Body;
     const target = this.scene.getPilotOrPlayer();
@@ -185,10 +197,22 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
 
   takeDamage(amount: number): void {
     if (this.droneState === 'DEATH' || this.droneState === 'HURT') return;
-    this.hp -= amount;
 
+    // Downed — shooting a downed enemy directly kills it
+    if (this.droneState === 'DOWNED') {
+      this.hp -= amount;
+      if (this.hp <= 0) this.setDroneState('DEATH');
+      return;
+    }
+
+    this.hp -= amount;
     if (this.hp <= 0) {
-      this.setDroneState('DEATH');
+      if (this.resilience > 0) {
+        this.resilience--;
+        this.setDroneState('DOWNED');
+      } else {
+        this.setDroneState('DEATH');
+      }
     } else {
       this.setDroneState('HURT');
     }
@@ -219,10 +243,38 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
         });
         break;
       }
+      case 'DOWNED': {
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        body.setVelocity(0, 0);
+        this.setTint(0x888888);
+
+        // Revive indicator dots above enemy (shows remaining revivals)
+        const dots = '●'.repeat(this.resilience) + '○';
+        this.reviveIndicator = this.scene.add.text(this.x, this.y - 50, dots, {
+          fontFamily: 'monospace', fontSize: '10px', color: '#ffaa00',
+        }).setDepth(25).setOrigin(0.5);
+
+        // Revive after 4s unless shot dead first
+        this.reviveTimer = this.scene.time.delayedCall(4000, () => {
+          if (!this.active || this.droneState !== 'DOWNED') return;
+          this.reviveIndicator?.destroy();
+          this.reviveIndicator = undefined;
+          this.hp = Math.ceil(this.maxHp * 0.5);
+          this.clearTint();
+          this.setTint(0xffffff);
+          this.scene.time.delayedCall(200, () => { if (this.active) this.clearTint(); });
+          this.setDroneState('HOVER');
+        });
+        break;
+      }
       case 'DEATH': {
         this.play(`${this.droneType}-death`);
         (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
         (this.body as Phaser.Physics.Arcade.Body).enable = false;
+
+        this.reviveTimer?.remove();
+        this.reviveIndicator?.destroy();
+        this.reviveIndicator = undefined;
 
         this.spawnDeathParticles();
 
