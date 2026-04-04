@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   GAME_W, GAME_H,
   GROUND_Y, WORLD_HEIGHT,
-  BOSS_WAVE_L1, BOSS_WAVE_L2,
+  BOSS_WAVE_L1, BOSS_WAVE_L2, BOSS_WAVE_L3,
   WAVE_BRACKETS,
   RADAR_X, RADAR_Y,
 } from '../constants';
@@ -21,9 +21,10 @@ describe('constants', () => {
     expect(WORLD_HEIGHT).toBe(1080);
   });
 
-  it('boss waves set to 3', () => {
+  it('boss waves set to 3 for L1/L2, 4 for L3', () => {
     expect(BOSS_WAVE_L1).toBe(3);
     expect(BOSS_WAVE_L2).toBe(3);
+    expect(BOSS_WAVE_L3).toBe(4);
   });
 
   it('WAVE_BRACKETS minWave starts at 0 and ramps 0,1,2,3', () => {
