@@ -511,7 +511,9 @@ export class UIScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '40px', color: '#00ff88',
     }).setOrigin(0.5).setDepth(61);
 
-    const nextName = level === 1 ? 'DESCENDING TO DARK SIDE…' : 'ALL CLEAR';
+    const nextName = level === 1 ? 'DESCENDING TO DARK SIDE…'
+                   : level === 2 ? 'ENTERING ICE CAVERNS…'
+                   : 'ALL CLEAR';
     this.add.text(W / 2, H / 2 - 20, nextName, {
       fontFamily: 'monospace', fontSize: '20px', color: '#aaffcc',
     }).setOrigin(0.5).setDepth(61);
@@ -524,15 +526,15 @@ export class UIScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => {
       this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
         if (progress === 1) {
-          if (level === 1) {
+          if (level < 3) {
             gameScene.scene.start('Game', {
-              level: 2,
+              level: level + 1,
               mechType,
               totalScore: score,
             });
             this.scene.restart();
           } else {
-            // Victory — return to Level 1
+            // Victory — return to title
             gameScene.scene.start('Game', { mechType });
             this.scene.restart();
           }
