@@ -51,6 +51,29 @@ export class TitleScene extends Phaser.Scene {
     this.add.image(W/2, H/2, 'title-stars-far').setDepth(1);
     this.add.image(W/2, H/2, 'title-stars-near').setDepth(2);
 
+    // Mech4 silhouette watermark — procedural rectangles, depth 1.5
+    {
+      const cx = W / 2;
+      const s  = H * 0.42;   // scale: ~226px tall for H=540
+      const gy = H * 0.75;   // feet Y position
+
+      const wm = this.add.graphics().setDepth(1.5);
+      wm.fillStyle(0xff3311, 0.05);
+
+      // Head
+      wm.fillRect(cx - s * 0.11, gy - s * 0.96, s * 0.22, s * 0.16);
+      // Body (wide shoulders)
+      wm.fillRect(cx - s * 0.22, gy - s * 0.78, s * 0.44, s * 0.32);
+      // Left arm
+      wm.fillRect(cx - s * 0.38, gy - s * 0.76, s * 0.16, s * 0.24);
+      // Right arm
+      wm.fillRect(cx + s * 0.22, gy - s * 0.76, s * 0.16, s * 0.24);
+      // Left leg
+      wm.fillRect(cx - s * 0.19, gy - s * 0.44, s * 0.15, s * 0.44);
+      // Right leg
+      wm.fillRect(cx + s * 0.04, gy - s * 0.44, s * 0.15, s * 0.44);
+    }
+
     // Logo
     const logoImage = this.add.image(W/2, 150, 'logo').setDepth(10);
 
