@@ -13,6 +13,7 @@ export class TitleScene extends Phaser.Scene {
   private inputLocked = false;
   private menuState: 'main' | 'levelSelect' | 'resetConfirm' = 'main';
   private currentOptions: string[] = [];
+  private titleMusic: Phaser.Sound.WebAudioSound | null = null;
 
   constructor() {
     super({ key: 'Title' });
@@ -107,6 +108,21 @@ export class TitleScene extends Phaser.Scene {
       duration: 600,
       ease: 'Power2',
     });
+
+    // Title music — guard against restart when returning from sub-scenes
+    const existing = this.sound.getAll('music-title') as Phaser.Sound.WebAudioSound[];
+    if (!existing.some(s => s.isPlaying)) {
+      this.titleMusic = this.sound.add('music-title', { loop: true, volume: 0 }) as Phaser.Sound.WebAudioSound;
+      this.titleMusic.play();
+      this.tweens.add({
+        targets: this.titleMusic,
+        volume: 0.6,
+        duration: 1500,
+        ease: 'Linear',
+      });
+    } else {
+      this.titleMusic = existing[0];
+    }
   }
 
   private renderOptions(): void {
