@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\); tags=d.get\\(''''meta'''',{}\\).get\\(''''frameTags'''',[]\\); print\\(''''frameTags:'''', [t[''''name''''] for t in tags]\\)\")",
-      "Bash(python3 -c \":*)"
-    ]
-  }
-}
