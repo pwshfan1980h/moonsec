@@ -117,15 +117,6 @@ export class GameScene extends Phaser.Scene {
     g.generateTexture('pilot_sphere', 16, 16);
     g.destroy();
 
-    // Fuel canister — yellow body with orange nozzle
-    const fg = this.add.graphics();
-    fg.fillStyle(0xffff00, 1);
-    fg.fillRect(2, 3, 10, 9);
-    fg.fillStyle(0xff8800, 1);
-    fg.fillRect(4, 1, 6, 3);
-    fg.generateTexture('pickup-fuel', 14, 14);
-    fg.destroy();
-
     // Boss projectile — large orange orb
     const bpg = this.add.graphics();
     bpg.fillStyle(0xff6600, 0.9);
@@ -505,7 +496,7 @@ export class GameScene extends Phaser.Scene {
   private spawnPickup(x: number, y: number, type: 'health' | 'fuel'): void {
     const [key, frame] = type === 'health'
       ? ['collectables', Math.random() < 0.5 ? 36 : 44]
-      : ['pickup-fuel', undefined];
+      : ['collectables', Math.random() < 0.5 ? 32 : 40];
     const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
     p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
