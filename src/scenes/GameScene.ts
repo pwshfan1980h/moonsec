@@ -39,8 +39,8 @@ export class GameScene extends Phaser.Scene {
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private groundLayer?: Phaser.Tilemaps.TilemapLayer;
   private spawner!: DroneSpawner;
-  private bgStars!: Phaser.GameObjects.TileSprite;
-  private bgTerrain!: Phaser.GameObjects.TileSprite;
+  private bgStars?: Phaser.GameObjects.TileSprite;
+  private bgTerrain?: Phaser.GameObjects.TileSprite;
   private bgHaze?: Phaser.GameObjects.TileSprite;
   public currentLevel = 1;
   private isBossDead = false;
@@ -73,6 +73,8 @@ export class GameScene extends Phaser.Scene {
     this.pilotBulletOverlap  = null;
     this.isBossDead      = false;
     this.bgHaze          = undefined;
+    this.bgStars         = undefined;
+    this.bgTerrain       = undefined;
     this.groundLayer     = undefined;
     this.debugLog?.destroy();
     this.debugLog        = undefined;
@@ -890,9 +892,9 @@ export class GameScene extends Phaser.Scene {
 
   private updateParallax(): void {
     const sx = this.cameras.main.scrollX;
-    this.bgStars.setTilePosition(sx * 0.05, 0);
-    this.bgTerrain.setTilePosition(sx * 0.20, 0);
-    if (this.bgHaze) this.bgHaze.setTilePosition(sx * 0.35, 0);
+    if (this.bgStars)   this.bgStars.setTilePosition(sx * 0.05, 0);
+    if (this.bgTerrain) this.bgTerrain.setTilePosition(sx * 0.20, 0);
+    if (this.bgHaze)    this.bgHaze.setTilePosition(sx * 0.35, 0);
   }
 
   private makeTerrainObstacles(palette: 'blue' | 'purple' = 'blue'): void {
