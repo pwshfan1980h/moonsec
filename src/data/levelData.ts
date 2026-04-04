@@ -31,3 +31,18 @@ export function buildLevel1Map(): number[][] {
 
   return map;
 }
+
+export function buildLevel2Map(): number[][] {
+  const map = Array.from({ length: ROWS }, () =>
+    Array<number>(COLS).fill(TILE.EMPTY),
+  );
+
+  for (let c = 0; c < COLS; c++) {
+    map[GROUND_ROW][c]     = TILE.SURFACE_VAR;
+    map[GROUND_ROW + 1][c] = TILE.FILL_A;
+    map[GROUND_ROW + 2][c] = TILE.FILL_B;
+    map[GROUND_ROW + 3][c] = TILE.FILL_B;
+  }
+
+  return map;
+}
