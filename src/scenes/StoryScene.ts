@@ -32,6 +32,14 @@ export class StoryScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Fade out title music if it carried through the transition
+    for (const m of this.sound.getAll('music-title') as Phaser.Sound.WebAudioSound[]) {
+      if (m.isPlaying) {
+        this.tweens.add({ targets: m, volume: 0, duration: 800, ease: 'Linear',
+          onComplete: () => m.stop() });
+      }
+    }
+
     const W = GAME_W, H = GAME_H;
     this.input.keyboard!.removeAllListeners();
     this.inputLocked = false;

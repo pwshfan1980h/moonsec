@@ -10,7 +10,7 @@ import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLA
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
 import { CARD_POOL } from '../data/upgradeCards';
-import { buildLevel1Map } from '../data/levelData';
+import { buildLevel1Map, buildLevel2Map } from '../data/levelData';
 import { DebugLog } from '../systems/DebugLog';
 
 export class GameScene extends Phaser.Scene {
@@ -56,6 +56,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Fade out title music if it carried through the transition
+    for (const m of this.sound.getAll('music-title') as Phaser.Sound.WebAudioSound[]) {
+      if (m.isPlaying) {
+        this.tweens.add({ targets: m, volume: 0, duration: 800, ease: 'Linear',
+          onComplete: () => m.stop() });
+      }
+    }
+
     // Reset state that persists across scene.restart() (instance is reused, not reconstructed)
     this.isGameOver   = false;
     this.killStreak   = 0;
@@ -65,6 +73,7 @@ export class GameScene extends Phaser.Scene {
     this.pilotBulletOverlap  = null;
     this.isBossDead      = false;
     this.bgHaze          = undefined;
+    this.groundLayer     = undefined;
     this.debugLog?.destroy();
     this.debugLog        = undefined;
     this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
@@ -108,11 +117,13 @@ export class GameScene extends Phaser.Scene {
     g.generateTexture('pilot_sphere', 16, 16);
     g.destroy();
 
-    // Health pack — cyan cross
+    // Health pack — wrench (open-end, golden)
     const hg = this.add.graphics();
-    hg.fillStyle(0x00ffff, 1);
-    hg.fillRect(5, 1, 4, 12);
-    hg.fillRect(1, 5, 12, 4);
+    hg.fillStyle(0xddcc44, 1);
+    hg.fillRect(2, 0, 10, 3); // top bar connecting jaws
+    hg.fillRect(2, 0, 3, 6);  // left jaw
+    hg.fillRect(9, 0, 3, 6);  // right jaw
+    hg.fillRect(5, 5, 4, 9);  // handle
     hg.generateTexture('pickup-health', 14, 14);
     hg.destroy();
 
@@ -138,6 +149,7 @@ export class GameScene extends Phaser.Scene {
       this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
       this.makeBackgroundL2();
       this.makeGroundL2();
+      this.makeTilemapGround(buildLevel2Map());
       this.makePlatforms('purple', { low: 8, mid: 6, high: 4 });
       this.makeBaseProps('high'); // more damage — dark side is ruined
       this.makeTerrainObstacles('purple');
@@ -149,8 +161,7 @@ export class GameScene extends Phaser.Scene {
 
       // --- Ground (tilemap) ---
       this.ground = this.physics.add.staticGroup();
-      this.groundLayer = undefined;
-      this.makeTilemapGround();
+      this.makeTilemapGround(buildLevel1Map());
 
       // --- Platforms ---
       this.makePlatforms();
@@ -863,9 +874,9 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private makeTilemapGround(): void {
+  private makeTilemapGround(mapData: number[][]): void {
     const map = this.make.tilemap({
-      data: buildLevel1Map(),
+      data: mapData,
       tileWidth: 32,
       tileHeight: 32,
     });
