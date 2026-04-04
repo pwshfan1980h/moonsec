@@ -32,6 +32,9 @@ export class BootScene extends Phaser.Scene {
       this.load.audio(s, `audio/${s}.wav`);
     }
 
+    // Title screen music loop
+    this.load.audio('music-title', 'audio/music-title.ogg');
+
     // Player mechs (Aseprite atlas for proper per-frame timing)
     this.load.aseprite('mech', 'assets/mech-sheet.png', 'assets/mech-sheet.json');
     this.load.aseprite('mech4', 'assets/mech4-sheet.png', 'assets/mech4-sheet.json');
