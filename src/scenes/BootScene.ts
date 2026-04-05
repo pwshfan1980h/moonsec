@@ -129,7 +129,8 @@ this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
     // Procedural bullet/effect textures
     this.makeTextures();
 
-    this.scene.start('Title');
+    this.scene.start('Game', { mechType: 'mech4', level: 1 });
+    this.scene.launch('UI');
   }
 
   private buildAsepriteAnims(textureKey: string, prefix: string): void {
