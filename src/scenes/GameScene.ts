@@ -7,9 +7,6 @@ import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
 import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
-import { ProgressionSystem } from '../systems/ProgressionSystem';
-import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
-import { CARD_POOL } from '../data/upgradeCards';
 import { buildLevel1Map } from '../data/levelData';
 import { DebugLog } from '../systems/DebugLog';
 
@@ -44,6 +41,7 @@ export class GameScene extends Phaser.Scene {
   private bgHaze?: Phaser.GameObjects.TileSprite;
   public currentLevel = 1;
   private isBossDead = false;
+  private waitingForStart = true;
 
   constructor() {
     super({ key: 'Game' });
@@ -53,6 +51,7 @@ export class GameScene extends Phaser.Scene {
     if (data.mechType) this.registry.set('mechType', data.mechType);
     if (data.level !== undefined) this.registry.set('currentLevel', data.level);
     if (data.totalScore !== undefined) this.registry.set('totalScore', data.totalScore);
+    this.waitingForStart = true;
   }
 
   create(): void {
@@ -81,24 +80,9 @@ export class GameScene extends Phaser.Scene {
     this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
 
-    // Init ProgressionSystem once — guard against re-creation on level restart
-    if (!this.registry.get('progression')) {
-      this.registry.set('progression', new ProgressionSystem());
-    }
-    const prog = this.registry.get('progression') as ProgressionSystem;
-
-    // isNewGame flag: set by UIScene before restart; reset run upgrades
-    if (this.registry.get('isNewGame')) {
-      this.registry.set('runUpgrades', [] as string[]);
-      this.registry.set('isNewGame', false);
-    }
-    if (!this.registry.get('runUpgrades')) {
-      this.registry.set('runUpgrades', [] as string[]);
-    }
-
     this.music?.destroy(); // stop music from previous run
     this.music = new MusicSystem();
-    this.music.start(0.35);
+    // music starts when title is dismissed
 
     this.audio?.destroy(); // close old AudioContext before creating new one
     this.audio = new AudioSystem(this.sound);
@@ -188,19 +172,6 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, 300, spawnY, mechType);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
-
-    // Apply persistent tree upgrades
-    for (const id of prog.ownedNodes) {
-      const node = TREE_NODES.find(n => n.id === id);
-      if (node) applyTreeEffect(this.player, node.effect);
-    }
-
-    // Re-apply per-run card upgrades
-    const runUpgrades = (this.registry.get('runUpgrades') as string[]) ?? [];
-    for (const id of runUpgrades) {
-      const card = CARD_POOL.find(c => c.id === id);
-      if (card) card.apply(this.player);
-    }
 
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     const bc = this.player.bodyConfig;
@@ -313,6 +284,10 @@ export class GameScene extends Phaser.Scene {
 
     // --- Spawner ---
     this.spawner = new DroneSpawner(this);
+    this.events.once('titleDismissed', () => {
+      this.waitingForStart = false;
+      this.music?.start(0.35);
+    });
 
     // --- Score tracking + kill streak + pickups ---
     const STREAK_MILESTONES = [3, 5, 10, 20];
@@ -358,17 +333,6 @@ export class GameScene extends Phaser.Scene {
       this.score += 1000;
       this.events.emit('scoreChange', this.score);
       // Level transition handled by UIScene listening to same event
-    });
-
-    this.events.on('waveCleared', (wave: number) => {
-      // Between-wave upgrade card picker (skip for boss wave)
-      if (!this.spawner.isBossWave()) {
-        this.scene.launch('UpgradeCards', { wave, audio: this.audio, player: this.player });
-        this.scene.pause('Game');
-        this.scene.get('UpgradeCards').events.once('shutdown', () => {
-          this.scene.resume('Game');
-        });
-      }
     });
 
     // --- Emit initial HUD state ---
@@ -430,6 +394,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (this.isGameOver) return;
+    if (this.waitingForStart) return;
     this.player.update(time, delta);
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     this.audio.update({
