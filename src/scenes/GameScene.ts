@@ -6,11 +6,11 @@ import { StunDart } from '../entities/StunDart';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS, L3_GROUND_Y } from '../constants';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 import { TREE_NODES, applyTreeEffect } from '../data/upgradeTree';
 import { CARD_POOL } from '../data/upgradeCards';
-import { buildLevel1Map, buildLevel2Map, buildLevel3Map } from '../data/levelData';
+import { buildLevel1Map } from '../data/levelData';
 import { DebugLog } from '../systems/DebugLog';
 
 export class GameScene extends Phaser.Scene {
@@ -128,31 +128,19 @@ export class GameScene extends Phaser.Scene {
     bpg.generateTexture('boss-projectile', 32, 32);
     bpg.destroy();
 
-    if (this.currentLevel === 3) {
-      this.setupLevel3();
-    } else if (this.currentLevel === 2) {
-      this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-      this.makeBackgroundL2();
-      this.makeGroundL2();
-      this.makeTilemapGround(buildLevel2Map());
-      this.makePlatforms('purple', { low: 8, mid: 6, high: 4 });
-      this.makeBaseProps('high'); // more damage — dark side is ruined
-      this.makeTerrainObstacles('purple');
-    } else {
-      this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
+    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
 
-      // --- Background ---
-      this.makeBackground();
+    // --- Background ---
+    this.makeBackground();
 
-      // --- Ground (tilemap) ---
-      this.ground = this.physics.add.staticGroup();
-      this.makeTilemapGround(buildLevel1Map());
+    // --- Ground (tilemap) ---
+    this.ground = this.physics.add.staticGroup();
+    this.makeTilemapGround(buildLevel1Map());
 
-      // --- Platforms ---
-      this.makePlatforms();
-      this.makeBaseProps(); // 'low' damage — default
-      this.makeTerrainObstacles('blue');
-    }
+    // --- Platforms ---
+    this.makePlatforms();
+    this.makeBaseProps();
+    this.makeTerrainObstacles();
 
     // --- Physics groups ---
     this.playerBullets = this.physics.add.group({
@@ -196,7 +184,7 @@ export class GameScene extends Phaser.Scene {
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
     const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
-    const spawnY = GROUND_Y - 5; // same for both levels — L2 is now a surface level
+    const spawnY = GROUND_Y - 5;
     this.player = new Player(this, 300, spawnY, mechType);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
@@ -207,7 +195,7 @@ export class GameScene extends Phaser.Scene {
       if (node) applyTreeEffect(this.player, node.effect);
     }
 
-    // Re-apply per-run card upgrades (survive L1→L2 transition)
+    // Re-apply per-run card upgrades
     const runUpgrades = (this.registry.get('runUpgrades') as string[]) ?? [];
     for (const id of runUpgrades) {
       const card = CARD_POOL.find(c => c.id === id);
@@ -390,22 +378,6 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('jetpackFuel', 1, 1);
     this.events.emit('scoreChange', this.score);
 
-    if (this.currentLevel === 2) {
-      this.physics.world.off('worldbounds');
-      this.physics.world.on('worldbounds', (body: Phaser.Physics.Arcade.Body) => {
-        const go = body.gameObject as Phaser.Physics.Arcade.Image;
-        if (!go?.active) return;
-        const bounces = (go.getData('bounces') ?? 0) + 1;
-        if (bounces >= 2) {
-          go.setActive(false).setVisible(false);
-          body.enable = false;
-        } else {
-          go.setData('bounces', bounces);
-          this.audio.playAt('hit', { rate: 1.8, detune: 400, volume: 0.2 });
-        }
-      });
-    }
-
     // --- Eject / reenter (E key) ---
     this.input.keyboard!.on('keydown-E', () => {
       if (this.isGameOver) return;
@@ -459,11 +431,6 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (this.isGameOver) return;
     this.player.update(time, delta);
-    // L3 death pits — falling off the bottom of the world triggers instant death
-    if (this.currentLevel === 3 && !this.isGameOver) {
-      if (this.player.y > WORLD_HEIGHT - 50) this.triggerGameOver();
-      if (this.pilot?.active && this.pilot.y > WORLD_HEIGHT - 50) this.triggerGameOver();
-    }
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     this.audio.update({
       onGround:  pb.blocked.down,
@@ -509,7 +476,7 @@ export class GameScene extends Phaser.Scene {
     const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
     p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
-      .setDisplaySize(14, 14);
+      .setDisplaySize(42, 42);
     p.setData('type', type);
     if (p.body) {
       const pb = p.body as Phaser.Physics.Arcade.Body;
@@ -614,26 +581,14 @@ export class GameScene extends Phaser.Scene {
       .setDepth(3).setOrigin(0.5, 1).setScrollFactor(0);
   }
 
-  private makeGroundL2(): void {
-    this.ground = this.physics.add.staticGroup();
-    const groundRect = this.add.rectangle(
-      WORLD_WIDTH / 2,
-      GROUND_Y + GROUND_HEIGHT / 2,
-      WORLD_WIDTH,
-      GROUND_HEIGHT,
-      0x0d0a20,
-    ).setDepth(4);
-    this.ground.add(groundRect);
-  }
-
-  private makeBaseProps(damageLevel: 'low' | 'high' = 'low'): void {
+  private makeBaseProps(): void {
     const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
 
     // ── Habitat Domes (8) ─────────────────────────────────────────────
     for (let i = 0; i < 8; i++) {
       const x   = Math.max(200, Math.min(6200, 300 + i * 725 + (hash(i + 10) * 400 - 200)));
       const r   = 50 + hash(i + 20) * 50;
-      const dmg = damageLevel === 'high' ? hash(i + 30) < 0.67 : hash(i + 30) < 0.33;
+      const dmg = hash(i + 30) < 0.33;
       const g   = this.add.graphics().setDepth(3.5).setPosition(x, GROUND_Y);
 
       // Dome shell — upper semicircle (clockwise arc PI→0 passes through top)
@@ -683,7 +638,7 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < 6; i++) {
       const x   = Math.max(300, Math.min(6000, 500 + i * 900 + (hash(i + 110) * 300 - 150)));
       const mh  = 80 + hash(i + 120) * 60; // mast height 80–140px
-      const dmg = damageLevel === 'high' ? true : hash(i + 130) < 0.5;
+      const dmg = hash(i + 130) < 0.5;
       const g   = this.add.graphics().setDepth(3.5).setPosition(x, GROUND_Y);
       if (dmg) g.setAngle(hash(i + 140) * 12 - 6); // −6° to +6° lean
 
@@ -720,7 +675,7 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < 5; i++) {
       const cx   = Math.max(300, Math.min(6000, 400 + i * 1100 + (hash(i + 210) * 300 - 150)));
       const cnt  = 3 + Math.floor(hash(i + 220) * 3); // 3–5 panels
-      const miss = damageLevel === 'high' ? 0.5 : 0;
+      const miss = 0;
 
       for (let p = 0; p < cnt; p++) {
         if (miss > 0 && hash(i * 100 + p + 230) < miss) continue;
@@ -741,155 +696,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private setupLevel3(): void {
-    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
-    this.makeBackgroundL3();
-
-    this.ground = this.physics.add.staticGroup();
-    this.makeTilemapGround(buildLevel3Map());
-
-    this.makePlatforms('blue', { low: 3, mid: 2, high: 2 });
-    this.makeBaseProps('low');
-    this.makeTerrainObstacles('blue');
-
-    // Notify player of ice physics after wave starts
-    this.time.delayedCall(1500, () => {
-      if (this.scene?.isActive('UI')) {
-        this.events.emit('hudMessage', 'Slippery terrain');
-      }
-    });
-  }
-
-  private makeBackgroundL2(): void {
-    // Deep void — dark crimson sky (distinct from L1 blue-black)
-    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x0d0005)
-      .setDepth(0).setScrollFactor(0);
-
-    // Dedup texture keys on restart
-    for (const key of ['bgStarsL2', 'bgTerrainL2', 'bgNebulaL2']) {
-      if (this.textures.exists(key)) this.textures.remove(key);
-    }
-
-    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
-
-    // ── Nebula cloud layer — large soft blobs of deep red/purple ──────
-    const nebGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    for (let i = 0; i < 6; i++) {
-      const nx = hash(i + 1000) * GAME_W;
-      const ny = 80 + hash(i + 1100) * (GROUND_Y - 300);
-      const nr = 120 + hash(i + 1200) * 180;
-      const col = i % 2 === 0 ? 0x330011 : 0x1a0028;
-      nebGfx.fillStyle(col, 0.55 + hash(i + 1300) * 0.25);
-      nebGfx.fillCircle(nx, ny, nr);
-    }
-    nebGfx.generateTexture('bgNebulaL2', GAME_W, GROUND_Y);
-    nebGfx.destroy();
-    this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'bgNebulaL2')
-      .setDepth(1).setScrollFactor(0);
-
-    // ── Starfield — blood-red tinted, denser than L1 ──────────────────
-    const starsGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    for (let i = 0; i < 600; i++) {
-      // Alternate warm (red) and cool (white) stars
-      const col = i % 3 === 0 ? 0xff5533 : (i % 3 === 1 ? 0xffffff : 0xffaa88);
-      starsGfx.fillStyle(col, 0.15 + Math.random() * 0.35);
-      starsGfx.fillRect(
-        Phaser.Math.Between(0, GAME_W - 1),
-        Phaser.Math.Between(0, GROUND_Y - 1),
-        1, 1,
-      );
-    }
-    // A few larger bright stars
-    for (let i = 0; i < 8; i++) {
-      starsGfx.fillStyle(0xffddcc, 0.7);
-      starsGfx.fillRect(
-        Phaser.Math.Between(0, GAME_W - 1),
-        Phaser.Math.Between(0, GROUND_Y - 200),
-        2, 2,
-      );
-    }
-    starsGfx.generateTexture('bgStarsL2', GAME_W, GROUND_Y);
-    starsGfx.destroy();
-    this.bgStars = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'bgStarsL2')
-      .setDepth(2).setScrollFactor(0);
-
-    // ── Jagged crystalline terrain silhouette — shard spires ─────────
-    const terrainGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    terrainGfx.fillStyle(0x0a0010, 1);
-    terrainGfx.fillRect(0, 0, GAME_W, 260);
-
-    // Crystal spires — pointed triangles jutting upward
-    for (let i = 0; i < 16; i++) {
-      const sx  = hash(i + 2000) * GAME_W;
-      const sw  = 12 + hash(i + 2100) * 30;
-      const sh  = 40 + hash(i + 2200) * 140;
-      terrainGfx.fillStyle(0x160020, 1);
-      terrainGfx.fillTriangle(sx - sw, 260, sx + sw, 260, sx, 260 - sh);
-    }
-    // Deep craters — torn ground pits
-    for (let i = 0; i < 5; i++) {
-      const cx = hash(i + 2500) * GAME_W;
-      const cr = 50 + hash(i + 2600) * 70;
-      terrainGfx.fillStyle(0x06000e, 1);
-      terrainGfx.slice(cx, 260, cr, Math.PI, 0, false);
-      terrainGfx.fillPath();
-    }
-    // Purple rim glow on terrain top
-    terrainGfx.lineStyle(2, 0x6600aa, 0.5);
-    terrainGfx.lineBetween(0, 0, GAME_W, 0);
-
-    terrainGfx.generateTexture('bgTerrainL2', GAME_W, 260);
-    terrainGfx.destroy();
-    this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 260, 'bgTerrainL2')
-      .setDepth(3).setOrigin(0.5, 1).setScrollFactor(0);
-
-    // ── Ground glow — vivid magenta instead of blue ───────────────────
-    this.add.rectangle(WORLD_WIDTH / 2, GROUND_Y + 1, WORLD_WIDTH, 3, 0xcc0055).setDepth(5);
-  }
-
-  private makeBackgroundL3(): void {
-    // Deep blue/black cavern background
-    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x010510)
-      .setDepth(0).setScrollFactor(0);
-
-    // Dedup texture keys on restart
-    for (const key of ['bgStarsL3', 'bgCrystalsL3']) {
-      if (this.textures.exists(key)) this.textures.remove(key);
-    }
-
-    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
-
-    // Crystal cluster layer — soft cyan glows
-    const crystalGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    for (let i = 0; i < 5; i++) {
-      const nx = hash(i + 2000) * GAME_W;
-      const ny = 100 + hash(i + 2100) * (L3_GROUND_Y - 300);
-      const nr = 80 + hash(i + 2200) * 120;
-      crystalGfx.fillStyle(0x002244, 0.4 + hash(i + 2300) * 0.3);
-      crystalGfx.fillCircle(nx, ny, nr);
-    }
-    crystalGfx.generateTexture('bgCrystalsL3', GAME_W, L3_GROUND_Y);
-    crystalGfx.destroy();
-    this.add.tileSprite(GAME_W / 2, L3_GROUND_Y / 2, GAME_W, L3_GROUND_Y, 'bgCrystalsL3')
-      .setDepth(1).setScrollFactor(0);
-
-    // Starfield — cold blue/white
-    const starsGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    for (let i = 0; i < 400; i++) {
-      const col = i % 3 === 0 ? 0x99ccff : (i % 3 === 1 ? 0xffffff : 0x66aaff);
-      starsGfx.fillStyle(col, 0.1 + Math.random() * 0.3);
-      starsGfx.fillRect(
-        Phaser.Math.Between(0, GAME_W - 1),
-        Phaser.Math.Between(0, L3_GROUND_Y - 1),
-        1, 1,
-      );
-    }
-    starsGfx.generateTexture('bgStarsL3', GAME_W, L3_GROUND_Y);
-    starsGfx.destroy();
-    this.bgStars = this.add.tileSprite(GAME_W / 2, L3_GROUND_Y / 2, GAME_W, L3_GROUND_Y, 'bgStarsL3')
-      .setDepth(2).setScrollFactor(0);
-  }
-
   private updateParallax(): void {
     const sx = this.cameras.main.scrollX;
     if (this.bgStars)   this.bgStars.setTilePosition(sx * 0.05, 0);
@@ -897,11 +703,11 @@ export class GameScene extends Phaser.Scene {
     if (this.bgHaze)    this.bgHaze.setTilePosition(sx * 0.35, 0);
   }
 
-  private makeTerrainObstacles(palette: 'blue' | 'purple' = 'blue'): void {
+  private makeTerrainObstacles(): void {
     const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
-    const bodyColor  = palette === 'purple' ? 0x12082a : 0x0e1228;
-    const glowColor  = palette === 'purple' ? 0x8833cc : 0x3355aa;
-    const edgeColor  = palette === 'purple' ? 0x4a1a66 : 0x1a2a55;
+    const bodyColor  = 0x0e1228;
+    const glowColor  = 0x3355aa;
+    const edgeColor  = 0x1a2a55;
 
     // 14 ground-level obstacles across the world — rocks/ruins the player must jump over
     for (let i = 0; i < 14; i++) {

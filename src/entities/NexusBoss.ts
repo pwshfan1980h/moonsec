@@ -30,15 +30,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     { drone: null, colliders: [] },
   ];
   private scaling: DroneScaling;
-  private level: number;
 
-  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, level = 1) {
+  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling) {
     super(scene, x, y, 'sentinel');
     this.scene   = scene;
     this.scaling = scaling;
-    this.level   = level;
 
-    this.hp = level === 2 ? Math.round(HP * 1.2) : HP;
+    this.hp = HP;
     this.setOrigin(0.5, 0.5);
     this.setScale(SCALE);
     this.setDepth(10);
@@ -178,12 +176,6 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       const body = b.body as Phaser.Physics.Arcade.Body;
       if (body) {
         body.enable = true;
-        if (this.level === 2) {
-          body.setCollideWorldBounds(true);
-          body.setBounce(1, 1);
-          (body as Phaser.Physics.Arcade.Body).onWorldBounds = true;
-          b.setData('bounces', 0);
-        }
       }
       b.setVelocity(Math.cos(angle) * BULLET_SPEED, Math.sin(angle) * BULLET_SPEED);
     }

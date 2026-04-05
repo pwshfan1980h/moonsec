@@ -273,14 +273,9 @@ export class UIScene extends Phaser.Scene {
 
       // Show level name on wave 1 only
       if (wave === 1) {
-        const gameScene = this.scene.get('Game') as GameScene;
-        const levelNum  = gameScene.currentLevel;
-        const levelName = levelNum === 3 ? 'ICE CAVERNS'
-                        : levelNum === 2 ? 'DARK SIDE'
-                        : 'SURFACE OPS';
-        const t = this.add.text(W / 2, 80, levelName, {
+        const t = this.add.text(W / 2, 80, 'SURFACE OPS', {
           fontFamily: 'monospace', fontSize: '28px',
-          color: levelNum === 3 ? '#88ddff' : levelNum === 2 ? '#aa66ff' : '#6699ff',
+          color: '#6699ff',
           stroke: '#000000', strokeThickness: 3,
         }).setOrigin(0.5).setDepth(50).setAlpha(0);
         this.tweens.add({
@@ -513,9 +508,6 @@ export class UIScene extends Phaser.Scene {
 
   private showLevelComplete(): void {
     const gameScene = this.scene.get('Game') as GameScene;
-    const mechType  = gameScene.registry.get('mechType') as string;
-    const score     = gameScene.score;
-    const level     = gameScene.currentLevel;
 
     // Overlay
     const W = GAME_W, H = GAME_H;
@@ -523,34 +515,19 @@ export class UIScene extends Phaser.Scene {
     this.add.text(W / 2, H / 2 - 80, 'LEVEL COMPLETE', {
       fontFamily: 'monospace', fontSize: '40px', color: '#00ff88',
     }).setOrigin(0.5).setDepth(61);
-
-    const nextName = level === 1 ? 'DESCENDING TO DARK SIDE…'
-                   : level === 2 ? 'ENTERING ICE CAVERNS…'
-                   : 'ALL CLEAR';
-    this.add.text(W / 2, H / 2 - 20, nextName, {
+    this.add.text(W / 2, H / 2 - 20, 'ALL CLEAR', {
       fontFamily: 'monospace', fontSize: '20px', color: '#aaffcc',
     }).setOrigin(0.5).setDepth(61);
 
     // Level complete stinger — low triumphant boom
-    const gameSceneForAudio = this.scene.get('Game') as GameScene;
-    gameSceneForAudio?.audio?.play('level-complete');
+    gameScene?.audio?.play('level-complete');
 
-    // Transition after 2000ms
+    // Return to title after 2000ms
     this.time.delayedCall(2000, () => {
       this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
         if (progress === 1) {
-          if (level < 3) {
-            gameScene.scene.start('Game', {
-              level: level + 1,
-              mechType,
-              totalScore: score,
-            });
-            this.scene.restart();
-          } else {
-            // Victory — return to title
-            gameScene.scene.start('Game', { mechType });
-            this.scene.restart();
-          }
+          gameScene.scene.start('Title');
+          this.scene.stop();
         }
       });
     });

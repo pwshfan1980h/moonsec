@@ -206,7 +206,7 @@ export class MechSelectScene extends Phaser.Scene {
     if (this.selectedIndex === 1) return; // SCOUT locked
     this.sound.play('ui-confirm', { volume: 0.40 });
     const mechType = mechs[this.selectedIndex].key;
-    this.scene.start('Game', { mechType, level: 2 }); // DEV: skip to L2
+    this.scene.start('Game', { mechType, level: 1 });
     this.scene.launch('UI');
   }
 }

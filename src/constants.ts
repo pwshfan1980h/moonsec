@@ -42,14 +42,6 @@ export const PILOT_JETPACK_MAX_FUEL = 3000;  // ms; ~3 seconds at 60fps
 export const PATROL_LANES = [570, 630, 690, 750, 810];
 
 export const BOSS_WAVE_L1     = 3;
-export const BOSS_WAVE_L2     = 3;
-export const L2_SPEED_MULT    = 1.2;
-export const L2_INTERVAL_MULT = 0.85;
-export const BOSS_WAVE_L3     = 4;
-export const L3_SPEED_MULT     = 1.3;
-export const L3_INTERVAL_MULT  = 0.80;
-export const L3_ENCOUNTER_SIZE = 5;
-export const L3_GROUND_Y       = 920;
 
 export const MECH_STATS: Record<string, {
   maxHp: number;

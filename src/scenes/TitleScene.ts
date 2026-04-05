@@ -3,7 +3,7 @@ import { GAME_W, GAME_H } from '../constants';
 import { ProgressionSystem } from '../systems/ProgressionSystem';
 
 const MAIN_OPTIONS    = ['START GAME', 'SELECT LEVEL', 'STORY', 'UPGRADES', 'RESET DATA'];
-const LEVEL_OPTIONS   = ['L1: SURFACE OPS', 'L2: DARK SIDE', 'L3: ICE CAVERNS', '[ BACK ]'];
+const LEVEL_OPTIONS   = ['L1: SURFACE OPS', '[ BACK ]'];
 const CONFIRM_OPTIONS = ['CONFIRM RESET', 'CANCEL'];
 
 export class TitleScene extends Phaser.Scene {
@@ -225,23 +225,7 @@ export class TitleScene extends Phaser.Scene {
             this.scene.launch('UI');
           });
           break;
-        case 1: // L2: DARK SIDE
-          this.inputLocked = true;
-          this.cameras.main.fadeOut(300, 0, 0, 0);
-          this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('Game', { mechType: 'mech4', level: 2 });
-            this.scene.launch('UI');
-          });
-          break;
-        case 2: // L3: ICE CAVERNS
-          this.inputLocked = true;
-          this.cameras.main.fadeOut(300, 0, 0, 0);
-          this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('Game', { mechType: 'mech4', level: 3 });
-            this.scene.launch('UI');
-          });
-          break;
-        case 3: // [ BACK ]
+        case 1: // [ BACK ]
           this.menuState = 'main';
           this.currentOptions = [...MAIN_OPTIONS];
           this.renderOptions();

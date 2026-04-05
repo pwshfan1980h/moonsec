@@ -3,12 +3,11 @@ import type { GameScene } from '../scenes/GameScene';
 import { Drone } from '../entities/Drone';
 import { ShieldedTank } from '../entities/ShieldedTank';
 import { NexusBoss } from '../entities/NexusBoss';
-import { MotherDrone } from '../entities/MotherDrone';
 import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
 import { Mine } from '../entities/Mine';
 import type { DroneVariant, DroneType } from '../entities/Drone';
-import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, BOSS_WAVE_L2, BOSS_WAVE_L3, L2_SPEED_MULT, L2_INTERVAL_MULT, L3_SPEED_MULT, L3_INTERVAL_MULT, L3_ENCOUNTER_SIZE, GAME_W, GAME_H, PATROL_LANES } from '../constants';
+import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, BOSS_WAVE_L1, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 
 export interface DroneScaling {
   attackSpeed: number;
@@ -51,11 +50,7 @@ export class DroneSpawner {
   }
 
   isBossWave(): boolean {
-    const currentLevel = (this.scene.registry.get('currentLevel') as number) ?? 1;
-    const bossWave = currentLevel === 3 ? BOSS_WAVE_L3
-                   : currentLevel === 2 ? BOSS_WAVE_L2
-                   : BOSS_WAVE_L1;
-    return this.waveIndex >= bossWave;
+    return this.waveIndex >= BOSS_WAVE_L1;
   }
 
   update(time: number, _delta: number): void {
@@ -71,12 +66,7 @@ export class DroneSpawner {
     this.spawning = true;
     this.waveIndex++;
     this.scene.events.emit('waveStart', this.waveIndex);
-    this.scene.debugLog?.log('[WAVE] Wave ' + this.waveIndex + ' start (L' + ((this.scene.registry.get('currentLevel') as number) ?? 1) + ')');
-
-    const currentLevel = (this.scene.registry.get('currentLevel') as number) ?? 1;
-    const bossWave     = currentLevel === 3 ? BOSS_WAVE_L3
-                       : currentLevel === 2 ? BOSS_WAVE_L2
-                       : BOSS_WAVE_L1;
+    this.scene.debugLog?.log('[WAVE] Wave ' + this.waveIndex + ' start');
 
     // Determine bracket
     let bracket = WAVE_BRACKETS[0];
@@ -84,72 +74,17 @@ export class DroneSpawner {
       if (this.waveIndex >= b.minWave) bracket = b;
     }
 
-    // Apply L2 difficulty multiplier
-    if (currentLevel === 2) {
-      bracket = {
-        ...bracket,
-        attackSpeed:   Math.round(bracket.attackSpeed   * L2_SPEED_MULT),
-        shootInterval: Math.round(bracket.shootInterval * L2_INTERVAL_MULT),
-      };
-    }
-
-    // Apply L3 difficulty multiplier — faster, more aggressive
-    if (currentLevel === 3) {
-      bracket = {
-        ...bracket,
-        attackSpeed:   Math.round(bracket.attackSpeed   * L3_SPEED_MULT),
-        shootInterval: Math.round(bracket.shootInterval * L3_INTERVAL_MULT),
-      };
-    }
-
     // Boss wave — spawn boss instead of regular drones
-    if (this.waveIndex === bossWave) {
+    if (this.waveIndex === BOSS_WAVE_L1) {
       this.spawning = false;
       const camCentreX = this.scene.cameras.main.scrollX + GAME_W / 2;
 
-      // ── Level 3: Mother Drone ────────────────────────────────────────────────
-      if (currentLevel === 3) {
-        const boss = new MotherDrone(this.scene, camCentreX, 180, bracket);
-        this.scene.add.existing(boss);
-        this.scene.physics.add.existing(boss);
-        this.scene.drones.add(boss);
-        boss.initBody();
-        this.scene.debugLog?.log('[BOSS] MotherDrone spawned — missiles only');
-
-        // Only missiles damage her — no playerBullets overlap registered
-        this.scene.physics.add.overlap(
-          this.scene.missiles,
-          boss,
-          (b, missile) => {
-            const m = missile as Phaser.Physics.Arcade.Image;
-            m.setData('hitTarget', true);
-            m.setActive(false).setVisible(false);
-            if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-            this.scene.spawnExplosion(m.x, m.y);
-            (b as unknown as MotherDrone).takeDamage(1);
-            this.scene.cameras.main.shake(200, 0.015);
-            this.scene.audio.play('explosion');
-            this.scene.spawnFloatingText(
-              (b as Phaser.GameObjects.Sprite).x,
-              (b as Phaser.GameObjects.Sprite).y - 30,
-              '-1', '#ffaa44',
-            );
-          },
-        );
-
-        this.dronesAlive++;
-        this.scene.events.emit('dronesRemaining', this.dronesAlive);
-        return;
-      }
-
-      // ── Level 1 / 2: NexusBoss ───────────────────────────────────────────────
-      const spawnY     = currentLevel === 2 ? 200 : 180;
-      const boss = new NexusBoss(this.scene, camCentreX, spawnY, bracket, currentLevel);
+      const boss = new NexusBoss(this.scene, camCentreX, 180, bracket);
       this.scene.add.existing(boss);
       this.scene.physics.add.existing(boss);
       this.scene.drones.add(boss);
       boss.initBody(); // must come after drones.add() — group.add() resets body defaults
-      this.scene.debugLog?.log('[BOSS] NexusBoss spawned (L' + currentLevel + ')');
+      this.scene.debugLog?.log('[BOSS] NexusBoss spawned');
 
       // Register bullet overlaps for boss
       this.scene.physics.add.overlap(
@@ -185,10 +120,8 @@ export class DroneSpawner {
       return;
     }
 
-    // Normal wave — drone count scales with wave (L3 uses fixed smaller encounter size)
-    const count = currentLevel === 3
-      ? L3_ENCOUNTER_SIZE
-      : 10 + (this.waveIndex - 1) * 5;
+    // Normal wave — drone count scales with wave
+    const count = 10 + (this.waveIndex - 1) * 5;
     let spawned = 0;
 
     const MARGIN = 150;
@@ -288,9 +221,8 @@ export class DroneSpawner {
         return;
       }
 
-      const forceHp   = isSentinel ? 3 : undefined;
-      const resilience = currentLevel === 3 ? 2 : 0;
-      const drone      = new Drone(this.scene, spawnX, finalSpawnY, type, bracket, variant, forceHp, resilience);
+      const forceHp = isSentinel ? 3 : undefined;
+      const drone   = new Drone(this.scene, spawnX, finalSpawnY, type, bracket, variant, forceHp);
       this.scene.add.existing(drone);
       this.scene.physics.add.existing(drone);
       this.scene.drones.add(drone);
@@ -385,8 +317,8 @@ export class DroneSpawner {
       );
     }
 
-    // Mines from wave 2 (or wave 1 on L3) — 1-2 per wave, placed at random ground positions
-    const mineStartWave = currentLevel === 3 ? 1 : 2;
+    // Mines from wave 2 — 1-2 per wave, placed at random ground positions
+    const mineStartWave = 2;
     if (this.waveIndex >= mineStartWave) {
       const mineCount = Math.random() < 0.5 ? 1 : 2;
       const groundY = this.scene.getApproxGroundY();
