@@ -579,7 +579,75 @@ export class UIScene extends Phaser.Scene {
   }
 
   private showControlsModal(): void {
-    // stub — implemented in Task 6
+    const W = GAME_W, H = GAME_H;
+    const objs: Phaser.GameObjects.GameObject[] = [];
+
+    const push = <T extends Phaser.GameObjects.GameObject>(o: T): T => { objs.push(o); return o; };
+
+    push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.82).setDepth(60).setScrollFactor(0));
+
+    push(this.add.text(W / 2, H * 0.12, 'CONTROLS', {
+      fontFamily: 'monospace', fontSize: '32px', color: '#6699ff',
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+
+    const colY  = H * 0.26;
+    const lx    = W * 0.28;   // left column center X
+    const rx    = W * 0.70;   // right column center X
+    const rowH  = 46;
+    const kStyle = { fontFamily: 'monospace', fontSize: '15px', color: '#ffdd44' };
+    const aStyle = { fontFamily: 'monospace', fontSize: '15px', color: '#aabbcc' };
+    const hStyle = { fontFamily: 'monospace', fontSize: '18px', color: '#ff3311' };
+
+    push(this.add.text(lx, colY, 'MECH', hStyle).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+    push(this.add.text(rx, colY, 'PILOT  (EJECTED)', hStyle).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+
+    const mechBindings: [string, string][] = [
+      ['A / D',     'Move'],
+      ['SPACE',     'Jump / Jetpack'],
+      ['RMB hold',  'Rapid gun'],
+      ['LMB',       'Turret'],
+      ['SHIFT',     'Missiles'],
+      ['Q',         'Nanite heal'],
+      ['E',         'Eject pilot'],
+    ];
+
+    const pilotBindings: [string, string][] = [
+      ['A / D',    'Move'],
+      ['SPACE',    'Jump / Jetpack'],
+      ['LMB hold', 'Pilot gun'],
+      ['E',        'Reenter mech'],
+    ];
+
+    mechBindings.forEach(([key, action], i) => {
+      const y = colY + 44 + i * rowH;
+      push(this.add.text(lx - 12, y, key,    kStyle).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
+      push(this.add.text(lx + 12, y, action, aStyle).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
+    });
+
+    pilotBindings.forEach(([key, action], i) => {
+      const y = colY + 44 + i * rowH;
+      push(this.add.text(rx - 12, y, key,    kStyle).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
+      push(this.add.text(rx + 12, y, action, aStyle).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
+    });
+
+    const dismissPrompt = push(this.add.text(W / 2, H * 0.90, '[ ANY KEY OR CLICK TO CONTINUE ]', {
+      fontFamily: 'monospace', fontSize: '18px', color: '#4488ff',
+    }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+    const blinkTween = this.tweens.add({ targets: dismissPrompt, alpha: 0.3, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      this.input.keyboard!.off('keydown', dismiss);
+      this.input.off('pointerdown', dismiss);
+      blinkTween.stop();
+      objs.forEach(o => o.destroy());
+    };
+
+    this.input.keyboard!.on('keydown', dismiss);
+    this.input.on('pointerdown', dismiss);
   }
 
   private showLevelComplete(): void {
