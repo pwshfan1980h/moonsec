@@ -32,14 +32,58 @@ The game is being trimmed to a polished L1-only experience. The title screen has
 
 ---
 
-## TitleScene
+## TitleScene → inline in UIScene
 
-- `MAIN_OPTIONS` reduced to `['START GAME']`
-- `LEVEL_OPTIONS` and `CONFIRM_OPTIONS` constants deleted
-- `menuState` type simplified: remove `'levelSelect'` and `'resetConfirm'` variants — only `'main'` remains, so the field can be removed entirely
-- `confirmSelection()` becomes a single action: fade out and start Game
-- Navigation guards (`if (this.menuState === 'levelSelect' || ...)`) removed
-- Menu rendering still works (single item, no selection needed — just ENTER/SPACE to confirm)
+`TitleScene.ts` is **deleted**. No replacement scene is created. The title content lives inside UIScene as a pre-game overlay that transitions directly into gameplay.
+
+### Scene flow
+
+**Before:** Boot → Title → Game + UI
+
+**After:** Boot → Game (frozen) + UI (shows title overlay inline) → [player presses ENTER/SPACE] → title elements fade out, controls modal appears, game unpauses
+
+### BootScene change
+
+Change final destination from `this.scene.start('Title')` to:
+```ts
+this.scene.start('Game', { mechType: 'mech4', level: 1 });
+this.scene.launch('UI');
+```
+
+### GameScene frozen state
+
+GameScene gains a `private waitingForStart = true` flag (set in `init()`):
+
+- `update()` returns early while `waitingForStart` is true (player input blocked, spawner not ticked, audio not updated)
+- `MusicSystem` does not start until `waitingForStart` becomes false
+- World renders normally — background, ground, player standing idle
+
+On receiving the `'titleDismissed'` game event from UIScene:
+1. `waitingForStart = false`
+2. Start music
+3. UIScene shows controls modal immediately after
+
+### UIScene title overlay (inline)
+
+UIScene's `create()` calls a new private method `showTitleScreen()` which draws title content on top of the game world. Elements (all `setScrollFactor(0)`):
+
+- **Logo image** — `this.add.image(W/2, 150, 'logo').setDepth(50)` with floating tween (y 150↔160, 2s sine yoyo)
+- **Mech silhouette watermark** — same procedural rectangles as TitleScene (red, 5% alpha), depth 49
+- **"PRESS ENTER / SPACE  TO START"** prompt — centered below logo, pulsing alpha tween, depth 51
+- **Version watermark** — bottom-right corner, depth 50
+- **Title music** — UIScene starts `'music-title'`, fades in over 1500ms
+
+On ENTER or SPACE (while title is active):
+1. Lock input
+2. Fade title music out over 600ms; start game music on GameScene via `game.events.emit('titleDismissed')`
+3. Tween all title GameObjects alpha → 0 over 400ms, then destroy them
+4. Show controls modal
+
+### Returning to title after game over / level complete
+
+UIScene `showGameOver` R-key handler and `showLevelComplete` both currently restart GameScene. They should also call `showTitleScreen()` after restart so the overlay reappears on the fresh game world.
+
+- Add a `private titleActive = false` guard so `showTitleScreen()` is idempotent
 
 ---
 
