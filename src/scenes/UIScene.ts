@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
 import type { GameScene } from './GameScene';
-import type { ProgressionSystem } from '../systems/ProgressionSystem';
 import { PILOT_JETPACK_MAX_FUEL, GAME_W, GAME_H } from '../constants';
 
 const BAR_W   = 200;   // bar width (was 140)
@@ -384,7 +383,6 @@ export class UIScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-R', () => {
       if (!this.gameOverActive) return;
       const gameScene = this.scene.get('Game');
-      this.registry.set('isNewGame', true);
       gameScene.scene.restart();
       this.scene.restart();
     });
@@ -526,8 +524,8 @@ export class UIScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => {
       this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
         if (progress === 1) {
-          gameScene.scene.start('Title');
-          this.scene.stop();
+          gameScene.scene.start('Game', { mechType: 'mech4', level: 1 });
+          this.scene.restart();
         }
       });
     });
@@ -536,53 +534,29 @@ export class UIScene extends Phaser.Scene {
   private showGameOver(): void {
     this.gameOverActive = true;
 
-    // Save high score via ProgressionSystem
-    const prog = this.registry.get('progression') as ProgressionSystem | undefined;
-    const prevHighScore = prog ? prog.highScore : 0;
-    if (prog) {
-      prog.addScore(this.currentScore);
-      prog.updateHighScore(this.currentScore);
-    }
-    const highScore = prog ? prog.highScore : this.currentScore;
-    const isNew = this.currentScore > prevHighScore;
-
-    // Dark overlay
     const W = GAME_W, H = GAME_H;
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(60);
 
-    // Game over text
     this.add.text(W / 2, H / 2 - 120, 'GAME OVER', {
       fontFamily: 'monospace', fontSize: '96px', color: '#ff2222',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
-    // Score
     this.add.text(W / 2, H / 2 - 40, `SCORE: ${this.currentScore}`, {
       fontFamily: 'monospace', fontSize: '22px', color: '#ffffff',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
-    // Wave reached
     this.add.text(W / 2, H / 2, `WAVE: ${this.currentWave}`, {
       fontFamily: 'monospace', fontSize: '16px', color: '#8888aa',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
-    // High score
-    const hsColor = isNew ? '#ffff00' : '#666688';
-    const hsPrefix = isNew ? 'NEW HIGH SCORE: ' : 'HIGH SCORE: ';
-    this.add.text(W / 2, H / 2 + 48, `${hsPrefix}${highScore}`, {
-      fontFamily: 'monospace', fontSize: '16px', color: hsColor,
-      align: 'center',
-    }).setOrigin(0.5, 0.5).setDepth(61);
-
-    // Restart prompt
-    const restartText = this.add.text(W / 2, H / 2 + 136, 'PRESS R TO RESTART', {
+    const restartText = this.add.text(W / 2, H / 2 + 80, 'PRESS R TO RESTART', {
       fontFamily: 'monospace', fontSize: '20px', color: '#4488ff',
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(61);
 
-    // Pulse the restart prompt
     this.tweens.add({
       targets: restartText,
       alpha: 0.3,
