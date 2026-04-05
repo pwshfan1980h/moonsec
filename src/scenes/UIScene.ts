@@ -37,6 +37,7 @@ export class UIScene extends Phaser.Scene {
   private naniteActive = false;
   private healthValueText!: Phaser.GameObjects.Text;
   private levelCompleteActive = false;
+  private titleActive = false;
   private nanitePulseTween: Phaser.Tweens.Tween | null = null;
 
   private dronesRemainingText!: Phaser.GameObjects.Text;
@@ -67,6 +68,7 @@ export class UIScene extends Phaser.Scene {
     const W = GAME_W, H = GAME_H;
     this.gameOverActive = false;
     this.levelCompleteActive = false;
+    this.titleActive = false;
     this.paused = false;
     this.naniteActive = false;
     this.currentWave = 0;
@@ -389,6 +391,8 @@ export class UIScene extends Phaser.Scene {
 
     // ── Radar minimap ─────────────────────────────────────────────
     this.minimap = new MinimapRenderer(this);
+
+    this.showTitleScreen();
   }
 
   update(time: number, _delta: number): void {
@@ -502,6 +506,80 @@ export class UIScene extends Phaser.Scene {
       this.naniteBar.setDisplaySize(BAR_W, BAR_H2);
       this.naniteBar.setFillStyle(0x00ff88);
     }
+  }
+
+  private showTitleScreen(): void {
+    if (this.titleActive) return;
+    this.titleActive = true;
+
+    const W = GAME_W, H = GAME_H;
+    const titleObjs: Phaser.GameObjects.GameObject[] = [];
+
+    // Mech silhouette watermark
+    const cx = W / 2;
+    const s  = H * 0.42;
+    const gy = H * 0.75;
+    const wm = this.add.graphics().setDepth(49).setScrollFactor(0);
+    wm.fillStyle(0xff3311, 0.05);
+    wm.fillRect(cx - s * 0.11, gy - s * 0.96, s * 0.22, s * 0.16); // head
+    wm.fillRect(cx - s * 0.22, gy - s * 0.78, s * 0.44, s * 0.32); // body
+    wm.fillRect(cx - s * 0.38, gy - s * 0.76, s * 0.16, s * 0.24); // left arm
+    wm.fillRect(cx + s * 0.22, gy - s * 0.76, s * 0.16, s * 0.24); // right arm
+    wm.fillRect(cx - s * 0.19, gy - s * 0.44, s * 0.15, s * 0.44); // left leg
+    wm.fillRect(cx + s * 0.04, gy - s * 0.44, s * 0.15, s * 0.44); // right leg
+    titleObjs.push(wm);
+
+    // Logo with floating tween
+    const logo = this.add.image(W / 2, 150, 'logo').setDepth(50).setScrollFactor(0);
+    this.tweens.add({ targets: logo, y: 160, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    titleObjs.push(logo);
+
+    // Start prompt
+    const prompt = this.add.text(W / 2, H * 0.58, 'PRESS  ENTER / SPACE  TO START', {
+      fontFamily: 'monospace', fontSize: '26px', color: '#ff3311',
+    }).setOrigin(0.5).setDepth(51).setScrollFactor(0);
+    this.tweens.add({ targets: prompt, alpha: { from: 0.75, to: 1 }, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    titleObjs.push(prompt);
+
+    // Version watermark
+    const ver = this.add.text(W - 16, H - 16, `ALPHA v${__APP_VERSION__}`, {
+      fontFamily: 'monospace', fontSize: '12px', color: '#334455',
+    }).setOrigin(1, 1).setDepth(50).setScrollFactor(0);
+    titleObjs.push(ver);
+
+    // Title music
+    const titleMusic = this.sound.add('music-title', { loop: true, volume: 0 }) as Phaser.Sound.WebAudioSound;
+    titleMusic.play();
+    this.tweens.add({ targets: titleMusic, volume: 0.6, duration: 1500, ease: 'Linear' });
+
+    // Dismiss on ENTER, SPACE, or click
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      this.titleActive = false;
+      this.input.keyboard!.off('keydown-ENTER', dismiss);
+      this.input.keyboard!.off('keydown-SPACE', dismiss);
+      this.input.off('pointerdown', dismiss);
+
+      this.tweens.add({ targets: titleMusic, volume: 0, duration: 600, ease: 'Linear',
+        onComplete: () => titleMusic.stop() });
+
+      this.tweens.add({ targets: titleObjs, alpha: 0, duration: 400, ease: 'Power2',
+        onComplete: () => titleObjs.forEach(o => o.destroy()) });
+
+      const game = this.scene.get('Game') as GameScene;
+      game.events.emit('titleDismissed');
+      this.showControlsModal();
+    };
+
+    this.input.keyboard!.on('keydown-ENTER', dismiss);
+    this.input.keyboard!.on('keydown-SPACE', dismiss);
+    this.input.on('pointerdown', dismiss);
+  }
+
+  private showControlsModal(): void {
+    // stub — implemented in Task 6
   }
 
   private showLevelComplete(): void {
