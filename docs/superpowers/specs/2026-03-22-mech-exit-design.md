@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-22
 **Project:** moonsec (Phaser 3 + TypeScript mech sidescroller)
-**Status:** Approved
+**Status:** Implemented
 **Inspiration:** MetalWarriors (SNES) — player ejects from mech and runs around as a tiny pilot
 
 ---

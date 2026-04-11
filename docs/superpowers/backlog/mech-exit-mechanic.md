@@ -73,4 +73,4 @@ The mech while empty: stationary, no collision with bullets (or minimal HP buffe
 
 ## Status
 
-Backlog — needs design questions answered before brainstorm/spec phase.
+Implemented — see `docs/superpowers/specs/2026-03-22-mech-exit-design.md` and `docs/superpowers/plans/2026-03-22-mech-exit.md`.
