@@ -30,6 +30,8 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     { drone: null, colliders: [] },
   ];
   private scaling: DroneScaling;
+  private glowAura: Phaser.GameObjects.Graphics | null = null;
+  private glowTween: Phaser.Tweens.Tween | null = null;
 
   constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling) {
     super(scene, x, y, 'sentinel');
@@ -41,6 +43,27 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     this.setScale(SCALE);
     this.setDepth(10);
     this.play('sentinel-hover');
+
+    // Pulsing glow aura — additive blend so it blooms over dark backgrounds
+    const gfx = scene.add.graphics();
+    gfx.setBlendMode(Phaser.BlendModes.ADD);
+    gfx.setDepth(9);
+    gfx.fillStyle(0xff2200, 0.22);
+    gfx.fillCircle(0, 0, 110);
+    gfx.fillStyle(0xff4400, 0.18);
+    gfx.fillCircle(0, 0, 78);
+    gfx.fillStyle(0xff8800, 0.14);
+    gfx.fillCircle(0, 0, 50);
+    gfx.setPosition(x, y);
+    this.glowAura = gfx;
+    this.glowTween = scene.tweens.add({
+      targets: gfx,
+      alpha: { from: 0.55, to: 1.0 },
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
     scene.time.delayedCall(500, () => this.spawnEscort(0));
     scene.time.delayedCall(800, () => this.spawnEscort(1));
@@ -117,6 +140,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
 
   update(_time: number, delta: number): void {
     if (!this.active || this.bossState === 'DEATH') return;
+    this.glowAura?.setPosition(this.x, this.y);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
 
@@ -278,6 +302,11 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         this.play('sentinel-death');
         (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
         (this.body as Phaser.Physics.Arcade.Body).enable = false;
+
+        this.glowTween?.stop();
+        this.glowAura?.destroy();
+        this.glowTween = null;
+        this.glowAura = null;
 
         for (const slot of this.escortSlots) {
           for (const col of slot.colliders) col.destroy();

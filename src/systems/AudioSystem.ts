@@ -8,7 +8,6 @@ type SoundId =
   | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
   | 'nanite-heal' | 'nanite-tick' | 'pickup' | 'eject'
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
-  | 'upgrade-pick' | 'upgrade-buy' | 'upgrade-denied'
   | 'missile-launch' | 'landing-soft' | 'landing-heavy';
 
 type LoopId = 'jetpack';
@@ -43,9 +42,6 @@ const VOLUMES: Record<SoundId, number> = {
   'ui-nav':         0.25,
   'ui-confirm':     0.40,
   'level-complete': 0.70,
-  'upgrade-pick':   0.55,
-  'upgrade-buy':    0.65,
-  'upgrade-denied': 0.40,
   'missile-launch': 0.45,
   'landing-soft':   0.30,
   'landing-heavy':  0.50,

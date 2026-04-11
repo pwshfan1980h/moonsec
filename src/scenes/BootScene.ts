@@ -26,7 +26,6 @@ export class BootScene extends Phaser.Scene {
       'drone-shoot','explosion','footstep','missile-impact',
       'nanite-heal','nanite-tick','pickup','eject',
       'ui-nav','ui-confirm','level-complete',
-      'upgrade-pick','upgrade-buy','upgrade-denied',
     ];
     for (const s of sounds) {
       this.load.audio(s, `audio/${s}.wav`);
@@ -67,8 +66,7 @@ export class BootScene extends Phaser.Scene {
 
     // Load new SVG assets for visual upgrades
     this.load.svg('logo', 'assets/logo.svg', { width: 600, height: 150 });
-    this.load.svg('hud-bracket', 'assets/hud-bracket.svg', { width: 180, height: 20 });
-this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
+    this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
   }
 
   create(): void {
@@ -121,10 +119,6 @@ this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
       frameRate: fps(120),
       repeat: 0,
     });
-
-    // Smooth boss textures (bilinear) so scale-up doesn't look blocky
-    this.textures.get('nexus').source[0].setFilter(Phaser.Textures.FilterMode.LINEAR);
-    this.textures.get('sentinel').source[0].setFilter(Phaser.Textures.FilterMode.LINEAR);
 
     // Procedural bullet/effect textures
     this.makeTextures();
