@@ -58,7 +58,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private keyA: Phaser.Input.Keyboard.Key;
   private keyD: Phaser.Input.Keyboard.Key;
   private keySpace: Phaser.Input.Keyboard.Key;
-  private keyShift: Phaser.Input.Keyboard.Key;
+  private keyE: Phaser.Input.Keyboard.Key;
   private keyQ: Phaser.Input.Keyboard.Key;
 
   private rapidGun: RapidGun;
@@ -106,7 +106,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.keyA      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.keyD      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.keySpace  = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.keyShift  = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+    this.keyE      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.keyQ      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
 
     this.rapidGun = new RapidGun(scene);
@@ -283,7 +283,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.rapidGun.update(time, !this.flipX);
     this.missile.update(time, delta);
 
-    if (Phaser.Input.Keyboard.JustDown(this.keyShift)) {
+    if (Phaser.Input.Keyboard.JustDown(this.keyE)) {
       this.missile.fire(this);
     }
 

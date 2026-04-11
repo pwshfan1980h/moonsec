@@ -165,7 +165,7 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setAlpha(0);
 
     // ── Controls hint (bottom-left) ───────────────────────────────
-    this.add.text(PAD, H - PAD, 'A/D move  SPACE jump/jetpack  LMB turret  RMB rapid  SHIFT missile  ESC pause', {
+    this.add.text(PAD, H - PAD, 'A/D move  SPACE jump/jetpack  LMB turret  RMB rapid  E missile  ESC pause', {
       fontFamily: 'monospace', fontSize: '18px', color: '#556677',
     }).setOrigin(0, 1);
 
@@ -545,45 +545,64 @@ export class UIScene extends Phaser.Scene {
 
     const W = GAME_W, H = GAME_H;
     const objs: Phaser.GameObjects.GameObject[] = [];
-
     const push = <T extends Phaser.GameObjects.GameObject>(o: T): T => { objs.push(o); return o; };
 
-    push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.82).setDepth(60).setScrollFactor(0));
+    // ── Overlay ───────────────────────────────────────────────────────────────
+    push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.92).setDepth(60).setScrollFactor(0));
 
-    push(this.add.text(W / 2, H * 0.12, 'CONTROLS', {
-      fontFamily: 'monospace', fontSize: '32px', color: '#6699ff',
-      stroke: '#000000', strokeThickness: 3,
+    // ── Scanline overlay ──────────────────────────────────────────────────────
+    const gfx = push(this.add.graphics()).setDepth(60).setScrollFactor(0) as Phaser.GameObjects.Graphics;
+    gfx.fillStyle(0x000000, 0.10);
+    for (let y = 0; y < H; y += 4) gfx.fillRect(0, y, W, 2);
+
+    // ── Header ────────────────────────────────────────────────────────────────
+    push(this.add.text(W / 2, H * 0.10, 'GLOBAL DEFENSE INITIATIVE // MECH-IV', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#004400',
     }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
 
-    const colY  = H * 0.26;
-    const cx    = W * 0.50;   // centered column
-    const rowH  = 46;
-    const kStyle = { fontFamily: 'monospace', fontSize: '15px', color: '#ffdd44' };
-    const aStyle = { fontFamily: 'monospace', fontSize: '15px', color: '#aabbcc' };
-    const hStyle = { fontFamily: 'monospace', fontSize: '18px', color: '#ff3311' };
+    push(this.add.text(W / 2, H * 0.165, '[ CONTROLS ]', {
+      fontFamily: 'monospace', fontSize: '38px', color: '#00ff41',
+      stroke: '#002200', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
 
-    push(this.add.text(cx, colY, 'CONTROLS', hStyle).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+    push(this.add.text(W / 2, H * 0.24, '════════════════════════════════', {
+      fontFamily: 'monospace', fontSize: '16px', color: '#004400',
+    }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
 
-    const bindings: [string, string][] = [
-      ['A / D',     'Move'],
-      ['SPACE',     'Jump / Jetpack'],
-      ['RMB hold',  'Rapid gun'],
-      ['LMB',       'Turret'],
-      ['SHIFT',     'Missiles'],
-      ['Q',         'Nanite heal'],
-      ['ESC',       'Pause'],
+    // ── Bindings ──────────────────────────────────────────────────────────────
+    const cx      = W / 2;
+    const prefX   = cx - 190;   // ">" prefix
+    const keyX    = cx - 95;    // keys right-align here
+    const sepX    = cx - 75;    // "──" left-aligns here
+    const actX    = cx - 30;    // action text left-aligns here
+    const startY  = H * 0.32;
+    const rowH    = 60;
+
+    const bindings: [string, string, boolean?][] = [
+      ['A / D',  'LOCOMOTION'],
+      ['SPACE',  'VERTICAL THRUST'],
+      ['LMB',    'TURRET FIRE'],
+      ['RMB',    'RAPID SUPPRESSION'],
+      ['E',      'HOMING MISSILES',  true],
+      ['Q',      'NANITE REPAIR'],
+      ['ESC',    'PAUSE / MENU'],
     ];
 
-    bindings.forEach(([key, action], i) => {
-      const y = colY + 44 + i * rowH;
-      push(this.add.text(cx - 12, y, key,    kStyle).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
-      push(this.add.text(cx + 12, y, action, aStyle).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
+    bindings.forEach(([key, action, highlight], i) => {
+      const y = startY + i * rowH;
+      const keyCol  = highlight ? '#ffff44' : '#00ff41';
+      const actCol  = highlight ? '#ffff44' : '#00cc33';
+      push(this.add.text(prefX, y, '>',      { fontFamily: 'monospace', fontSize: '18px', color: '#004400' }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
+      push(this.add.text(keyX,  y, key,      { fontFamily: 'monospace', fontSize: '18px', color: keyCol   }).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
+      push(this.add.text(sepX,  y, '\u2500\u2500', { fontFamily: 'monospace', fontSize: '18px', color: '#007700' }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
+      push(this.add.text(actX,  y, action,   { fontFamily: 'monospace', fontSize: '18px', color: actCol   }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
     });
 
-    const dismissPrompt = push(this.add.text(W / 2, H * 0.90, '[ ANY KEY OR CLICK TO CONTINUE ]', {
-      fontFamily: 'monospace', fontSize: '18px', color: '#4488ff',
+    // ── Dismiss ───────────────────────────────────────────────────────────────
+    const dismissPrompt = push(this.add.text(W / 2, H * 0.92, 'press any key to engage_', {
+      fontFamily: 'monospace', fontSize: '16px', color: '#005500',
     }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
-    const blinkTween = this.tweens.add({ targets: dismissPrompt, alpha: 0.3, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const blinkTween = this.tweens.add({ targets: dismissPrompt, alpha: 0.15, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     let dismissed = false;
     const dismiss = () => {
