@@ -579,6 +579,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private showControlsModal(): void {
+    this.scene.pause('Game');
+
     const W = GAME_W, H = GAME_H;
     const objs: Phaser.GameObjects.GameObject[] = [];
 
@@ -644,6 +646,7 @@ export class UIScene extends Phaser.Scene {
       this.input.off('pointerdown', dismiss);
       blinkTween.stop();
       objs.forEach(o => o.destroy());
+      this.scene.resume('Game');
     };
 
     this.input.keyboard!.on('keydown', dismiss);
