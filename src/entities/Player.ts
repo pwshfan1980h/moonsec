@@ -47,7 +47,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private jetpackFuel = 0;
   private hurtLock = 0;
   private dead = false;
-  piloting = true;
 
   private wasAirborne = false;
   private prevVelocityY = 0;
@@ -116,7 +115,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Left-click: turret fire
     scene.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
-      if (this.dead || !this.piloting) return;
+      if (this.dead) return;
       if (ptr.leftButtonDown()) {
         const wp = scene.cameras.main.getWorldPoint(ptr.x, ptr.y);
         this.turret.fire(this.x, this.y, wp.x, wp.y, scene.time.now);
@@ -192,7 +191,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Nanite Q key listener
     this.keyQ.on('down', () => {
-      if (!this.naniteActive && this.naniteCooldown <= 0 && this.hp < this.maxHp && !this.dead && this.piloting) {
+      if (!this.naniteActive && this.naniteCooldown <= 0 && this.hp < this.maxHp && !this.dead) {
         this.naniteActive = true;
         this.naniteHealElapsed = 0;
         this.naniteHealStart = this.hp;
@@ -205,7 +204,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   update(time: number, delta: number): void {
     if (this.dead) return;
-    if (!this.piloting) return; // mech frozen while pilot is on foot
     if (this.empStunned) return; // EMP shutdown — no input, gravity still applies
 
     const body = this.body as Phaser.Physics.Arcade.Body;
@@ -371,41 +369,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   restoreJetpackFuel(amount: number): void {
     this.jetpackFuel = Math.min(this.jetpackMaxFuel, this.jetpackFuel + amount);
     this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
-  }
-
-  isDead(): boolean {
-    return this.dead;
-  }
-
-  isHurtLocked(): boolean {
-    return this.hurtLock > 0;
-  }
-
-  eject(): { x: number; y: number } {
-    this.piloting = false;
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setVelocity(0, 0);
-    body.setAcceleration(0, 0);
-    body.moves = false;                // freeze mech in place (even mid-air)
-    body.setCollideWorldBounds(false); // prevent spurious world-bounds events while frozen
-    this.setAlpha(0.45);               // dark/idle visual — mech "goes dark"
-    this.play({ key: this.animPrefix + 'idle', repeat: -1 }, true);
-    this.jetpackInner.emitting = false;
-    this.jetpackOuter.emitting = false;
-    this.scene.audio.stopLoop('jetpack');
-    // Spawn pilot 20px to the side and just above the mech top.
-    // displayHeight at scale 0.75 = 112.5px; +8px margin clears the sprite.
-    const spawnX = this.x + (this.flipX ? -20 : 20);
-    const spawnY = this.y - (this.displayHeight + 8);
-    return { x: spawnX, y: spawnY };
-  }
-
-  reenter(): void {
-    this.piloting = true;
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.moves = true;
-    body.setCollideWorldBounds(true);
-    this.setAlpha(1);
   }
 
   takeDamage(amount: number): void {

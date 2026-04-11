@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import type { MechType } from '../entities/Player';
-import { Pilot } from '../entities/Pilot';
 import { StunDart } from '../entities/StunDart';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
@@ -12,7 +11,6 @@ import { DebugLog } from '../systems/DebugLog';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
-  pilot: Pilot | null = null;
   playerBullets!: Phaser.Physics.Arcade.Group;
   droneBullets!: Phaser.Physics.Arcade.Group;
   missiles!: Phaser.Physics.Arcade.Group;
@@ -28,10 +26,6 @@ export class GameScene extends Phaser.Scene {
   private isGameOver = false;
   private killStreak = 0;
   private prevHp = 0;
-  private pilotGroundCollider: Phaser.Physics.Arcade.Collider | null = null;
-  private pilotBulletOverlap:  Phaser.Physics.Arcade.Collider | null = null;
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private spaceKey!: Phaser.Input.Keyboard.Key;
 
   private ground!: Phaser.Physics.Arcade.StaticGroup;
   private groundLayer?: Phaser.Tilemaps.TilemapLayer;
@@ -67,9 +61,6 @@ export class GameScene extends Phaser.Scene {
     this.isGameOver   = false;
     this.killStreak   = 0;
     this.prevHp       = 0;
-    this.pilot        = null;
-    this.pilotGroundCollider = null;
-    this.pilotBulletOverlap  = null;
     this.isBossDead      = false;
     this.bgHaze          = undefined;
     this.bgStars         = undefined;
@@ -87,21 +78,11 @@ export class GameScene extends Phaser.Scene {
     this.audio?.destroy(); // close old AudioContext before creating new one
     this.audio = new AudioSystem(this.sound);
 
-    // Input keys for pilot (Phaser deduplicates — safe alongside Player's own captures)
     const kb = this.input.keyboard!;
-    this.cursors  = kb.createCursorKeys();
-    this.spaceKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // Debug log — toggle with backtick (`)
     this.debugLog = new DebugLog(this);
     kb.addKey(Phaser.Input.Keyboard.KeyCodes.BACKTICK).on('down', () => this.debugLog?.toggle());
-
-    // Pilot sphere placeholder texture
-    const g = this.add.graphics();
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(8, 8, 8);
-    g.generateTexture('pilot_sphere', 16, 16);
-    g.destroy();
 
     // Boss projectile — large orange orb
     const bpg = this.add.graphics();
@@ -342,54 +323,6 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('jetpackFuel', 1, 1);
     this.events.emit('scoreChange', this.score);
 
-    // --- Eject / reenter (E key) ---
-    this.input.keyboard!.on('keydown-E', () => {
-      if (this.isGameOver) return;
-      if (this.pilot) {
-        // Reenter mech if close enough
-        const mechCenterY = this.player.y - 56;
-        const dist = Phaser.Math.Distance.Between(this.pilot.x, this.pilot.y, this.player.x, mechCenterY);
-        if (dist < 80) {
-          this.pilotGroundCollider?.destroy();
-          this.pilotBulletOverlap?.destroy();
-          this.pilotGroundCollider = null;
-          this.pilotBulletOverlap  = null;
-          this.pilot.destroy();
-          this.pilot = null;
-          this.player.reenter();
-          this.cameras.main.startFollow(this.player, false, 0.20, 0.18);
-        }
-      } else {
-        if (this.player.isDead() || this.player.isHurtLocked()) return;
-        this.audio.play('eject');
-        const spawnPos = this.player.eject();
-        this.pilot = new Pilot(this, spawnPos.x, spawnPos.y);
-        this.pilot.setFireCallback((bx, by, dirX) => {
-          const b = this.playerBullets.get(bx, by, 'bullet-rapid') as Phaser.Physics.Arcade.Image;
-          if (!b) return;
-          b.setActive(true).setVisible(true).setDepth(14);
-          b.setBlendMode(Phaser.BlendModes.ADD);
-          const bb = b.body as Phaser.Physics.Arcade.Body;
-          if (bb) { bb.enable = true; bb.setAllowGravity(false); }
-          b.setVelocity(dirX * 400, 0);
-          this.audio.play('rapid');
-        });
-        this.cameras.main.startFollow(this.pilot, false, 0.12, 0.08);
-        this.pilotGroundCollider = this.physics.add.collider(this.pilot, this.ground);
-        if (this.groundLayer) this.physics.add.collider(this.pilot, this.groundLayer);
-        this.pilotBulletOverlap = this.physics.add.overlap(
-          this.droneBullets,
-          this.pilot,
-          (_pilotObj, bulletObj) => {
-            if (!this.pilot?.active) return;
-            const bullet = bulletObj as Phaser.Physics.Arcade.Image;
-            bullet.setActive(false).setVisible(false);
-            if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
-            this.triggerGameOver();
-          },
-        );
-      }
-    });
   }
 
   update(time: number, delta: number): void {
@@ -402,7 +335,6 @@ export class GameScene extends Phaser.Scene {
       moving:    Math.abs(pb.velocity.x) > 10,
       delta,
     });
-    if (this.pilot?.active) this.pilot.update(this.cursors, this.spaceKey, delta);
     this.spawner.update(time, delta);
     this.cullBullets();
     this.updateParallax();
@@ -420,7 +352,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   public getPilotOrPlayer(): { x: number; y: number } {
-    if (this.pilot?.active) return { x: this.pilot.x, y: this.pilot.y };
     return { x: this.player.x, y: this.player.y };
   }
 

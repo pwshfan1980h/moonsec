@@ -128,15 +128,10 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
     this.scene.cameras.main.shake(280, 0.018);
     this.scene.audio.playAt('explosion', { rate: 0.65, detune: -350, volume: 0.9 });
 
-    // Damage if player/pilot is in the blast radius
-    const target = this.scene.getPilotOrPlayer();
-    const dist = Math.abs(target.x - this.targetX);
+    // Damage if player is in the blast radius
+    const dist = Math.abs(this.scene.player.x - this.targetX);
     if (dist < BOMB_RADIUS) {
-      if (this.scene.pilot?.active) {
-        this.scene.triggerGameOver();
-      } else {
-        this.scene.player.takeDamage(2);
-      }
+      this.scene.player.takeDamage(2);
     }
   }
 

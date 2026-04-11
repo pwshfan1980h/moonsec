@@ -31,10 +31,9 @@ export class MinimapRenderer {
     const gfx = this.gfx;
     gfx.clear();
 
-    const player = game.player;                    // still needed for facing arrow fallback
-    const radarCenter = game.getPilotOrPlayer();
-    const px = radarCenter.x;
-    const py = radarCenter.y;
+    const player = game.player;
+    const px = player.x;
+    const py = player.y;
     const R  = RADAR_SCREEN_RADIUS;
     const scale = R / RADAR_WORLD_RADIUS;
 
@@ -182,7 +181,7 @@ export class MinimapRenderer {
     gfx.fillStyle(0xffffff, 1);
     gfx.fillCircle(RADAR_X, RADAR_Y, 4);
 
-    const facing = game.pilot?.active ? game.pilot : game.player;
+    const facing = game.player;
     const arrowAngle = facing.flipX ? Math.PI : 0;
     gfx.lineStyle(2, 0x4488ff, 1);
     gfx.lineBetween(

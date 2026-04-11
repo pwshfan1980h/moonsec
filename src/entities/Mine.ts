@@ -94,14 +94,9 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
     this.scene.audio.play('explosion');
 
     // Damage check
-    const target = this.scene.getPilotOrPlayer();
-    const dist   = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
+    const dist = Phaser.Math.Distance.Between(this.x, this.y, this.scene.player.x, this.scene.player.y);
     if (dist < BLAST_RADIUS) {
-      if (this.scene.pilot?.active) {
-        this.scene.triggerGameOver();
-      } else {
-        this.scene.player.takeDamage(2);
-      }
+      this.scene.player.takeDamage(2);
     }
 
     this.mineState = 'DEAD';

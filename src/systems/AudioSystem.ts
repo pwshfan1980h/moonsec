@@ -6,9 +6,13 @@ import type Phaser from 'phaser';
 type SoundId =
   | 'rapid' | 'turret' | 'hit' | 'hurt' | 'jump' | 'death'
   | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
-  | 'nanite-heal' | 'nanite-tick' | 'pickup' | 'eject'
+  | 'nanite-heal' | 'nanite-tick' | 'pickup'
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
-  | 'missile-launch' | 'landing-soft' | 'landing-heavy';
+  | 'missile-launch' | 'landing-soft' | 'landing-heavy'
+  | 'ra2-start-1' | 'ra2-start-2' | 'ra2-start-3'
+  | 'ra2-kill-1'  | 'ra2-kill-2'  | 'ra2-kill-3'
+  | 'ra2-lowhp'
+  | 'ra2-over-1'  | 'ra2-over-2';
 
 type LoopId = 'jetpack';
 
@@ -38,13 +42,21 @@ const VOLUMES: Record<SoundId, number> = {
   'nanite-heal':    0.55,
   'nanite-tick':    0.30,
   'pickup':         0.50,
-  'eject':          0.60,
   'ui-nav':         0.25,
   'ui-confirm':     0.40,
   'level-complete': 0.70,
   'missile-launch': 0.45,
   'landing-soft':   0.30,
   'landing-heavy':  0.50,
+  'ra2-start-1':    0.75,
+  'ra2-start-2':    0.75,
+  'ra2-start-3':    0.75,
+  'ra2-kill-1':     0.75,
+  'ra2-kill-2':     0.75,
+  'ra2-kill-3':     0.75,
+  'ra2-lowhp':      0.70,
+  'ra2-over-1':     0.75,
+  'ra2-over-2':     0.75,
 };
 
 export class AudioSystem {
@@ -57,6 +69,7 @@ export class AudioSystem {
     'nanite-tick': 550,
   };
   private loops = new Map<LoopId, LoopEntry>();
+  private deathAmbientNodes: (OscillatorNode | GainNode)[] = [];
   private footstepTimer = 0;
   private readonly onBeforeUnload = () => { try { this.ctx.close(); } catch { /* ignore */ } };
 
@@ -70,6 +83,7 @@ export class AudioSystem {
   /** Call before discarding this instance (e.g. scene restart) to stop all nodes and close the AudioContext. */
   destroy(): void {
     window.removeEventListener('beforeunload', this.onBeforeUnload);
+    this.deathAmbientNodes = []; // context closing kills nodes immediately
     // Stop all active loops immediately (no fade — context is going away)
     for (const id of [...this.loops.keys()]) {
       const entry = this.loops.get(id)!;
@@ -151,6 +165,47 @@ export class AudioSystem {
 
       this.loops.set(id, { sources, gainNode });
     } catch { /* ignore */ }
+  }
+
+  /** A minor chord drone — plays on game over. Fades in over 2s. */
+  startDeathAmbient(): void {
+    this.stopDeathAmbient();
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+      const masterGain = this.ctx.createGain();
+      masterGain.gain.setValueAtTime(0, t);
+      masterGain.gain.linearRampToValueAtTime(0.18, t + 2.5);
+      masterGain.connect(this.ctx.destination);
+      this.deathAmbientNodes.push(masterGain);
+      // A1 minor chord: A=55Hz, C=65.41Hz, E=82.41Hz
+      for (const freq of [55, 65.41, 82.41]) {
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        osc.connect(masterGain);
+        osc.start(t);
+        this.deathAmbientNodes.push(osc);
+      }
+    } catch { /* ignore */ }
+  }
+
+  stopDeathAmbient(): void {
+    if (this.deathAmbientNodes.length === 0) return;
+    try {
+      const t = this.ctx.currentTime;
+      for (const node of this.deathAmbientNodes) {
+        if (node instanceof GainNode) {
+          node.gain.cancelScheduledValues(t);
+          node.gain.setValueAtTime(node.gain.value, t);
+          node.gain.linearRampToValueAtTime(0, t + 0.5);
+          setTimeout(() => { try { node.disconnect(); } catch { /* ignore */ } }, 600);
+        } else if (node instanceof OscillatorNode) {
+          try { node.stop(t + 0.5); } catch { /* ignore */ }
+        }
+      }
+    } catch { /* ignore */ }
+    this.deathAmbientNodes = [];
   }
 
   stopLoop(id: LoopId): void {

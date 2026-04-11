@@ -33,12 +33,6 @@ export const WAVE_BRACKETS: {
   { minWave: 3,  attackSpeed: 580, shootInterval: 800,  extraHp: 2, bulletSpeedMult: 1.65 },
 ];
 
-// Pilot (on-foot) movement
-export const PILOT_WALK_SPEED       = 90;    // px/s horizontal
-export const PILOT_JUMP_VEL         = -280;  // px/s, applied once on jump keydown
-export const PILOT_JETPACK_ACCEL    = -1200; // px/s² via setAccelerationY; net with gravity 600 = -600 upward
-export const PILOT_JETPACK_MAX_FUEL = 3000;  // ms; ~3 seconds at 60fps
-
 export const PATROL_LANES = [570, 630, 690, 750, 810];
 
 export const BOSS_WAVE_L1     = 3;

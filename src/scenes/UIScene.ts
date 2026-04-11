@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
 import type { GameScene } from './GameScene';
-import { PILOT_JETPACK_MAX_FUEL, GAME_W, GAME_H } from '../constants';
+import { GAME_W, GAME_H } from '../constants';
 
 const BAR_W   = 200;   // bar width (was 140)
 const BAR_H   = 14;    // primary bar height: HP, MSL (was 10)
@@ -26,11 +26,6 @@ export class UIScene extends Phaser.Scene {
   private turretBar!: Phaser.GameObjects.Rectangle;
   private turretLabel!: Phaser.GameObjects.Text;
   private turretBg!: Phaser.GameObjects.Rectangle;
-  private suitLabel!: Phaser.GameObjects.Text;
-  private suitBg!: Phaser.GameObjects.Rectangle;
-  private suitBar!: Phaser.GameObjects.Rectangle;
-  private pilotPip!: Phaser.GameObjects.Rectangle;
-  private pilotPipLabel!: Phaser.GameObjects.Text;
   private naniteBar!:   Phaser.GameObjects.Rectangle;
   private naniteBg!:    Phaser.GameObjects.Rectangle;
   private naniteLabel!: Phaser.GameObjects.Text;
@@ -59,6 +54,7 @@ export class UIScene extends Phaser.Scene {
   private currentWave = 0;
   private currentScore = 0;
   private lastHp = 0;
+  private ra2LowHpFired = false;
 
   constructor() {
     super({ key: 'UI', active: false });
@@ -74,6 +70,7 @@ export class UIScene extends Phaser.Scene {
     this.currentWave = 0;
     this.currentScore = 0;
     this.lastHp = 0;
+    this.ra2LowHpFired = false;
 
     // ── LEFT STAT PANEL (top-left) ────────────────────────────────
     // Vertical rhythm — same offsets reused by the right panel
@@ -119,25 +116,6 @@ export class UIScene extends Phaser.Scene {
     });
     this.naniteBg  = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x001a0d).setOrigin(0, 0);
     this.naniteBar = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x00ff88).setOrigin(0, 0);
-
-    // ── SUIT jetpack bar / Pilot pip (below left panel, hidden until ejected) ──
-    const panelBotY = PAD + panelH;    // 130 — bottom edge of left panel
-    const sy = panelBotY + 8;          // 138 — first row below panel
-
-    this.suitLabel = this.add.text(barX, sy, 'SUIT', {
-      fontFamily: 'monospace', fontSize: '13px', color: '#aaffaa',
-    }).setVisible(false);
-    this.suitBg = this.add.rectangle(barX, sy + LABEL_H, BAR_W, BAR_H2, 0x001100)
-      .setOrigin(0, 0).setVisible(false);
-    this.suitBar = this.add.rectangle(barX, sy + LABEL_H, BAR_W, BAR_H2, 0x44ff44)
-      .setOrigin(0, 0).setVisible(false);
-
-    const pipY = sy + LABEL_H + BAR_H2 + 6;
-    this.pilotPip = this.add.rectangle(barX, pipY, 6, 6, 0xff4444)
-      .setOrigin(0, 0).setVisible(false);
-    this.pilotPipLabel = this.add.text(barX + 10, pipY - 2, 'PILOT', {
-      fontFamily: 'monospace', fontSize: '12px', color: '#ff4444',
-    }).setVisible(false);
 
     // ── RIGHT STAT PANEL (top-right) ──────────────────────────────
     // Reuses r0LblY, r0BarY, r1LblY, r1BarY from the left-panel block above
@@ -217,6 +195,14 @@ export class UIScene extends Phaser.Scene {
       }
       if (hp < this.lastHp) {
         this.cameras.main.flash(200, 220, 30, 30, false);
+        // RA2 low-HP warning — fires once per life when dropping to ≤25%
+        if (!this.ra2LowHpFired && hp > 0 && hp / maxHp <= 0.25) {
+          this.ra2LowHpFired = true;
+          this.time.delayedCall(300, () => {
+            const gs = this.scene.get('Game') as GameScene;
+            gs?.audio?.play('ra2-lowhp');
+          });
+        }
       }
       this.lastHp = hp;
     });
@@ -313,6 +299,12 @@ export class UIScene extends Phaser.Scene {
       if (this.levelCompleteActive) return;
       this.levelCompleteActive = true;
       this.clearTelegraph();
+      // RA2 kill voice line — brief delay so it lands after explosion audio
+      this.time.delayedCall(400, () => {
+        const gs = this.scene.get('Game') as GameScene;
+        const picks = ['ra2-kill-1', 'ra2-kill-2', 'ra2-kill-3'] as const;
+        gs?.audio?.play(picks[Math.floor(Math.random() * picks.length)]);
+      });
       this.showLevelComplete();
     });
 
@@ -352,15 +344,10 @@ export class UIScene extends Phaser.Scene {
       // Damage player if they're still on the targeted half
       const gameScene = this.scene.get('Game') as GameScene;
       if (gameScene) {
-        const target = gameScene.getPilotOrPlayer();
-        const screenX = target.x - camScrollX;
+        const screenX = gameScene.player.x - camScrollX;
         const onTargetSide = side === 'left' ? screenX < W / 2 : screenX >= W / 2;
         if (onTargetSide) {
-          if (gameScene.pilot?.active) {
-            gameScene.triggerGameOver();
-          } else {
-            gameScene.player.takeDamage(3);
-          }
+          gameScene.player.takeDamage(3);
         }
       }
     });
@@ -401,31 +388,6 @@ export class UIScene extends Phaser.Scene {
     const game = this.scene.get('Game') as GameScene;
     if (!game || !game.sys.isActive()) return;
     this.minimap.draw(time, game);
-
-    // Pilot HUD — show/hide based on whether pilot is active
-    const pilotActive = !!game.pilot?.active;
-
-    this.suitLabel.setVisible(pilotActive);
-    this.suitBg.setVisible(pilotActive);
-    this.pilotPip.setVisible(pilotActive);
-    this.pilotPipLabel.setVisible(pilotActive);
-
-    if (pilotActive) {
-      this.suitBar.setVisible(true);
-      this.suitBar.setDisplaySize(BAR_W * (game.pilot!.jetpackFuel / PILOT_JETPACK_MAX_FUEL), BAR_H2);
-    } else {
-      this.suitBar.setVisible(false);
-    }
-
-    // Dim mech weapon bars while ejected
-    const weaponAlpha = pilotActive ? 0.3 : 1.0;
-    this.missileBar.setAlpha(weaponAlpha);
-    this.missileBg.setAlpha(weaponAlpha);
-    this.missileLabel.setAlpha(weaponAlpha);
-    this.missileStateLabel.setAlpha(weaponAlpha);
-    this.turretBar.setAlpha(weaponAlpha);
-    this.turretBg.setAlpha(weaponAlpha);
-    this.turretLabel.setAlpha(weaponAlpha);
   }
 
   private clearTelegraph(): void {
@@ -594,43 +556,28 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
 
     const colY  = H * 0.26;
-    const lx    = W * 0.28;   // left column center X
-    const rx    = W * 0.70;   // right column center X
+    const cx    = W * 0.50;   // centered column
     const rowH  = 46;
     const kStyle = { fontFamily: 'monospace', fontSize: '15px', color: '#ffdd44' };
     const aStyle = { fontFamily: 'monospace', fontSize: '15px', color: '#aabbcc' };
     const hStyle = { fontFamily: 'monospace', fontSize: '18px', color: '#ff3311' };
 
-    push(this.add.text(lx, colY, 'MECH', hStyle).setOrigin(0.5).setDepth(61).setScrollFactor(0));
-    push(this.add.text(rx, colY, 'PILOT  (EJECTED)', hStyle).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+    push(this.add.text(cx, colY, 'CONTROLS', hStyle).setOrigin(0.5).setDepth(61).setScrollFactor(0));
 
-    const mechBindings: [string, string][] = [
+    const bindings: [string, string][] = [
       ['A / D',     'Move'],
       ['SPACE',     'Jump / Jetpack'],
       ['RMB hold',  'Rapid gun'],
       ['LMB',       'Turret'],
       ['SHIFT',     'Missiles'],
       ['Q',         'Nanite heal'],
-      ['E',         'Eject pilot'],
+      ['ESC',       'Pause'],
     ];
 
-    const pilotBindings: [string, string][] = [
-      ['A / D',    'Move'],
-      ['SPACE',    'Jump / Jetpack'],
-      ['LMB hold', 'Pilot gun'],
-      ['E',        'Reenter mech'],
-    ];
-
-    mechBindings.forEach(([key, action], i) => {
+    bindings.forEach(([key, action], i) => {
       const y = colY + 44 + i * rowH;
-      push(this.add.text(lx - 12, y, key,    kStyle).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
-      push(this.add.text(lx + 12, y, action, aStyle).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
-    });
-
-    pilotBindings.forEach(([key, action], i) => {
-      const y = colY + 44 + i * rowH;
-      push(this.add.text(rx - 12, y, key,    kStyle).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
-      push(this.add.text(rx + 12, y, action, aStyle).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
+      push(this.add.text(cx - 12, y, key,    kStyle).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
+      push(this.add.text(cx + 12, y, action, aStyle).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
     });
 
     const dismissPrompt = push(this.add.text(W / 2, H * 0.90, '[ ANY KEY OR CLICK TO CONTINUE ]', {
@@ -647,6 +594,12 @@ export class UIScene extends Phaser.Scene {
       blinkTween.stop();
       objs.forEach(o => o.destroy());
       this.scene.resume('Game');
+      // RA2 "reporting" voice line on game start
+      this.time.delayedCall(200, () => {
+        const gs = this.scene.get('Game') as GameScene;
+        const picks = ['ra2-start-1', 'ra2-start-2', 'ra2-start-3'] as const;
+        gs?.audio?.play(picks[Math.floor(Math.random() * picks.length)]);
+      });
     };
 
     this.input.keyboard!.on('keydown', dismiss);
@@ -682,9 +635,25 @@ export class UIScene extends Phaser.Scene {
 
   private showGameOver(): void {
     this.gameOverActive = true;
+    this.ra2LowHpFired = true; // suppress any pending low-HP bark
 
     const W = GAME_W, H = GAME_H;
-    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(60);
+
+    // Red camera atmosphere
+    this.cameras.main.flash(1200, 200, 0, 0, false);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x440000, 0.45).setDepth(59);
+    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.45).setDepth(60);
+
+    // Somber death ambient
+    const gs = this.scene.get('Game') as GameScene;
+    gs?.audio?.startDeathAmbient();
+
+    // RA2 "leaving" voice line
+    this.time.delayedCall(800, () => {
+      const gs2 = this.scene.get('Game') as GameScene;
+      const picks = ['ra2-over-1', 'ra2-over-2'] as const;
+      gs2?.audio?.play(picks[Math.floor(Math.random() * picks.length)]);
+    });
 
     this.add.text(W / 2, H / 2 - 120, 'GAME OVER', {
       fontFamily: 'monospace', fontSize: '96px', color: '#ff2222',
