@@ -9,9 +9,7 @@ type AnimState = 'idle' | 'walk' | 'run' | 'jump_loop' | 'jump_start' | 'jump_la
 
 const FRICTION = 0.78;
 
-const NANITE_HEAL_AMOUNT   = 1;
 const NANITE_HEAL_DURATION = 4000;  // ms
-const NANITE_COOLDOWN      = 20000; // ms
 
 export type MechType = 'mech' | 'mech4';
 

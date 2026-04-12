@@ -99,7 +99,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     if (!this.active || this.droneState === 'DEATH' || this.droneState === 'DOWNED') return;
 
     const body   = this.body as Phaser.Physics.Arcade.Body;
-    const target = this.scene.getPilotOrPlayer();
+    const target = this.scene.getPlayerPos();
     const dist   = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
 
     switch (this.droneState) {
@@ -177,7 +177,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   }
 
   private shoot(): void {
-    const target = this.scene.getPilotOrPlayer();
+    const target = this.scene.getPlayerPos();
     const angle  = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
 
     const b = this.scene.droneBullets.get(this.x, this.y, 'bullet-drone') as Phaser.Physics.Arcade.Image;
@@ -289,16 +289,17 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
 
   private spawnDeathParticles(): void {
     const emitter = this.scene.add.particles(this.x, this.y, 'pixel', {
-      speed:     { min: 60, max: 180 },
+      speed:     { min: 120, max: 340 },
       angle:     { min: 0, max: 360 },
-      scale:     { start: 2.5, end: 0 },
+      gravityY:  900,
+      scale:     { start: 3.5, end: 0 },
       alpha:     { start: 1, end: 0 },
       tint:      [0xffaa00, 0xff4400, 0xffffff, 0xff0000],
-      lifespan:  500,
-      quantity:  10,
+      lifespan:  950,
+      quantity:  18,
       blendMode: 'ADD',
     });
     emitter.setDepth(20);
-    this.scene.time.delayedCall(500, () => emitter.destroy());
+    this.scene.time.delayedCall(1000, () => emitter.destroy());
   }
 }

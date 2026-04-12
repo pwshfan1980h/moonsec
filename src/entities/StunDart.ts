@@ -31,7 +31,7 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite {
     if (!this.active || this.dartState === 'DEATH') return;
 
     const body   = this.body as Phaser.Physics.Arcade.Body;
-    const target = this.scene.getPilotOrPlayer();
+    const target = this.scene.getPlayerPos();
     const dx     = target.x - this.x;
     const dy     = target.y - this.y;
     const dist   = Math.sqrt(dx * dx + dy * dy);
@@ -120,17 +120,18 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite {
 
         // EMP burst particles — cyan/white
         const emitter = this.scene.add.particles(this.x, this.y, 'pixel', {
-          speed:     { min: 80, max: 220 },
+          speed:     { min: 120, max: 340 },
           angle:     { min: 0, max: 360 },
-          scale:     { start: 2.5, end: 0 },
+          gravityY:  900,
+          scale:     { start: 3.5, end: 0 },
           alpha:     { start: 1, end: 0 },
           tint:      [0x44ffee, 0x0088ff, 0xffffff, 0x00ffcc],
-          lifespan:  500,
-          quantity:  14,
+          lifespan:  950,
+          quantity:  18,
           blendMode: 'ADD',
         });
         emitter.setDepth(20);
-        this.scene.time.delayedCall(500, () => emitter.destroy());
+        this.scene.time.delayedCall(1000, () => emitter.destroy());
 
         this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
           this.scene.events.emit('droneKilled', this.x, this.y);

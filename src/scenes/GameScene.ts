@@ -15,7 +15,7 @@ export class GameScene extends Phaser.Scene {
   droneBullets!: Phaser.Physics.Arcade.Group;
   missiles!: Phaser.Physics.Arcade.Group;
   drones!: Phaser.Physics.Arcade.Group;
-  crawlers!: Phaser.Physics.Arcade.Group;
+  tanks!: Phaser.Physics.Arcade.Group;
   pickups!: Phaser.Physics.Arcade.Group;
   bossProjectiles!: Phaser.Physics.Arcade.Group;
   debugLog?: DebugLog;
@@ -33,7 +33,6 @@ export class GameScene extends Phaser.Scene {
   private bgStars?: Phaser.GameObjects.TileSprite;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
   private bgHaze?: Phaser.GameObjects.TileSprite;
-  public currentLevel = 1;
   private isBossDead = false;
   private waitingForStart = true;
 
@@ -41,9 +40,8 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'Game' });
   }
 
-  init(data: { mechType?: MechType; level?: number; totalScore?: number }): void {
+  init(data: { mechType?: MechType; totalScore?: number }): void {
     if (data.mechType) this.registry.set('mechType', data.mechType);
-    if (data.level !== undefined) this.registry.set('currentLevel', data.level);
     if (data.totalScore !== undefined) this.registry.set('totalScore', data.totalScore);
     this.waitingForStart = true;
   }
@@ -68,7 +66,6 @@ export class GameScene extends Phaser.Scene {
     this.groundLayer     = undefined;
     this.debugLog?.destroy();
     this.debugLog        = undefined;
-    this.currentLevel    = (this.registry.get('currentLevel') as number) ?? 1;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
 
     this.music?.destroy(); // stop music from previous run
@@ -131,7 +128,7 @@ export class GameScene extends Phaser.Scene {
 
     this.drones = this.physics.add.group({ runChildUpdate: true });
 
-    this.crawlers = this.physics.add.group({ runChildUpdate: true });
+    this.tanks = this.physics.add.group({ runChildUpdate: true });
 
     this.pickups = this.physics.add.group({
       maxSize: 20,
@@ -165,9 +162,9 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.ground);
     if (this.groundLayer) this.physics.add.collider(this.player, this.groundLayer);
 
-    // Crawlers land on ground
-    this.physics.add.collider(this.crawlers, this.ground);
-    if (this.groundLayer) this.physics.add.collider(this.crawlers, this.groundLayer);
+    // Tanks land on ground
+    this.physics.add.collider(this.tanks, this.ground);
+    if (this.groundLayer) this.physics.add.collider(this.tanks, this.groundLayer);
 
     // Drone bullets hit player
     this.physics.add.overlap(
@@ -351,7 +348,7 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('gameOver');
   }
 
-  public getPilotOrPlayer(): { x: number; y: number } {
+  public getPlayerPos(): { x: number; y: number } {
     return { x: this.player.x, y: this.player.y };
   }
 
@@ -406,17 +403,18 @@ export class GameScene extends Phaser.Scene {
 
   spawnExplosion(x: number, y: number): void {
     const emitter = this.add.particles(x, y, 'flare', {
-      speed: { min: 80, max: 220 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 1.5, end: 0 },
-      alpha: { start: 1, end: 0 },
-      tint: [0xffaa00, 0xff4400, 0xffffff, 0xffff00],
-      lifespan: 450,
-      quantity: 14,
+      speed:    { min: 120, max: 340 },
+      angle:    { min: 0, max: 360 },
+      gravityY: 900,
+      scale:    { start: 2.0, end: 0 },
+      alpha:    { start: 1, end: 0 },
+      tint:     [0xffaa00, 0xff4400, 0xffffff, 0xffff00],
+      lifespan: 950,
+      quantity: 18,
       blendMode: 'ADD',
     });
     emitter.setDepth(20);
-    this.time.delayedCall(500, () => emitter.destroy());
+    this.time.delayedCall(1000, () => emitter.destroy());
   }
 
   private makeBackground(): void {
@@ -448,7 +446,7 @@ export class GameScene extends Phaser.Scene {
     // Craters are cut into the bottom edge using arc() — darker color overlaid on baseline.
     // Each crater: upper-semicircle arc (slice PI→0 clockwise) centered at y=200 (bottom edge),
     // so the bowl shape cuts upward into the terrain.
-    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+    const hash = GameScene.hash;
     const terrainGfx = this.make.graphics({ x: 0, y: 0 }, false);
     terrainGfx.fillStyle(0x0d0d1e, 1);
     terrainGfx.fillRect(0, 0, GAME_W, 200);
@@ -475,10 +473,77 @@ export class GameScene extends Phaser.Scene {
     hazeGfx.destroy();
     this.bgHaze = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 120, 'bgHaze')
       .setDepth(3).setOrigin(0.5, 1).setScrollFactor(0);
+
+    this.makeBackgroundDomes();
+  }
+
+  private makeBackgroundDomes(): void {
+    const hash = GameScene.hash;
+
+    // Three depth layers. scrollFactor determines parallax speed and sets
+    // the effective canvas width: GAME_W + (WORLD_WIDTH - GAME_W) * f.
+    // Domes are spread across that range so they stay visible throughout the run.
+    const layers = [
+      // Very far — huge, barely-there silhouettes just above the starfield
+      { f: 0.06, count: 5, rMin: 210, rMax: 330,
+        outerColor: 0x06060f, innerColor: 0x09091a, rimColor: 0x111128, depth: 1.2 },
+      // Far — large domes, subtle blue tint
+      { f: 0.13, count: 7, rMin: 140, rMax: 230,
+        outerColor: 0x08081c, innerColor: 0x0c0c28, rimColor: 0x18183c, depth: 1.5 },
+      // Mid-far — most visible, richer blue, smaller
+      { f: 0.22, count: 9, rMin:  90, rMax: 165,
+        outerColor: 0x0a0a24, innerColor: 0x0f0f34, rimColor: 0x1e1e52, depth: 1.8 },
+    ];
+
+    layers.forEach(({ f, count, rMin, rMax, outerColor, innerColor, rimColor, depth }, layerIdx) => {
+      // Effective x-range: all positions that will ever be on screen for this parallax factor
+      const maxX   = GAME_W + (WORLD_WIDTH - GAME_W) * f;
+      const spacing = maxX / count;
+
+      for (let i = 0; i < count; i++) {
+        const seed = layerIdx * 300 + i * 19 + 700;
+        const wx   = i * spacing + hash(seed) * spacing * 0.45;
+        const r    = rMin + hash(seed + 1) * (rMax - rMin);
+
+        const g = this.add.graphics()
+          .setDepth(depth)
+          .setScrollFactor(f)
+          .setPosition(wx, GROUND_Y);
+
+        // Outer dome shell — upper semicircle
+        g.fillStyle(outerColor, 1);
+        g.slice(0, 0, r, Math.PI, 0, false);
+        g.fillPath();
+
+        // Inner glass fill — lighter centre
+        g.fillStyle(innerColor, 1);
+        g.slice(0, 0, r * 0.68, Math.PI, 0, false);
+        g.fillPath();
+
+        // Deep inner core — tiny bright spot suggesting interior light
+        g.fillStyle(rimColor, 1);
+        g.slice(0, 0, r * 0.32, Math.PI, 0, false);
+        g.fillPath();
+
+        // Structural rim arc
+        g.lineStyle(1, rimColor, 0.8);
+        g.beginPath();
+        g.arc(0, 0, r, Math.PI, 0, false);
+        g.strokePath();
+
+        // Base plate
+        g.fillStyle(rimColor, 0.6);
+        g.fillRect(-r - 4, 0, r * 2 + 8, 3);
+
+        // Vertical support spine at apex
+        g.lineStyle(1, rimColor, 0.4);
+        g.lineBetween(0, 0, 0, -r);
+      }
+    });
   }
 
   private makeBaseProps(): void {
-    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+    const hash = GameScene.hash;
 
     // ── Habitat Domes (8) ─────────────────────────────────────────────
     for (let i = 0; i < 8; i++) {
@@ -571,10 +636,7 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < 5; i++) {
       const cx   = Math.max(300, Math.min(6000, 400 + i * 1100 + (hash(i + 210) * 300 - 150)));
       const cnt  = 3 + Math.floor(hash(i + 220) * 3); // 3–5 panels
-      const miss = 0;
-
       for (let p = 0; p < cnt; p++) {
-        if (miss > 0 && hash(i * 100 + p + 230) < miss) continue;
         const px = cx + (p - (cnt - 1) / 2) * 44;
 
         const g = this.add.graphics().setDepth(3.5);
@@ -600,7 +662,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private makeTerrainObstacles(): void {
-    const hash = (n: number) => ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+    const hash = GameScene.hash;
     const bodyColor  = 0x0e1228;
     const glowColor  = 0x3355aa;
     const edgeColor  = 0x1a2a55;
@@ -652,13 +714,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private makePlatforms(
-    palette: 'blue' | 'purple' = 'blue',
     counts: { low: number; mid: number; high: number } = { low: 7, mid: 5, high: 3 },
   ): void {
     this.platformData = [];
 
-    const hash = (n: number): number =>
-      ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
+    const hash = GameScene.hash;
 
     const configs = [
       { ...PLATFORM_BANDS[0], count: counts.low,  minW: 200, maxW: 380 },
@@ -682,18 +742,18 @@ export class GameScene extends Phaser.Scene {
         lastX = x;
         const y = yMin + hash(seed + 1000) * (yMax - yMin);
         this.platformData.push({ x, y, w });
-        this.addStructure(x, y, w, palette);
+        this.addStructure(x, y, w);
       }
     });
   }
 
-  private addStructure(x: number, y: number, w: number, palette: 'blue' | 'purple' = 'blue'): void {
-    const bodyColor   = palette === 'purple' ? 0x1a0d2e : 0x1c2040;
-    const slabColor   = palette === 'purple' ? 0x100820 : 0x12122e;
-    const postColor   = palette === 'purple' ? 0x2a1a44 : 0x2a3a5a;
-    const glowColor   = palette === 'purple' ? 0xaa66ff : 0x7799ff;
-    const accentColor = palette === 'purple' ? 0x3a2255 : 0x334466;
-    const lightColor  = palette === 'purple' ? 0xff3355 : 0xff8800;
+  private addStructure(x: number, y: number, w: number): void {
+    const bodyColor   = 0x1c2040;
+    const slabColor   = 0x12122e;
+    const postColor   = 0x2a3a5a;
+    const glowColor   = 0x7799ff;
+    const accentColor = 0x334466;
+    const lightColor  = 0xff8800;
 
     // Physics rect — one-way top surface, unchanged from before
     const rect = this.add.rectangle(x, y, w, 8, bodyColor).setDepth(4);
@@ -723,6 +783,10 @@ export class GameScene extends Phaser.Scene {
       const lx = x - w / 2 + spacing * (i + 1);
       this.add.rectangle(lx, y + 14, 3, 3, lightColor).setDepth(5);
     }
+  }
+
+  private static hash(n: number): number {
+    return ((n * 1664525 + 1013904223) >>> 0) / 0xffffffff;
   }
 
   private cullBullets(): void {

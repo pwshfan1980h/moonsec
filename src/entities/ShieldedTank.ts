@@ -62,7 +62,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
     if (this.shieldHp > 0) this.drawShield(1.0);
 
     const body   = this.body as Phaser.Physics.Arcade.Body;
-    const target = this.scene.getPilotOrPlayer();
+    const target = this.scene.getPlayerPos();
     const dx     = target.x - this.x;
     const dy     = target.y - this.y;
     const dist   = Math.sqrt(dx * dx + dy * dy);
@@ -119,7 +119,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
       callback: () => {
         elapsed += 50;
         if (!this.reticleGfx) { event.remove(); return; }
-        const target = this.scene.getPilotOrPlayer();
+        const target = this.scene.getPlayerPos();
         this.drawReticle(target.x, target.y, elapsed / TELEGRAPH_MS);
         if (elapsed >= TELEGRAPH_MS) {
           event.remove();

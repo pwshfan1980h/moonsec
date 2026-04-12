@@ -45,7 +45,7 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
       this.mineState === 'ARMED' ? 1.0 : 0.6,
     );
 
-    const target = this.scene.getPilotOrPlayer();
+    const target = this.scene.getPlayerPos();
     const dist   = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
 
     if (this.mineState === 'IDLE' && dist < ARM_RADIUS) {

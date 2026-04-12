@@ -7,7 +7,6 @@
 - Three weapons: RapidGun, Turret, HomingMissile
 - Per-run upgrade cards (11 cards across 3 categories)
 - Persistent upgrade tree
-- Ejectable pilot with risk/reward gameplay
 
 ## v0.7 (this release)
 - **Bug fixes:** missile boss priority, pickup 10s lifetime + pulse, bomber telegraph Y snap

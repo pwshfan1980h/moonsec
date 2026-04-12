@@ -352,17 +352,6 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    game.events.on('hudMessage', (message: string) => {
-      const t = this.add.text(W / 2, H / 2 - 60, message, {
-        fontFamily: 'monospace', fontSize: '22px', color: '#aaddff',
-        stroke: '#000000', strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(55).setAlpha(0);
-      this.tweens.add({
-        targets: t, alpha: 1, duration: 400, yoyo: true, hold: 1500,
-        onComplete: () => t.destroy(),
-      });
-    });
-
     // ── Keyboard handlers ─────────────────────────────────────────
     this.input.keyboard!.on('keydown-ESC', () => {
       if (this.gameOverActive) return;
@@ -645,7 +634,7 @@ export class UIScene extends Phaser.Scene {
     this.time.delayedCall(2000, () => {
       this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
         if (progress === 1) {
-          gameScene.scene.start('Game', { mechType: 'mech4', level: 1 });
+          gameScene.scene.start('Game');
           this.scene.restart();
         }
       });

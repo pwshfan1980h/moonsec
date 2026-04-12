@@ -41,7 +41,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
 
     // Arm when bomber crosses directly over the player's X position
     if (!this.hasArmed) {
-      const target = this.scene.getPilotOrPlayer();
+      const target = this.scene.getPlayerPos();
       const crossed = this.direction > 0 ? this.x >= target.x : this.x <= target.x;
       if (crossed) {
         this.hasArmed = true;
@@ -113,7 +113,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
 
   private drop(): void {
     this.cleanupMarker();
-    const target2 = this.scene.getPilotOrPlayer();
+    const target2 = this.scene.getPlayerPos();
     this.scene.debugLog?.log('[BOMB] drop — in range: ' + (Math.abs(target2.x - this.targetX) < BOMB_RADIUS));
 
     // Three staggered explosions at drop zone

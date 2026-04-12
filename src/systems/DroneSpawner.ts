@@ -121,7 +121,7 @@ export class DroneSpawner {
     }
 
     // Normal wave — drone count scales with wave
-    const count = 10 + (this.waveIndex - 1) * 5;
+    const count = 25 + (this.waveIndex - 1) * 10;
     let spawned = 0;
 
     const MARGIN = 150;
@@ -378,7 +378,7 @@ export class DroneSpawner {
       const tank = new ShieldedTank(this.scene, spawnX, groundY, side < 0 ? 1 : -1);
       this.scene.add.existing(tank);
       this.scene.physics.add.existing(tank);
-      this.scene.crawlers.add(tank);
+      this.scene.tanks.add(tank);
       tank.initBody();
 
       this.dronesAlive++;

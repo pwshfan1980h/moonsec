@@ -181,7 +181,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   }
 
   private fire(): void {
-    const target = this.scene.getPilotOrPlayer();
+    const target = this.scene.getPlayerPos();
     const targetBody = (target as unknown as { body: Phaser.Physics.Arcade.Body }).body;
     const dist = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
     const travelTime = dist / BULLET_SPEED;
@@ -261,7 +261,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         this.play('sentinel-attack');
         (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
 
-        const target = this.scene.getPilotOrPlayer();
+        const target = this.scene.getPlayerPos();
         const camMid = this.scene.cameras.main.scrollX + GAME_W / 2;
         this.telegraphSide = target.x < camMid ? 'left' : 'right';
 
