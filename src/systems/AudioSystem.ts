@@ -14,12 +14,13 @@ type SoundId =
   | 'ra2-lowhp'
   | 'ra2-over-1'  | 'ra2-over-2';
 
-type LoopId = 'jetpack';
+type LoopId = 'jetpack' | 'missile';
 
 interface AudioUpdateState {
-  onGround: boolean;
-  moving: boolean;   // Math.abs(velocityX) > 10
-  delta: number;     // ms
+  onGround:  boolean;
+  moving:    boolean;    // Math.abs(velocityX) > 10
+  velocityX: number;     // raw px/s — used for footstep interval scaling
+  delta:     number;     // ms
 }
 
 interface LoopEntry {
@@ -110,6 +111,9 @@ export class AudioSystem {
     if (id === 'landing-soft')  { this.playProceduralOneShot(70, 0.08, 0.30); return; }
     if (id === 'landing-heavy') { this.playProceduralOneShot(55, 0.12, 0.50, { filterHz: 200 }); return; }
 
+    // Layered procedural additions
+    if (id === 'explosion') this.playExplosionThump();
+
     try {
       this.soundManager.play(id, { volume: VOLUMES[id] });
     } catch { /* ignore — sound not yet loaded or context suspended */ }
@@ -161,6 +165,33 @@ export class AudioSystem {
         sources.push(subOsc);
 
         gainNode.gain.linearRampToValueAtTime(0.35, t + FADE_IN);
+      }
+
+      if (id === 'missile') {
+        // Sine whine ~1380 Hz with slow LFO pitch wobble — tracking scream
+        const lfo = this.ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(5.5, t);
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.setValueAtTime(28, t); // ±28 Hz wobble
+        lfo.connect(lfoGain);
+
+        const whine = this.ctx.createOscillator();
+        whine.type = 'sawtooth';
+        whine.frequency.setValueAtTime(1380, t);
+        lfoGain.connect(whine.frequency);
+
+        const hp = this.ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(900, t);
+
+        whine.connect(hp);
+        hp.connect(gainNode);
+        whine.start(t);
+        lfo.start(t);
+        sources.push(whine, lfo);
+
+        gainNode.gain.linearRampToValueAtTime(0.18, t + FADE_IN);
       }
 
       this.loops.set(id, { sources, gainNode });
@@ -298,17 +329,132 @@ export class AudioSystem {
   }
 
   update(state: AudioUpdateState): void {
-    const { onGround, moving, delta } = state;
+    const { onGround, moving, velocityX, delta } = state;
 
     if (onGround && moving) {
       this.footstepTimer -= delta;
       if (this.footstepTimer <= 0) {
-        this.footstepTimer = 280;
+        // Shorter interval when running (|vx| > ~250 px/s)
+        this.footstepTimer = Math.abs(velocityX) > 250 ? 140 : 280;
         this.play('footstep');
       }
     } else {
-      this.footstepTimer = Math.min(this.footstepTimer, 280);
+      this.footstepTimer = Math.min(this.footstepTimer, 140);
     }
+  }
+
+  /** Short percussive chord stab on wave start. */
+  playWaveStinger(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t   = this.ctx.currentTime;
+      const dur = 0.22;
+
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.28, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(1800, t);
+      lp.frequency.linearRampToValueAtTime(400, t + dur);
+      g.connect(lp);
+      lp.connect(this.ctx.destination);
+
+      // Dm power chord: D3 + A3 + D4
+      for (const freq of [146.83, 220.00, 293.66]) {
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t);
+        osc.connect(g);
+        osc.start(t);
+        osc.stop(t + dur);
+        osc.onended = () => { try { g.disconnect(); lp.disconnect(); } catch { /* ok */ } };
+      }
+    } catch { /* ignore */ }
+  }
+
+  /** Rising pitched chime on kill-streak milestone. Higher pitch = bigger streak. */
+  playStreakChime(milestone: number): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+
+      // C5 / E5 / G5 / C6 per milestone tier
+      const freqMap: Record<number, number> = { 3: 523.25, 5: 659.25, 10: 783.99, 20: 1046.50 };
+      const freq = freqMap[milestone] ?? 523.25;
+      const dur  = milestone >= 10 ? 0.9 : 0.6;
+
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      g.connect(this.ctx.destination);
+
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      // Slight pitch slide up for sparkle
+      osc.frequency.linearRampToValueAtTime(freq * 1.04, t + dur);
+      osc.connect(g);
+      osc.start(t);
+      osc.stop(t + dur);
+
+      // Octave echo at half gain, 80ms delay — adds shimmer on big streaks
+      if (milestone >= 5) {
+        const g2 = this.ctx.createGain();
+        g2.gain.setValueAtTime(0.10, t + 0.08);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.08);
+        g2.connect(this.ctx.destination);
+        const osc2 = this.ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2, t + 0.08);
+        osc2.connect(g2);
+        osc2.start(t + 0.08);
+        osc2.stop(t + dur + 0.08);
+        osc2.onended = () => { try { g2.disconnect(); } catch { /* ok */ } };
+      }
+
+      osc.onended = () => { try { g.disconnect(); } catch { /* ok */ } };
+    } catch { /* ignore */ }
+  }
+
+  private playExplosionThump(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t   = this.ctx.currentTime;
+      const dur = 0.38;
+
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.55, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      g.connect(this.ctx.destination);
+
+      // Sub-sine sweep 90→18 Hz — body thump
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(90, t);
+      osc.frequency.exponentialRampToValueAtTime(18, t + dur);
+      osc.connect(g);
+      osc.start(t);
+      osc.stop(t + dur);
+      osc.onended = () => { try { g.disconnect(); } catch { /* ok */ } };
+
+      // Short noise burst for crack texture
+      const ns = this.ctx.createBufferSource();
+      ns.buffer = this.noiseBuffer;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(280, t);
+      const ng = this.ctx.createGain();
+      ng.gain.setValueAtTime(0.30, t);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      ns.connect(lp); lp.connect(ng); ng.connect(this.ctx.destination);
+      ns.start(t);
+      ns.stop(t + 0.12);
+      ns.onended = () => { try { ng.disconnect(); lp.disconnect(); } catch { /* ok */ } };
+    } catch { /* ignore */ }
   }
 
   private initNoiseBuffer(): void {

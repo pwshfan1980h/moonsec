@@ -5,7 +5,7 @@ import { StunDart } from '../entities/StunDart';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS, BOSS_WAVE_L1 } from '../constants';
 import { buildLevel1Map } from '../data/levelData';
 import { DebugLog } from '../systems/DebugLog';
 
@@ -267,6 +267,12 @@ export class GameScene extends Phaser.Scene {
       this.music?.start(0.35);
     });
 
+    // --- Wave audio ---
+    this.events.on('waveStart', (wave: number) => {
+      this.audio.playWaveStinger();
+      if (wave === BOSS_WAVE_L1) this.music?.setBossMode();
+    });
+
     // --- Score tracking + kill streak + pickups ---
     const STREAK_MILESTONES = [3, 5, 10, 20];
     const STREAK_BONUSES    = [50, 100, 150, 200];
@@ -283,6 +289,7 @@ export class GameScene extends Phaser.Scene {
         this.score += bonus;
         this.events.emit('scoreChange', this.score);
         this.events.emit('killStreak', this.killStreak, bonus);
+        this.audio.playStreakChime(this.killStreak);
       }
 
       // Random pickup drop (15% health, 15% fuel)
@@ -330,6 +337,7 @@ export class GameScene extends Phaser.Scene {
     this.audio.update({
       onGround:  pb.blocked.down,
       moving:    Math.abs(pb.velocity.x) > 10,
+      velocityX: pb.velocity.x,
       delta,
     });
     this.spawner.update(time, delta);

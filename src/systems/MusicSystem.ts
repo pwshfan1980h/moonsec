@@ -20,6 +20,9 @@ export class MusicSystem {
   private padLfo!: OscillatorNode;
   private padLp!: BiquadFilterNode;
 
+  private bossMode = false;
+  private noiseBuffer!: AudioBuffer;
+
   // --- Timing constants ---
   private readonly STEP = 0.25;   // 120 BPM, 8th note = 0.25 s
   private readonly LOOK = 0.30;   // look-ahead window
@@ -54,6 +57,12 @@ export class MusicSystem {
     this.master = this.ctx.createGain();
     this.master.gain.value = 0;
     this.master.connect(this.ctx.destination);
+    this.initNoiseBuffer();
+  }
+
+  /** Escalate to boss-fight percussion layer. Call once when boss wave begins. */
+  setBossMode(): void {
+    this.bossMode = true;
   }
 
   start(volume = 0.45): void {
@@ -126,6 +135,12 @@ export class MusicSystem {
         this.playNote(leadFreq, 'square', t, this.STEP * 0.35, 0.07, 2800);
       }
     }
+
+    // Boss percussion layer — hi-hats on every off-beat, snare on step 4
+    if (this.bossMode) {
+      if (step % 2 === 1) this.playHiHat(t);
+      if (step === 4)     this.playSnare(t);
+    }
   }
 
   // ── Note / kick players ───────────────────────────────────────────────────
@@ -175,6 +190,54 @@ export class MusicSystem {
       osc.stop(t + dur);
       osc.onended = () => { try { g.disconnect(); } catch { /* ok */ } };
     } catch { /* ok */ }
+  }
+
+  // ── Boss percussion ───────────────────────────────────────────────────────
+
+  private playHiHat(t: number): void {
+    try {
+      const dur = 0.04;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.14, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      g.connect(this.master);
+
+      const ns = this.ctx.createBufferSource();
+      ns.buffer = this.noiseBuffer;
+      const hp = this.ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.setValueAtTime(7000, t);
+      ns.connect(hp); hp.connect(g);
+      ns.start(t); ns.stop(t + dur);
+      ns.onended = () => { try { g.disconnect(); hp.disconnect(); } catch { /* ok */ } };
+    } catch { /* ok */ }
+  }
+
+  private playSnare(t: number): void {
+    try {
+      const dur = 0.16;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.22, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      g.connect(this.master);
+
+      const ns = this.ctx.createBufferSource();
+      ns.buffer = this.noiseBuffer;
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(2400, t);
+      bp.Q.setValueAtTime(0.8, t);
+      ns.connect(bp); bp.connect(g);
+      ns.start(t); ns.stop(t + dur);
+      ns.onended = () => { try { g.disconnect(); bp.disconnect(); } catch { /* ok */ } };
+    } catch { /* ok */ }
+  }
+
+  private initNoiseBuffer(): void {
+    const sr = this.ctx.sampleRate;
+    this.noiseBuffer = this.ctx.createBuffer(1, sr, sr);
+    const data = this.noiseBuffer.getChannelData(0);
+    for (let i = 0; i < sr; i++) data[i] = Math.random() * 2 - 1;
   }
 
   // ── Pad (continuous, detuned chord) ──────────────────────────────────────

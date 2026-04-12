@@ -66,11 +66,14 @@ export class HomingMissile {
     });
     emitter.setDepth(15);
 
+    const wasEmpty = this.active.length === 0;
     this.active.push({ obj: m, angle, target, emitter });
     this.scene.audio.play('missile-launch');
+    if (wasEmpty) this.scene.audio.startLoop('missile');
   }
 
   update(_time: number, _delta: number): void {
+    const prevCount = this.active.length;
     this.active = this.active.filter((state) => {
       const { obj, emitter } = state;
 
@@ -106,6 +109,11 @@ export class HomingMissile {
 
       return true;
     });
+
+    // Stop whine loop once all missiles are gone
+    if (prevCount > 0 && this.active.length === 0) {
+      this.scene.audio.stopLoop('missile');
+    }
   }
 
   private findNearestDrone(x: number, y: number): Drone | null {
