@@ -299,9 +299,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         break;
 
       case 'DEATH': {
-        this.play('sentinel-death');
-        (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
-        (this.body as Phaser.Physics.Arcade.Body).enable = false;
+        this.stop();
+
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        body.setCollideWorldBounds(false);
+        body.setAllowGravity(true);
+        body.setVelocity(Phaser.Math.Between(-40, 40), -60);
+        body.setAngularVelocity(Phaser.Math.Between(80, 140) * (Math.random() < 0.5 ? 1 : -1));
 
         this.glowTween?.stop();
         this.glowAura?.destroy();
@@ -313,23 +317,51 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
           slot.colliders = [];
         }
 
-        // Clear any active telegraph
         this.scene.events.emit('bossTelegraphCancel');
 
-        const offsets = [{ x: 0, y: 0 }, { x: -40, y: 20 }, { x: 35, y: -15 }];
-        offsets.forEach((off, i) => {
-          this.scene.time.delayedCall(i * 150, () => {
-            this.scene.spawnExplosion(this.x + off.x, this.y + off.y);
-            this.scene.audio.playAt('explosion', { rate: 0.5, detune: -200 - i * 200, volume: 0.9 });
+        // Staggered multi-stage detonations across the tumble
+        const detonations = [
+          { delay:    0, dx:   0, dy:   0 },
+          { delay:  320, dx: -50, dy:  20 },
+          { delay:  640, dx:  45, dy: -25 },
+          { delay:  960, dx: -20, dy:  35 },
+          { delay: 1280, dx:  55, dy:  10 },
+          { delay: 1650, dx: -35, dy: -15 },
+          { delay: 2050, dx:   0, dy:   0 }, // final
+        ];
+
+        detonations.forEach(({ delay, dx, dy }, i) => {
+          this.scene.time.delayedCall(delay, () => {
+            if (!this.scene?.sys.isActive()) return;
+            const isFinal = i === detonations.length - 1;
+            this.scene.spawnExplosion(this.x + dx, this.y + dy);
+            this.scene.audio.playAt('explosion', {
+              rate:   0.38 + i * 0.06,
+              detune: -600 + i * 80,
+              volume: isFinal ? 1.0 : 0.85,
+            });
+            this.scene.cameras.main.shake(isFinal ? 280 : 90, isFinal ? 0.018 : 0.007);
           });
         });
+
         this.scene.time.delayedCall(400, () => {
-          this.scene.audio.playAt('death', { rate: 0.4, detune: -400, volume: 0.7 });
+          if (this.scene?.sys.isActive()) {
+            this.scene.audio.playAt('death', { rate: 0.4, detune: -400, volume: 0.7 });
+          }
         });
 
-        this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-          this.scene.events.emit('bossKilled', this.x, this.y);
-          this.destroy();
+        // Fade out then fire bossKilled
+        this.scene.time.delayedCall(2400, () => {
+          if (!this.scene?.sys.isActive()) return;
+          this.scene.tweens.add({
+            targets:  this,
+            alpha:    0,
+            duration: 700,
+            onComplete: () => {
+              this.scene.events.emit('bossKilled', this.x, this.y);
+              this.destroy();
+            },
+          });
         });
         break;
       }
