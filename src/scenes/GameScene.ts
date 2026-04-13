@@ -411,18 +411,18 @@ export class GameScene extends Phaser.Scene {
 
   spawnExplosion(x: number, y: number): void {
     const emitter = this.add.particles(x, y, 'flare', {
-      speed:    { min: 120, max: 340 },
+      speed:    { min: 20, max: 80 },
       angle:    { min: 0, max: 360 },
-      gravityY: 900,
-      scale:    { start: 2.0, end: 0 },
+      gravityY: 180,
+      scale:    { start: 1.2, end: 0 },
       alpha:    { start: 1, end: 0 },
-      tint:     [0xffaa00, 0xff4400, 0xffffff, 0xffff00],
-      lifespan: 950,
-      quantity: 18,
+      tint:     [0xff6600, 0xff2200, 0xff9900, 0xffcc00],
+      lifespan: 4000,
+      quantity: 1,
       blendMode: 'ADD',
     });
     emitter.setDepth(20);
-    this.time.delayedCall(1000, () => emitter.destroy());
+    this.time.delayedCall(4500, () => emitter.destroy());
   }
 
   private makeBackground(): void {
