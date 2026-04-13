@@ -630,12 +630,21 @@ export class UIScene extends Phaser.Scene {
     // Level complete stinger — low triumphant boom
     gameScene?.audio?.play('level-complete');
 
-    // Return to title after 2000ms
+    // Return to overworld after 2000ms, advancing to the next node
     this.time.delayedCall(2000, () => {
       this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
         if (progress === 1) {
-          gameScene.scene.start('Game');
-          this.scene.restart();
+          const completedLevel = (this.registry.get('currentLevel') as number) ?? 1;
+          const nextNode       = Math.min(completedLevel, 4);          // 0-indexed, cap at last
+          const nextUnlocked   = Math.min(completedLevel + 1, 5);      // unlock one more sector
+          const mechType       = (this.registry.get('mechType') as string) ?? 'mech4';
+          gameScene.scene.stop('UI');
+          gameScene.scene.start('Overworld', {
+            currentNode:   nextNode,
+            unlockedCount: nextUnlocked,
+            totalScore:    this.currentScore,
+            mechType,
+          });
         }
       });
     });

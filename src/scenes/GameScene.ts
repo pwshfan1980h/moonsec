@@ -40,9 +40,10 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'Game' });
   }
 
-  init(data: { mechType?: MechType; totalScore?: number }): void {
-    if (data.mechType) this.registry.set('mechType', data.mechType);
-    if (data.totalScore !== undefined) this.registry.set('totalScore', data.totalScore);
+  init(data: { mechType?: MechType; totalScore?: number; level?: number }): void {
+    if (data.mechType)               this.registry.set('mechType',      data.mechType);
+    if (data.totalScore !== undefined) this.registry.set('totalScore',  data.totalScore);
+    if (data.level      !== undefined) this.registry.set('currentLevel', data.level);
     this.waitingForStart = true;
   }
 
