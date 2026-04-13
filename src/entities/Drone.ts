@@ -288,18 +288,19 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   }
 
   private spawnDeathParticles(): void {
-    const emitter = this.scene.add.particles(this.x, this.y, 'pixel', {
-      speed:     { min: 20, max: 80 },
+    const emitter = this.scene.add.particles(this.x, this.y, 'flare', {
+      speed:     { min: 60, max: 160 },
       angle:     { min: 0, max: 360 },
-      gravityY:  180,
-      scale:     { start: 2.5, end: 0 },
+      gravityY:  280,
+      scale:     { start: 1.2, end: 0 },
       alpha:     { start: 1, end: 0 },
       tint:      [0xff6600, 0xff2200, 0xff9900, 0xffcc00],
-      lifespan:  4000,
-      quantity:  1,
+      lifespan:  { min: 1500, max: 3000 },
+      emitting:  false,
       blendMode: 'ADD',
     });
     emitter.setDepth(20);
-    this.scene.time.delayedCall(4500, () => emitter.destroy());
+    emitter.explode(7);
+    this.scene.time.delayedCall(3200, () => emitter.destroy());
   }
 }
