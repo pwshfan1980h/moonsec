@@ -167,6 +167,45 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.tanks, this.ground);
     if (this.groundLayer) this.physics.add.collider(this.tanks, this.groundLayer);
 
+    // --- Geometry collision for projectiles & enemies ---
+
+    const killBullet = (b: unknown) => {
+      const bullet = b as Phaser.Physics.Arcade.Image;
+      if (!bullet.active) return;
+      bullet.setActive(false).setVisible(false);
+      if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
+    };
+
+    const killMissile = (m: unknown) => {
+      const missile = m as Phaser.Physics.Arcade.Image;
+      if (!missile.active) return;
+      missile.setData('hitTarget', true);
+      missile.setActive(false).setVisible(false);
+      if (missile.body) (missile.body as Phaser.Physics.Arcade.Body).enable = false;
+      this.spawnExplosion(missile.x, missile.y);
+      this.audio.play('explosion');
+    };
+
+    // Player bullets destroyed by geometry
+    this.physics.add.overlap(this.playerBullets, this.ground, killBullet);
+    if (this.groundLayer) this.physics.add.overlap(this.playerBullets, this.groundLayer, killBullet);
+
+    // Drone bullets destroyed by geometry
+    this.physics.add.overlap(this.droneBullets, this.ground, killBullet);
+    if (this.groundLayer) this.physics.add.overlap(this.droneBullets, this.groundLayer, killBullet);
+
+    // Boss projectiles destroyed by geometry
+    this.physics.add.overlap(this.bossProjectiles, this.ground, killBullet);
+    if (this.groundLayer) this.physics.add.overlap(this.bossProjectiles, this.groundLayer, killBullet);
+
+    // Missiles explode on geometry
+    this.physics.add.overlap(this.missiles, this.ground, (m) => killMissile(m));
+    if (this.groundLayer) this.physics.add.overlap(this.missiles, this.groundLayer, (m) => killMissile(m));
+
+    // Enemies blocked by geometry
+    this.physics.add.collider(this.drones, this.ground);
+    if (this.groundLayer) this.physics.add.collider(this.drones, this.groundLayer);
+
     // Drone bullets hit player
     this.physics.add.overlap(
       this.droneBullets,
