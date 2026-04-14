@@ -276,7 +276,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
         this.reviveIndicator?.destroy();
         this.reviveIndicator = undefined;
 
-        this.spawnDeathParticles();
+        this.scene.spawnExplosion(this.x, this.y);
 
         this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
           this.scene.events.emit('droneKilled', this.x, this.y);
@@ -285,22 +285,5 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
         break;
       }
     }
-  }
-
-  private spawnDeathParticles(): void {
-    const emitter = this.scene.add.particles(this.x, this.y, 'flare', {
-      speed:     { min: 60, max: 160 },
-      angle:     { min: 0, max: 360 },
-      gravityY:  280,
-      scale:     { start: 1.2, end: 0 },
-      alpha:     { start: 1, end: 0 },
-      tint:      [0xff6600, 0xff2200, 0xff9900, 0xffcc00],
-      lifespan:  { min: 1500, max: 3000 },
-      emitting:  false,
-      blendMode: 'ADD',
-    });
-    emitter.setDepth(20);
-    emitter.explode(7);
-    this.scene.time.delayedCall(3200, () => emitter.destroy());
   }
 }

@@ -127,10 +127,11 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite {
           alpha:     { start: 1, end: 0 },
           tint:      [0x44ffee, 0x0088ff, 0xffffff, 0x00ffcc],
           lifespan:  950,
-          quantity:  18,
+          emitting:  false,
           blendMode: 'ADD',
         });
         emitter.setDepth(20);
+        emitter.explode(18);
         this.scene.time.delayedCall(1000, () => emitter.destroy());
 
         this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
