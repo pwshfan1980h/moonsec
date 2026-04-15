@@ -5,8 +5,11 @@ import { StunDart } from '../entities/StunDart';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS, BOSS_WAVE_L1 } from '../constants';
-import { buildLevel1Map } from '../data/levelData';
+import { MovingPlatform } from '../entities/MovingPlatform';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
+import { buildMap } from '../data/levelData';
+import { LEVEL_CONFIGS, NODE_GRAPH } from '../data/levelConfigs';
+import type { LevelConfig } from '../data/levelConfigs';
 import { DebugLog } from '../systems/DebugLog';
 
 export class GameScene extends Phaser.Scene {
@@ -18,6 +21,7 @@ export class GameScene extends Phaser.Scene {
   tanks!: Phaser.Physics.Arcade.Group;
   pickups!: Phaser.Physics.Arcade.Group;
   bossProjectiles!: Phaser.Physics.Arcade.Group;
+  movingPlatforms!: Phaser.Physics.Arcade.Group;
   debugLog?: DebugLog;
   audio!: AudioSystem;
   private music: MusicSystem | null = null;
@@ -33,18 +37,32 @@ export class GameScene extends Phaser.Scene {
   private bgStars?: Phaser.GameObjects.TileSprite;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
   private bgHaze?: Phaser.GameObjects.TileSprite;
-  private isBossDead = false;
+  private isBossDead    = false;
   private waitingForStart = true;
+
+  // Campaign state — exposed so UIScene can read on level complete
+  currentNode:    number   = 0;
+  completedNodes: number[] = [];
+  private activeConfig!: LevelConfig;
+  private levelGroundY = GROUND_Y;
 
   constructor() {
     super({ key: 'Game' });
   }
 
-  init(data: { mechType?: MechType; totalScore?: number; level?: number }): void {
-    if (data.mechType)               this.registry.set('mechType',      data.mechType);
-    if (data.totalScore !== undefined) this.registry.set('totalScore',  data.totalScore);
+  init(data: { mechType?: MechType; totalScore?: number; level?: number; completedNodes?: number[] }): void {
+    if (data.mechType)                this.registry.set('mechType',      data.mechType);
+    if (data.totalScore !== undefined) this.registry.set('totalScore',   data.totalScore);
     if (data.level      !== undefined) this.registry.set('currentLevel', data.level);
+    this.currentNode    = data.level        ?? 0;
+    this.completedNodes = data.completedNodes ?? [];
     this.waitingForStart = true;
+  }
+
+  /** Returns the first next node from the active level that hasn't been completed yet. */
+  getDefaultNextNode(): number {
+    const nexts = NODE_GRAPH[this.currentNode]?.nextNodes ?? [];
+    return nexts.find(n => !this.completedNodes.includes(n)) ?? this.currentNode;
   }
 
   create(): void {
@@ -69,8 +87,15 @@ export class GameScene extends Phaser.Scene {
     this.debugLog        = undefined;
     this.score           = (this.registry.get('totalScore')   as number) ?? 0;
 
-    this.music?.destroy(); // stop music from previous run
-    this.music = new MusicSystem();
+    // Select level config for the current node
+    const nodeIdx = this.currentNode;
+    this.activeConfig  = LEVEL_CONFIGS[nodeIdx] ?? LEVEL_CONFIGS[0];
+    this.levelGroundY  = this.activeConfig.template.hasGround
+      ? this.activeConfig.template.groundRow * 32
+      : GAME_H + 200; // off-screen — mines/tanks won't spawn
+
+    this.music?.destroy();
+    this.music = new MusicSystem(this.activeConfig.musicTheme);
     // music starts when title is dismissed
 
     this.audio?.destroy(); // close old AudioContext before creating new one
@@ -93,12 +118,29 @@ export class GameScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT + 200);
 
+    // --- Moving-platform texture (shared across all levels) ---
+    if (!this.textures.exists('moving-platform')) {
+      const mpg = this.add.graphics();
+      mpg.fillStyle(0x2a4a8a, 1);
+      mpg.fillRect(0, 0, 128, 16);
+      mpg.lineStyle(2, 0x5588cc, 1);
+      mpg.strokeRect(0, 0, 128, 16);
+      mpg.fillStyle(0x5588cc, 0.4);
+      mpg.fillRect(4, 4, 120, 4);
+      mpg.generateTexture('moving-platform', 128, 16);
+      mpg.destroy();
+    }
+
     // --- Background ---
     this.makeBackground();
 
     // --- Ground (tilemap) ---
     this.ground = this.physics.add.staticGroup();
-    this.makeTilemapGround(buildLevel1Map());
+    const mapSeed = Math.random() * 0xFFFFFFFF | 0;
+    this.makeTilemapGround(
+      buildMap(this.activeConfig.template, mapSeed),
+      this.activeConfig.tilesetKey,
+    );
 
     // --- Platforms ---
     this.makePlatforms();
@@ -300,8 +342,26 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAME_H - 120));
     this.cameras.main.startFollow(this.player, false, 0.20, 0.18);
 
+    // --- Moving platforms (Trade Lanes only) ---
+    this.movingPlatforms = this.physics.add.group({ runChildUpdate: true });
+    if (this.activeConfig.movingPlatforms) {
+      this.spawnMovingPlatforms();
+      this.physics.add.collider(this.player, this.movingPlatforms);
+    }
+
+    // --- Void death zone (Trade Lanes / Orbital) ---
+    if (this.activeConfig.voidBottom) {
+      const deathY = WORLD_HEIGHT + 80;
+      const voidSensor = this.add.rectangle(WORLD_WIDTH / 2, deathY, WORLD_WIDTH, 40, 0xff0000, 0);
+      this.physics.add.existing(voidSensor, true); // static
+      this.physics.add.overlap(this.player, voidSensor, () => {
+        if (!this.isGameOver) this.triggerGameOver();
+      });
+    }
+
     // --- Spawner ---
-    this.spawner = new DroneSpawner(this);
+    const cfg = this.activeConfig;
+    this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossCount, cfg.boss2HpMult, cfg.enemyMix);
     this.events.once('titleDismissed', () => {
       this.waitingForStart = false;
       this.music?.start(0.35);
@@ -310,7 +370,7 @@ export class GameScene extends Phaser.Scene {
     // --- Wave audio ---
     this.events.on('waveStart', (wave: number) => {
       this.audio.playWaveStinger();
-      if (wave === BOSS_WAVE_L1) this.music?.setBossMode();
+      if (wave >= cfg.waveCount) this.music?.setBossMode();
     });
 
     // --- Score tracking + kill streak + pickups ---
@@ -353,11 +413,14 @@ export class GameScene extends Phaser.Scene {
       this.isGameOver = true;
     });
 
+    // Each boss kill adds score; two-boss sequence tracked by DroneSpawner
     this.events.on('bossKilled', () => {
-      this.isBossDead = true;
       this.score += 1000;
       this.events.emit('scoreChange', this.score);
-      // Level transition handled by UIScene listening to same event
+    });
+    // levelComplete fires after final boss dies (emitted by DroneSpawner)
+    this.events.on('levelComplete', () => {
+      this.isBossDead = true;
     });
 
     // --- Emit initial HUD state ---
@@ -381,6 +444,7 @@ export class GameScene extends Phaser.Scene {
       delta,
     });
     this.spawner.update(time, delta);
+    // Moving platforms: runChildUpdate is true on the group, so they self-update
     this.cullBullets();
     this.updateParallax();
   }
@@ -401,7 +465,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   public getApproxGroundY(): number {
-    return GROUND_Y;
+    return this.levelGroundY;
+  }
+
+  private spawnMovingPlatforms(): void {
+    // Stagger platforms along the level: one every ~300px, alternating travel direction
+    const spacing   = 300;
+    const count     = Math.floor(WORLD_WIDTH / spacing);
+    for (let i = 0; i < count; i++) {
+      const x          = 150 + i * spacing;
+      const y          = 680 + (i % 3) * 40;  // vary height slightly (rows 21–23 approx)
+      const startRight = i % 2 === 0;
+      const mp = new MovingPlatform(this, x, y, 112, 240, 100 + (i % 3) * 20, startRight);
+      this.add.existing(mp);
+      this.movingPlatforms.add(mp, true);
+    }
   }
 
   spawnFloatingText(x: number, y: number, text: string, color = '#ffffff'): void {
@@ -467,8 +545,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private makeBackground(): void {
-    // Sky
-    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x030318)
+    // Sky — color from level config
+    const skyColor = this.activeConfig?.bgSkyColor ?? 0x030318;
+    this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, skyColor)
       .setDepth(0).setScrollFactor(0);
 
     // Dedup texture keys on scene restart (instance is reused, not reconstructed)
@@ -742,16 +821,16 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private makeTilemapGround(mapData: number[][]): void {
+  private makeTilemapGround(mapData: number[][], tilesetKey = 'industrial-tileset'): void {
     const map = this.make.tilemap({
       data: mapData,
       tileWidth: 32,
       tileHeight: 32,
     });
 
-    const tileset = map.addTilesetImage('industrial-tileset', 'industrial-tileset');
+    const tileset = map.addTilesetImage(tilesetKey, tilesetKey);
     if (!tileset) {
-      console.warn('[GameScene] industrial-tileset not found — ground tilemap skipped');
+      console.warn(`[GameScene] tileset "${tilesetKey}" not found — ground tilemap skipped`);
       return;
     }
 

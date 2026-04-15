@@ -35,7 +35,6 @@ export const WAVE_BRACKETS: {
 
 export const PATROL_LANES = [570, 630, 690, 750, 810];
 
-export const BOSS_WAVE_L1     = 3;
 
 export const MECH_STATS: Record<string, {
   maxHp: number;

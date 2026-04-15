@@ -8,11 +8,7 @@ type SoundId =
   | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
   | 'nanite-heal' | 'nanite-tick' | 'pickup'
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
-  | 'missile-launch' | 'landing-soft' | 'landing-heavy'
-  | 'ra2-start-1' | 'ra2-start-2' | 'ra2-start-3'
-  | 'ra2-kill-1'  | 'ra2-kill-2'  | 'ra2-kill-3'
-  | 'ra2-lowhp'
-  | 'ra2-over-1'  | 'ra2-over-2';
+  | 'missile-launch' | 'landing-soft' | 'landing-heavy';
 
 type LoopId = 'jetpack' | 'missile';
 
@@ -49,15 +45,6 @@ const VOLUMES: Record<SoundId, number> = {
   'missile-launch': 0.45,
   'landing-soft':   0.30,
   'landing-heavy':  0.50,
-  'ra2-start-1':    0.75,
-  'ra2-start-2':    0.75,
-  'ra2-start-3':    0.75,
-  'ra2-kill-1':     0.75,
-  'ra2-kill-2':     0.75,
-  'ra2-kill-3':     0.75,
-  'ra2-lowhp':      0.70,
-  'ra2-over-1':     0.75,
-  'ra2-over-2':     0.75,
 };
 
 export class AudioSystem {

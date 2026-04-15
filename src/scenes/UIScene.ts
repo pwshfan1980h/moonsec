@@ -54,7 +54,6 @@ export class UIScene extends Phaser.Scene {
   private currentWave = 0;
   private currentScore = 0;
   private lastHp = 0;
-  private ra2LowHpFired = false;
 
   constructor() {
     super({ key: 'UI', active: false });
@@ -70,7 +69,6 @@ export class UIScene extends Phaser.Scene {
     this.currentWave = 0;
     this.currentScore = 0;
     this.lastHp = 0;
-    this.ra2LowHpFired = false;
 
     // ── LEFT STAT PANEL (top-left) ────────────────────────────────
     // Vertical rhythm — same offsets reused by the right panel
@@ -195,14 +193,6 @@ export class UIScene extends Phaser.Scene {
       }
       if (hp < this.lastHp) {
         this.cameras.main.flash(200, 220, 30, 30, false);
-        // RA2 low-HP warning — fires once per life when dropping to ≤25%
-        if (!this.ra2LowHpFired && hp > 0 && hp / maxHp <= 0.25) {
-          this.ra2LowHpFired = true;
-          this.time.delayedCall(300, () => {
-            const gs = this.scene.get('Game') as GameScene;
-            gs?.audio?.play('ra2-lowhp');
-          });
-        }
       }
       this.lastHp = hp;
     });
@@ -296,15 +286,15 @@ export class UIScene extends Phaser.Scene {
     });
 
     game.events.on('bossKilled', () => {
+      // Individual boss kill — clear telegraph but don't show level complete yet
+      // (two-boss levels: levelComplete fires only after the second boss)
+      this.clearTelegraph();
+    });
+
+    game.events.on('levelComplete', () => {
       if (this.levelCompleteActive) return;
       this.levelCompleteActive = true;
       this.clearTelegraph();
-      // RA2 kill voice line — brief delay so it lands after explosion audio
-      this.time.delayedCall(400, () => {
-        const gs = this.scene.get('Game') as GameScene;
-        const picks = ['ra2-kill-1', 'ra2-kill-2', 'ra2-kill-3'] as const;
-        gs?.audio?.play(picks[Math.floor(Math.random() * picks.length)]);
-      });
       this.showLevelComplete();
     });
 
@@ -602,12 +592,6 @@ export class UIScene extends Phaser.Scene {
       blinkTween.stop();
       objs.forEach(o => o.destroy());
       this.scene.resume('Game');
-      // RA2 "reporting" voice line on game start
-      this.time.delayedCall(200, () => {
-        const gs = this.scene.get('Game') as GameScene;
-        const picks = ['ra2-start-1', 'ra2-start-2', 'ra2-start-3'] as const;
-        gs?.audio?.play(picks[Math.floor(Math.random() * picks.length)]);
-      });
     };
 
     this.input.keyboard!.on('keydown', dismiss);
@@ -630,19 +614,19 @@ export class UIScene extends Phaser.Scene {
     // Level complete stinger — low triumphant boom
     gameScene?.audio?.play('level-complete');
 
-    // Return to overworld after 2000ms, advancing to the next node
+    // Return to overworld after 2000ms, marking the completed node and moving to the next
     this.time.delayedCall(2000, () => {
       this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
         if (progress === 1) {
-          const completedLevel = (this.registry.get('currentLevel') as number) ?? 1;
-          const nextNode       = Math.min(completedLevel, 4);          // 0-indexed, cap at last
-          const nextUnlocked   = Math.min(completedLevel + 1, 5);      // unlock one more sector
-          const mechType       = (this.registry.get('mechType') as string) ?? 'mech4';
+          const gs       = this.scene.get('Game') as GameScene;
+          const mechType = (this.registry.get('mechType') as string) ?? 'mech4';
+          const completed = [...(gs?.completedNodes ?? []), gs?.currentNode ?? 0];
+          const nextNode  = gs?.getDefaultNextNode() ?? 0;
           gameScene.scene.stop('UI');
           gameScene.scene.start('Overworld', {
-            currentNode:   nextNode,
-            unlockedCount: nextUnlocked,
-            totalScore:    this.currentScore,
+            currentNode:    nextNode,
+            completedNodes: completed,
+            totalScore:     this.currentScore,
             mechType,
           });
         }
@@ -652,7 +636,6 @@ export class UIScene extends Phaser.Scene {
 
   private showGameOver(): void {
     this.gameOverActive = true;
-    this.ra2LowHpFired = true; // suppress any pending low-HP bark
 
     const W = GAME_W, H = GAME_H;
 
@@ -664,13 +647,6 @@ export class UIScene extends Phaser.Scene {
     // Somber death ambient
     const gs = this.scene.get('Game') as GameScene;
     gs?.audio?.startDeathAmbient();
-
-    // RA2 "leaving" voice line
-    this.time.delayedCall(800, () => {
-      const gs2 = this.scene.get('Game') as GameScene;
-      const picks = ['ra2-over-1', 'ra2-over-2'] as const;
-      gs2?.audio?.play(picks[Math.floor(Math.random() * picks.length)]);
-    });
 
     this.add.text(W / 2, H / 2 - 120, 'GAME OVER', {
       fontFamily: 'monospace', fontSize: '96px', color: '#ff2222',

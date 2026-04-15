@@ -33,14 +33,14 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private glowAura: Phaser.GameObjects.Graphics | null = null;
   private glowTween: Phaser.Tweens.Tween | null = null;
 
-  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling) {
+  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, hp = HP, scale = SCALE) {
     super(scene, x, y, 'sentinel');
     this.scene   = scene;
     this.scaling = scaling;
 
-    this.hp = HP;
+    this.hp = hp;
     this.setOrigin(0.5, 0.5);
-    this.setScale(SCALE);
+    this.setScale(scale);
     this.setDepth(10);
     this.play('sentinel-hover');
 

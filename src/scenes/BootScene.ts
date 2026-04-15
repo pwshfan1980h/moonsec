@@ -31,17 +31,6 @@ export class BootScene extends Phaser.Scene {
       this.load.audio(s, `audio/${s}.wav`);
     }
 
-    // RA2 voice lines
-    this.load.audio('ra2-start-1', 'audio/ra2/agent-ready.mp3');
-    this.load.audio('ra2-start-2', 'audio/ra2/conscript-reporting.mp3');
-    this.load.audio('ra2-start-3', 'audio/ra2/desolator-ready.mp3');
-    this.load.audio('ra2-kill-1',  'audio/ra2/he-s-fried.mp3');
-    this.load.audio('ra2-kill-2',  'audio/ra2/he-s-a-dead-man.mp3');
-    this.load.audio('ra2-kill-3',  'audio/ra2/cha-ching.mp3');
-    this.load.audio('ra2-lowhp',   'audio/ra2/need-a-repair.mp3');
-    this.load.audio('ra2-over-1',  'audio/ra2/better-be-going.mp3');
-    this.load.audio('ra2-over-2',  'audio/ra2/let-s-get-outta-here.mp3');
-
     // Title screen music loop
     this.load.audio('music-title', 'audio/music-title.ogg');
 
@@ -69,8 +58,10 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 28, frameHeight: 24,
     });
 
-    // Tilemap tileset
-    this.load.image('industrial-tileset', 'assets/industrial-tileset.png');
+    // Tilemap tilesets
+    this.load.image('industrial-tileset',        'assets/industrial-tileset.png');
+    this.load.image('industrial-tileset-blue',   'assets/industrial-tileset-blue.png');
+    this.load.image('industrial-tileset-violet', 'assets/industrial-tileset-violet.png');
 
     // Collectables spritesheet (16x16 tiles, 8×6 grid)
     this.load.spritesheet('collectables', 'assets/collectables.png', { frameWidth: 16, frameHeight: 16 });
@@ -134,7 +125,7 @@ export class BootScene extends Phaser.Scene {
     // Procedural bullet/effect textures
     this.makeTextures();
 
-    this.scene.start('Overworld', { currentNode: 0, unlockedCount: 1, totalScore: 0, mechType: 'mech4' });
+    this.scene.start('Overworld', { currentNode: 0, completedNodes: [], totalScore: 0, mechType: 'mech4' });
   }
 
   private buildAsepriteAnims(textureKey: string, prefix: string): void {

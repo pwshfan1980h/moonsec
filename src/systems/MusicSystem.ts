@@ -1,7 +1,76 @@
+import type { MusicTheme } from '../data/levelConfigs';
+
+type ThemeParams = {
+  step:       number;    // seconds per 8th note (controls BPM)
+  bass:       number[];  // 8-step bass note frequencies (0 = rest)
+  lead:       number[];  // 8-step lead frequencies (0 = rest)
+  padFreqs:   number[];  // sustained pad chord frequencies
+  padFilter:  number;    // pad lowpass center Hz
+  hiHatEvery: number;    // 0 = no hi-hat; 1 = every step; 2 = every other step
+  snareStep:  number;    // step index for snare (-1 = no snare)
+  kickSteps:  number[];  // steps with a kick drum
+};
+
+// Frequency helpers
+const note = (hz: number, semis: number) => hz * Math.pow(2, semis / 12);
+
+// Pre-computed notes
+const D2 = 73.42, F2 = 87.31, A2 = 110.00, C3 = 130.81;
+const D3 = 146.83, F3 = 174.61, A3 = 220.00, C4 = 261.63;
+const D4 = 293.66, A4 = 440.00;
+// G-minor rooted notes for Trade Lanes
+const G2 = 98.00, Bb2 = note(G2, 3), G3 = 196.00, D5 = note(D4, 12);
+// Bb-minor for Deep Facility
+const Bb1 = 58.27, Eb2 = note(Bb1, 5), F_2 = 87.31, Bb3 = note(Bb2, 12);
+// E-minor for Orbital
+const E2 = 82.41, B2 = note(E2, 7), E3 = note(E2, 12), G3e = note(E2, 15);
+
+const THEMES: Record<MusicTheme, ThemeParams> = {
+  'surface': {
+    step:      0.25,  // 120 BPM
+    bass:      [D2, 0, A2, F2, D2, C3, A2, 0],
+    lead:      [D4, 0, 0, 0, A4, 0, D4, 0],
+    padFreqs:  [D3, F3, A3, C4],
+    padFilter: 550,
+    hiHatEvery: 2, snareStep: 4, kickSteps: [0, 4],
+  },
+  'trade-lanes': {
+    step:      0.18,  // ~139 BPM — fast and punchy
+    bass:      [G2, 0, D2, Bb2, G2, 0, D2, Bb2],
+    lead:      [G3, 0, D5, 0, G3, 0, Bb2, 0],
+    padFreqs:  [G3, Bb2, D3, F3],
+    padFilter: 900,
+    hiHatEvery: 1, snareStep: 4, kickSteps: [0, 2, 4, 6],
+  },
+  'deep-facility': {
+    step:      0.33,  // ~91 BPM — slow and ominous
+    bass:      [Bb1, 0, 0, Eb2, Bb1, 0, F_2, 0],
+    lead:      [Bb3, 0, 0, 0, 0, 0, Bb3, 0],
+    padFreqs:  [Bb1, Eb2, F_2, Bb3],
+    padFilter: 200,
+    hiHatEvery: 0, snareStep: -1, kickSteps: [0, 4],
+  },
+  'orbital': {
+    step:      0.27,  // ~111 BPM — floating, minimal
+    bass:      [E2, 0, B2, 0, E2, 0, G3e, 0],
+    lead:      [E3, 0, 0, 0, B2, 0, 0, 0],
+    padFreqs:  [E2, B2, E3, G3e],
+    padFilter: 1200,
+    hiHatEvery: 0, snareStep: -1, kickSteps: [0, 4],
+  },
+  'nexus-core': {
+    step:      0.19,  // ~158 BPM — relentless
+    bass:      [D2, 0, A2, F2, D2, C3, A2, F2],
+    lead:      [D4, A4, 0, D4, A4, 0, D4, 0],
+    padFreqs:  [D3, F3, A3, C4],
+    padFilter: 700,
+    hiHatEvery: 1, snareStep: 4, kickSteps: [0, 2, 4, 6],
+  },
+};
+
 /**
  * Procedural music engine using Web Audio API.
- * D-minor pentatonic arpeggio bass + detuned pad + sparse lead.
- * 120 BPM, 8-step loop (~2 s/bar).
+ * Theme-aware: key, BPM, pad voicing, and percussion pattern vary per level.
  */
 export class MusicSystem {
   private ctx: AudioContext;
@@ -23,37 +92,14 @@ export class MusicSystem {
   private bossMode = false;
   private noiseBuffer!: AudioBuffer;
 
-  // --- Timing constants ---
-  private readonly STEP = 0.25;   // 120 BPM, 8th note = 0.25 s
-  private readonly LOOK = 0.30;   // look-ahead window
-  private readonly TICK = 80;     // scheduler interval (ms)
+  private readonly LOOK = 0.30;
+  private readonly TICK = 80;
 
-  // --- D-minor pentatonic frequencies ---
-  private readonly D2  = 73.42;
-  private readonly F2  = 87.31;
-  private readonly A2  = 110.00;
-  private readonly C3  = 130.81;
-  private readonly D3  = 146.83;
-  private readonly F3  = 174.61;
-  private readonly A3  = 220.00;
-  private readonly C4  = 261.63;
-  private readonly D4  = 293.66;
-  private readonly A4  = 440.00;
+  private readonly theme: ThemeParams;
 
-  // Bass arpeggio: D2 . A2 F2 | D2 C3 A2 .
-  private readonly BASS = [
-    this.D2, 0, this.A2, this.F2,
-    this.D2, this.C3, this.A2, 0,
-  ];
-
-  // Lead (upper octave, plays on even loops only)
-  private readonly LEAD = [
-    this.D4, 0, 0, 0,
-    this.A4, 0, this.D4, 0,
-  ];
-
-  constructor() {
-    this.ctx = new AudioContext();
+  constructor(theme: MusicTheme = 'surface') {
+    this.theme  = THEMES[theme];
+    this.ctx    = new AudioContext();
     this.master = this.ctx.createGain();
     this.master.gain.value = 0;
     this.master.connect(this.ctx.destination);
@@ -70,7 +116,6 @@ export class MusicSystem {
     this.running = true;
     if (this.ctx.state === 'suspended') this.ctx.resume();
 
-    // Fade in over 3 s
     const t = this.ctx.currentTime;
     this.master.gain.setValueAtTime(0, t);
     this.master.gain.linearRampToValueAtTime(volume, t + 3);
@@ -109,37 +154,40 @@ export class MusicSystem {
     while (this.nextTime < now + this.LOOK) {
       this.scheduleStep(this.step, this.nextTime);
       this.step++;
-      if (this.step >= this.BASS.length) {
+      if (this.step >= this.theme.bass.length) {
         this.step = 0;
         this.loopCount++;
       }
-      this.nextTime += this.STEP;
+      this.nextTime += this.theme.step;
     }
     this.timerId = window.setTimeout(() => this.tick(), this.TICK) as unknown as number;
   }
 
   private scheduleStep(step: number, t: number): void {
-    // Sub-kick on downbeats (steps 0 and 4)
-    if (step === 0 || step === 4) this.playKick(t);
+    const { bass, lead, hiHatEvery, snareStep, kickSteps } = this.theme;
 
-    // Bass arpeggio
-    const bassFreq = this.BASS[step];
+    if (kickSteps.includes(step)) this.playKick(t);
+
+    const bassFreq = bass[step];
     if (bassFreq > 0) {
-      this.playNote(bassFreq, 'sawtooth', t, this.STEP * 0.72, 0.28, 700);
+      this.playNote(bassFreq, 'sawtooth', t, this.theme.step * 0.72, 0.28, 700);
     }
 
-    // Lead (every other 4-bar loop for variation)
     if (this.loopCount % 2 === 1) {
-      const leadFreq = this.LEAD[step];
+      const leadFreq = lead[step];
       if (leadFreq > 0) {
-        this.playNote(leadFreq, 'square', t, this.STEP * 0.35, 0.07, 2800);
+        this.playNote(leadFreq, 'square', t, this.theme.step * 0.35, 0.07, 2800);
       }
     }
 
-    // Boss percussion layer — hi-hats on every off-beat, snare on step 4
+    // Boss percussion layer (overlaid on top of theme percussion)
     if (this.bossMode) {
-      if (step % 2 === 1) this.playHiHat(t);
-      if (step === 4)     this.playSnare(t);
+      if (hiHatEvery === 0 || step % 2 === 1) this.playHiHat(t); // always add hi-hats in boss mode
+      if (snareStep >= 0 && step === snareStep) this.playSnare(t);
+    } else {
+      // Normal play — theme-defined percussion
+      if (hiHatEvery > 0 && step % hiHatEvery === 1) this.playHiHat(t);
+      if (snareStep >= 0 && step === snareStep)        this.playSnare(t);
     }
   }
 
@@ -247,19 +295,18 @@ export class MusicSystem {
 
     this.padGain = this.ctx.createGain();
     this.padGain.gain.setValueAtTime(0, t);
-    this.padGain.gain.linearRampToValueAtTime(0.09, t + 5); // 5 s attack
+    this.padGain.gain.linearRampToValueAtTime(0.09, t + 5);
 
     this.padLp = this.ctx.createBiquadFilter();
     this.padLp.type = 'lowpass';
-    this.padLp.frequency.setValueAtTime(550, t);
+    this.padLp.frequency.setValueAtTime(this.theme.padFilter, t);
     this.padLp.Q.setValueAtTime(0.9, t);
 
-    // Very slow LFO (0.07 Hz) sweeps filter cutoff ±200 Hz
     this.padLfo = this.ctx.createOscillator();
     this.padLfo.type = 'sine';
     this.padLfo.frequency.setValueAtTime(0.07, t);
     const lfoAmt = this.ctx.createGain();
-    lfoAmt.gain.setValueAtTime(220, t);
+    lfoAmt.gain.setValueAtTime(Math.min(220, this.theme.padFilter * 0.4), t);
     this.padLfo.connect(lfoAmt);
     lfoAmt.connect(this.padLp.frequency);
     this.padLfo.start(t);
@@ -267,9 +314,7 @@ export class MusicSystem {
     this.padGain.connect(this.padLp);
     this.padLp.connect(this.master);
 
-    // Dm7 chord: D3 F3 A3 C4 — two detuned sawtooth oscillators per note
-    const padFreqs = [this.D3, this.F3, this.A3, this.C4];
-    for (const freq of padFreqs) {
+    for (const freq of this.theme.padFreqs) {
       for (const detune of [-7, 7]) {
         const osc = this.ctx.createOscillator();
         osc.type = 'sawtooth';
