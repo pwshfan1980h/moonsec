@@ -100,10 +100,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       this.scene.playerBullets, escort,
       (e, bullet) => {
         const b = bullet as Phaser.Physics.Arcade.Image;
+        const ix = b.x, iy = b.y;
         b.setActive(false).setVisible(false);
         if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
         (e as unknown as Drone).takeDamage(1);
+        this.scene.spawnBulletImpact(ix, iy, 'enemy');
         this.scene.audio.play('hit');
+        if (Math.random() < 0.4) this.scene.spawnEnemyChunks(ix, iy, 0x993333, 2);
         this.scene.spawnFloatingText((e as Phaser.GameObjects.Sprite).x, (e as Phaser.GameObjects.Sprite).y - 20, '-1', '#ffffff');
       },
     );

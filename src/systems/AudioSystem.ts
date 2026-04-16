@@ -6,7 +6,7 @@ import type Phaser from 'phaser';
 type SoundId =
   | 'rapid' | 'turret' | 'hit' | 'hurt' | 'jump' | 'death'
   | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
-  | 'nanite-heal' | 'nanite-tick' | 'pickup'
+  | 'nanite-heal' | 'nanite-tick' | 'pickup' | 'eject'
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
   | 'missile-launch' | 'landing-soft' | 'landing-heavy';
 
@@ -39,6 +39,7 @@ const VOLUMES: Record<SoundId, number> = {
   'nanite-heal':    0.55,
   'nanite-tick':    0.30,
   'pickup':         0.50,
+  eject:            0.20,
   'ui-nav':         0.25,
   'ui-confirm':     0.40,
   'level-complete': 0.70,
@@ -55,6 +56,8 @@ export class AudioSystem {
   private readonly minInterval: Partial<Record<SoundId, number>> = {
     rapid: 55, // ms — prevents audio spam on rapid fire
     'nanite-tick': 550,
+    eject: 80,  // geometry-impact throttle — prevents stacking during sustained fire
+    hit:   70,  // enemy-impact throttle
   };
   private loops = new Map<LoopId, LoopEntry>();
   private deathAmbientNodes: (OscillatorNode | GainNode)[] = [];

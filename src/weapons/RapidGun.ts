@@ -29,7 +29,7 @@ export class RapidGun {
     const vy = Math.sin(angle) * SPEED;
 
     const b = this.scene.playerBullets.get(spawnX, spawnY, 'bullet-rapid') as Phaser.Physics.Arcade.Image;
-    if (!b) return;
+    if (!b) { console.warn('[RapidGun] pool exhausted — no bullet returned'); return; }
 
     b.setActive(true).setVisible(true).setDepth(15);
     b.setBlendMode(Phaser.BlendModes.ADD);

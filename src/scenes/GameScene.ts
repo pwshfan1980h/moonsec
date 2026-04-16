@@ -214,8 +214,11 @@ export class GameScene extends Phaser.Scene {
     const killBullet = (b: unknown) => {
       const bullet = b as Phaser.Physics.Arcade.Image;
       if (!bullet.active) return;
+      const ix = bullet.x, iy = bullet.y;
       bullet.setActive(false).setVisible(false);
       if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
+      this.spawnBulletImpact(ix, iy, 'geometry');
+      this.audio.play('eject');
     };
 
     const killMissile = (m: unknown) => {
@@ -228,21 +231,29 @@ export class GameScene extends Phaser.Scene {
       this.audio.play('explosion');
     };
 
+    const killBulletOnTile = (b: unknown, tile: unknown) => {
+      if (!(tile as Phaser.Tilemaps.Tile).collides) return;
+      killBullet(b);
+    };
+
     // Player bullets destroyed by geometry
     this.physics.add.overlap(this.playerBullets, this.ground, killBullet);
-    if (this.groundLayer) this.physics.add.overlap(this.playerBullets, this.groundLayer, killBullet);
+    if (this.groundLayer) this.physics.add.overlap(this.playerBullets, this.groundLayer, killBulletOnTile);
 
     // Drone bullets destroyed by geometry
     this.physics.add.overlap(this.droneBullets, this.ground, killBullet);
-    if (this.groundLayer) this.physics.add.overlap(this.droneBullets, this.groundLayer, killBullet);
+    if (this.groundLayer) this.physics.add.overlap(this.droneBullets, this.groundLayer, killBulletOnTile);
 
     // Boss projectiles destroyed by geometry
     this.physics.add.overlap(this.bossProjectiles, this.ground, killBullet);
-    if (this.groundLayer) this.physics.add.overlap(this.bossProjectiles, this.groundLayer, killBullet);
+    if (this.groundLayer) this.physics.add.overlap(this.bossProjectiles, this.groundLayer, killBulletOnTile);
 
     // Missiles explode on geometry
     this.physics.add.overlap(this.missiles, this.ground, (m) => killMissile(m));
-    if (this.groundLayer) this.physics.add.overlap(this.missiles, this.groundLayer, (m) => killMissile(m));
+    if (this.groundLayer) this.physics.add.overlap(this.missiles, this.groundLayer, (m, tile) => {
+      if (!(tile as Phaser.Tilemaps.Tile).collides) return;
+      killMissile(m);
+    });
 
     // Enemies blocked by geometry
     this.physics.add.collider(this.drones, this.ground);
@@ -298,11 +309,13 @@ export class GameScene extends Phaser.Scene {
       this.bossProjectiles,
       (_proj, bullet) => {
         const b = bullet as Phaser.Physics.Arcade.Image;
+        const ix = b.x, iy = b.y;
         b.setActive(false).setVisible(false);
         if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
         const p = _proj as Phaser.Physics.Arcade.Image;
         p.setActive(false).setVisible(false);
         if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
+        this.spawnBulletImpact(ix, iy, 'enemy');
         this.audio.play('hit');
       },
     );
@@ -542,6 +555,47 @@ export class GameScene extends Phaser.Scene {
     emitter.setDepth(20);
     emitter.explode(7);
     this.time.delayedCall(3200, () => emitter.destroy());
+  }
+
+  /** Quick spark burst at a projectile impact point.
+   *  type='geometry' → cool dust/sparks that fall. type='enemy' → hot sparks + optional chunks. */
+  spawnBulletImpact(x: number, y: number, type: 'enemy' | 'geometry'): void {
+    const cfg = type === 'enemy'
+      ? { tints: [0xffddaa, 0xffaa33, 0xff6600], count: 5, gravity: 120, speed: [80, 220] as [number, number], life: [160, 320] as [number, number] }
+      : { tints: [0xbbccee, 0x8899aa, 0xddddee], count: 4, gravity: 320, speed: [40, 160] as [number, number], life: [200, 400] as [number, number] };
+
+    const emitter = this.add.particles(x, y, 'pixel', {
+      speed:    { min: cfg.speed[0], max: cfg.speed[1] },
+      angle:    { min: 0, max: 360 },
+      gravityY: cfg.gravity,
+      scale:    { start: 1.4, end: 0 },
+      alpha:    { start: 1, end: 0 },
+      tint:     cfg.tints,
+      lifespan: { min: cfg.life[0], max: cfg.life[1] },
+      emitting: false,
+      blendMode: 'ADD',
+    });
+    emitter.setDepth(19);
+    emitter.explode(cfg.count);
+    this.time.delayedCall(cfg.life[1] + 100, () => emitter.destroy());
+  }
+
+  /** Bits falling off an enemy — tinted chunks with gravity. Called on hits, low chance. */
+  spawnEnemyChunks(x: number, y: number, tint = 0x99aaff, count = 3): void {
+    const emitter = this.add.particles(x, y, 'pixel', {
+      speed:    { min: 60, max: 180 },
+      angle:    { min: 200, max: 340 }, // upward spray, then gravity pulls down
+      gravityY: 520,
+      scale:    { start: 1.2, end: 0.6 },
+      alpha:    { start: 1, end: 0 },
+      tint:     [tint, 0x555566, 0x222233],
+      lifespan: { min: 600, max: 1100 },
+      rotate:   { start: 0, end: 360 },
+      emitting: false,
+    });
+    emitter.setDepth(18);
+    emitter.explode(count);
+    this.time.delayedCall(1200, () => emitter.destroy());
   }
 
   private makeBackground(): void {

@@ -135,14 +135,39 @@ export function buildMap(tmpl: LevelTemplate, seed: number): number[][] {
     }
   }
 
-  // Variation: extra platforms
+  // Variation: extra platforms — avoid colliding with existing tiles
+  // (fixed platforms, fixed walls, ceiling/ground). Also keep ≥1-col gap on each
+  // side so a new platform can't butt flush against another platform at the
+  // same row. Up to 20 placement attempts per platform before giving up.
   const platCount = randi(tmpl.variation.extraPlatforms[0], tmpl.variation.extraPlatforms[1]);
   const pRows = tmpl.variation.platformRows;
+  const canPlacePlatform = (row: number, col: number, width: number): boolean => {
+    if (row < 0 || row >= tmpl.rows) return false;
+    const c0 = Math.max(0, col - 1);
+    const c1 = Math.min(tmpl.cols - 1, col + width);
+    // Row must be empty across [col, col+width), with 1-col buffer each side
+    for (let c = c0; c <= c1; c++) if (map[row][c] !== T.EMPTY) return false;
+    // Don't spawn directly above/below ≤1 row from fixed features (avoids stacking)
+    for (const adj of [row - 1, row + 1]) {
+      if (adj < 0 || adj >= tmpl.rows) continue;
+      for (let c = col; c < col + width; c++) {
+        if (map[adj][c] !== T.EMPTY) return false;
+      }
+    }
+    return true;
+  };
   for (let p = 0; p < platCount; p++) {
-    const row   = pRows[Math.floor(rng() * pRows.length)];
     const width = randi(tmpl.variation.platformWidth[0], tmpl.variation.platformWidth[1]);
-    const col   = randi(5, tmpl.cols - width - 5);
-    for (let w = 0; w < width && col + w < tmpl.cols; w++) map[row][col + w] = T.SURFACE;
+    let placed = false;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const row = pRows[Math.floor(rng() * pRows.length)];
+      const col = randi(5, tmpl.cols - width - 5);
+      if (!canPlacePlatform(row, col, width)) continue;
+      for (let w = 0; w < width && col + w < tmpl.cols; w++) map[row][col + w] = T.SURFACE;
+      placed = true;
+      break;
+    }
+    if (!placed) continue;
   }
 
   // Variation: random walls (vertical fill columns, min 15-col spacing)
@@ -265,12 +290,12 @@ export const TMPL_NEXUS_CORE: LevelTemplate = {
     { col:  15, row: 19, width: 15 },
     { col:  70, row: 15, width: 10 },
     { col:  85, row: 19, width: 10 },
-    { col: 140, row: 19, width: 15 },
+    { col: 155, row: 19, width: 12 }, // shifted right of wall@col 150
   ],
   fixedWalls: [
-    { col:  50, rowStart: 5, height: 15 },
-    { col: 100, rowStart: 5, height: 15 },
-    { col: 150, rowStart: 5, height: 15 },
+    { col:  50, rowStart: 5, height: 14 }, // shortened so platform@row 19 clears
+    { col: 100, rowStart: 5, height: 14 },
+    { col: 150, rowStart: 5, height: 14 },
   ],
   variation: {
     pitCount:       [1, 2], pitWidth:       [4, 6],

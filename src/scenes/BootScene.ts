@@ -26,6 +26,7 @@ export class BootScene extends Phaser.Scene {
       'drone-shoot','explosion','footstep','missile-impact',
       'nanite-heal','nanite-tick','pickup',
       'ui-nav','ui-confirm','level-complete',
+      'eject', // bullet-on-geometry ricochet
     ];
     for (const s of sounds) {
       this.load.audio(s, `audio/${s}.wav`);

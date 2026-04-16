@@ -131,10 +131,14 @@ export class DroneSpawner {
       this.scene.playerBullets, boss,
       (b, bullet) => {
         const blt = bullet as Phaser.Physics.Arcade.Image;
+        const ix = blt.x, iy = blt.y;
         blt.setActive(false).setVisible(false);
         if (blt.body) (blt.body as Phaser.Physics.Arcade.Body).enable = false;
         (b as unknown as NexusBoss).takeDamage(1);
+        this.scene.spawnBulletImpact(ix, iy, 'enemy');
         this.scene.audio.play('hit');
+        // Boss is big — chunks fly off more often
+        if (Math.random() < 0.7) this.scene.spawnEnemyChunks(ix, iy, 0xff6633, 4);
         this.scene.spawnFloatingText((b as Phaser.GameObjects.Sprite).x, (b as Phaser.GameObjects.Sprite).y - 30, '-1', '#ffffff');
       },
     );
@@ -219,10 +223,13 @@ export class DroneSpawner {
         this.scene.physics.add.overlap(this.scene.playerBullets, dart,
           (_d, bullet) => {
             const b = bullet as Phaser.Physics.Arcade.Image;
+            const ix = b.x, iy = b.y;
             b.setActive(false).setVisible(false);
             if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
             (_d as unknown as StunDart).takeDamage(1);
+            this.scene.spawnBulletImpact(ix, iy, 'enemy');
             this.scene.audio.play('hit');
+            if (Math.random() < 0.4) this.scene.spawnEnemyChunks(ix, iy, 0x66aaff, 2);
           });
         this.scene.physics.add.overlap(this.scene.missiles, dart,
           (_d, missile) => {
@@ -256,11 +263,21 @@ export class DroneSpawner {
       this.scene.physics.add.overlap(this.scene.playerBullets, drone,
         (d, bullet) => {
           const b = bullet as Phaser.Physics.Arcade.Image;
+          const ix = b.x, iy = b.y;
           b.setActive(false).setVisible(false);
           if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
-          (d as unknown as Drone).takeDamage(1);
+          const dr = d as unknown as Drone;
+          dr.takeDamage(1);
+          this.scene.spawnBulletImpact(ix, iy, 'enemy');
           this.scene.audio.play('hit');
-          this.scene.spawnFloatingText((d as unknown as Drone).x, (d as unknown as Drone).y - 20, '-1', '#ffffff');
+          // Drones are small — ~40% chance to shed a chunk per hit, tinted by variant
+          if (Math.random() < 0.4) {
+            const chunkTint = type === 'drone-red' ? 0xcc3322
+              : type === 'drone-green' ? 0x33cc66
+              : type === 'sentinel' ? 0xaaaacc : 0x99aabb;
+            this.scene.spawnEnemyChunks(ix, iy, chunkTint, 2);
+          }
+          this.scene.spawnFloatingText(dr.x, dr.y - 20, '-1', '#ffffff');
         });
       this.scene.physics.add.overlap(this.scene.missiles, drone,
         (d, missile) => {
@@ -300,10 +317,13 @@ export class DroneSpawner {
       this.scene.physics.add.overlap(this.scene.playerBullets, bomber,
         (_b, bullet) => {
           const b = bullet as Phaser.Physics.Arcade.Image;
+          const ix = b.x, iy = b.y;
           b.setActive(false).setVisible(false);
           if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
           (_b as unknown as BomberDrone).takeDamage(1);
+          this.scene.spawnBulletImpact(ix, iy, 'enemy');
           this.scene.audio.play('hit');
+          if (Math.random() < 0.5) this.scene.spawnEnemyChunks(ix, iy, 0xccaa55, 3);
         });
       this.scene.physics.add.overlap(this.scene.missiles, bomber,
         (_b, missile) => {
@@ -338,9 +358,11 @@ export class DroneSpawner {
           this.scene.physics.add.overlap(this.scene.playerBullets, mine,
             (_m, bullet) => {
               const b = bullet as Phaser.Physics.Arcade.Image;
+              const ix = b.x, iy = b.y;
               b.setActive(false).setVisible(false);
               if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
               (_m as unknown as Mine).takeDamage(1);
+              this.scene.spawnBulletImpact(ix, iy, 'enemy');
             });
           this.scene.physics.add.overlap(this.scene.missiles, mine,
             (_m, missile) => {
@@ -378,10 +400,14 @@ export class DroneSpawner {
           this.scene.physics.add.overlap(this.scene.playerBullets, tank,
             (_t, bullet) => {
               const b = bullet as Phaser.Physics.Arcade.Image;
+              const ix = b.x, iy = b.y;
               b.setActive(false).setVisible(false);
               if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
               (_t as unknown as ShieldedTank).takeDamage(1);
+              this.scene.spawnBulletImpact(ix, iy, 'enemy');
               this.scene.audio.play('hit');
+              // Tanks are armoured — chunks more often, duller tint
+              if (Math.random() < 0.55) this.scene.spawnEnemyChunks(ix, iy, 0x776655, 3);
             });
           this.scene.physics.add.overlap(this.scene.missiles, tank,
             (_t, missile) => {
