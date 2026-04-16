@@ -17,11 +17,11 @@ const MOON_Y = 610;
 const MOON_R  = 305;
 
 const NODES: NodeDef[] = [
-  { x: 430,  y: 820, label: 'SURFACE OPS',    ...NODE_GRAPH[0] },
-  { x: 660,  y: 560, label: 'TRADE LANES',    ...NODE_GRAPH[1] },
-  { x: 800,  y: 758, label: 'DEEP FACILITY',  ...NODE_GRAPH[2] },
-  { x: 1150, y: 490, label: 'ORBITAL STATION',...NODE_GRAPH[3] },
-  { x: 1490, y: 760, label: 'NEXUS CORE',     ...NODE_GRAPH[4] },
+  { x: 775,  y: 790, label: 'SURFACE OPS',    ...NODE_GRAPH[0] },  // lower-left  — dist ≈ 258
+  { x: 790,  y: 510, label: 'TRADE LANES',    ...NODE_GRAPH[1] },  // upper-left  — dist ≈ 197
+  { x: 965,  y: 760, label: 'DEEP FACILITY',  ...NODE_GRAPH[2] },  // lower-center— dist ≈ 150
+  { x: 1130, y: 490, label: 'ORBITAL STATION',...NODE_GRAPH[3] },  // upper-right — dist ≈ 208
+  { x: 1155, y: 730, label: 'NEXUS CORE',     ...NODE_GRAPH[4] },  // right-center— dist ≈ 229
 ];
 
 // Edge list for path rendering: [fromIndex, toIndex]
@@ -151,34 +151,128 @@ export class OverworldScene extends Phaser.Scene {
   // ── Moon ──────────────────────────────────────────────────────────────────
 
   private buildMoon(): void {
-    const gfx = this.add.graphics().setDepth(2);
-    for (let i = 5; i >= 1; i--) {
-      gfx.fillStyle(0xddddc8, 0.025 * i);
-      gfx.fillCircle(MOON_X, MOON_Y, MOON_R + i * 22);
-    }
-    gfx.fillStyle(0xb8b4a0, 1.0);
-    gfx.fillCircle(MOON_X, MOON_Y, MOON_R);
-    gfx.fillStyle(0x00061a, 0.40);
-    gfx.fillCircle(MOON_X + 150, MOON_Y + 50, MOON_R);
-    gfx.fillStyle(0xd8d5c5, 0.50);
-    gfx.fillEllipse(MOON_X - 95, MOON_Y - 100, MOON_R * 0.68, MOON_R * 0.52);
+    // Shared geometry mask — clips everything inside the moon disc cleanly.
+    const maskGfx = this.add.graphics().setVisible(false);
+    maskGfx.fillStyle(0xffffff);
+    maskGfx.fillCircle(MOON_X, MOON_Y, MOON_R);
+    const moonMask = maskGfx.createGeometryMask();
 
+    // ── 1. Atmospheric glow (unmasked — extends beyond rim) ─────────────────
+    const glowGfx = this.add.graphics().setDepth(2);
+    for (let i = 5; i >= 1; i--) {
+      glowGfx.fillStyle(0x6699dd, 0.013 * i);
+      glowGfx.fillCircle(MOON_X, MOON_Y, MOON_R + i * 22);
+    }
+    // Electric blue rim
+    glowGfx.lineStyle(2, 0x2255bb, 0.30);
+    glowGfx.strokeCircle(MOON_X, MOON_Y, MOON_R + 5);
+    glowGfx.lineStyle(1, 0x4488ff, 0.12);
+    glowGfx.strokeCircle(MOON_X, MOON_Y, MOON_R + 14);
+
+    // ── 2. Base body + terrain detail (masked) ───────────────────────────────
+    const moonGfx = this.add.graphics().setDepth(2).setMask(moonMask);
+
+    // Base — cool industrial blue-grey
+    moonGfx.fillStyle(0x6a7080, 1.0);
+    moonGfx.fillCircle(MOON_X, MOON_Y, MOON_R);
+
+    // Highland / lit region upper-left (subtle — surface texture, not a sphere)
+    moonGfx.fillStyle(0x8a95a8, 0.55);
+    moonGfx.fillEllipse(MOON_X - 75, MOON_Y - 85, 195, 150);
+    moonGfx.fillStyle(0x9aaabb, 0.22);
+    moonGfx.fillEllipse(MOON_X - 110, MOON_Y - 120, 100, 80);
+
+    // Survey grid — latitude/longitude lines projected as chords
+    for (let dy = -290; dy <= 290; dy += 38) {
+      const hw = Math.sqrt(Math.max(0, MOON_R * MOON_R - dy * dy));
+      if (hw < 4) continue;
+      moonGfx.lineStyle(1, 0x3a6aaa, 0.14);
+      moonGfx.beginPath();
+      moonGfx.moveTo(MOON_X - hw, MOON_Y + dy);
+      moonGfx.lineTo(MOON_X + hw, MOON_Y + dy);
+      moonGfx.strokePath();
+    }
+    for (let dx = -290; dx <= 290; dx += 38) {
+      const hh = Math.sqrt(Math.max(0, MOON_R * MOON_R - dx * dx));
+      if (hh < 4) continue;
+      moonGfx.lineStyle(1, 0x3a6aaa, 0.14);
+      moonGfx.beginPath();
+      moonGfx.moveTo(MOON_X + dx, MOON_Y - hh);
+      moonGfx.lineTo(MOON_X + dx, MOON_Y + hh);
+      moonGfx.strokePath();
+    }
+
+    // Colonised facility sectors — double-ring zones with fill
+    // Positioned clear of all mission nodes
+    const zones = [
+      { dx: -115, dy:   55, r: 40 },  // left-mid
+      { dx:   75, dy:  -85, r: 30 },  // upper-center
+      { dx:  -35, dy:  195, r: 22 },  // lower-left  (was 25,125 — moved clear of node 2)
+      { dx:  -50, dy: -150, r: 20 },  // upper-left
+      { dx:  160, dy:   20, r: 22 },  // right
+      { dx: -220, dy: -140, r: 14 },  // far upper-left (was -175,-95 — moved clear of node 1)
+    ];
+    for (const z of zones) {
+      moonGfx.fillStyle(0x2277aa, 0.11);
+      moonGfx.fillCircle(MOON_X + z.dx, MOON_Y + z.dy, z.r);
+      moonGfx.lineStyle(1, 0x44aadd, 0.40);
+      moonGfx.strokeCircle(MOON_X + z.dx, MOON_Y + z.dy, z.r);
+      moonGfx.lineStyle(1, 0x3388bb, 0.18);
+      moonGfx.strokeCircle(MOON_X + z.dx, MOON_Y + z.dy, z.r + 9);
+    }
+
+    // Infrastructure corridors connecting facility sectors
+    const corridors: [number, number][] = [[0,1],[1,3],[0,2],[1,4],[3,5],[4,5]];
+    for (const [a, b] of corridors) {
+      moonGfx.lineStyle(1, 0x3399bb, 0.22);
+      moonGfx.beginPath();
+      moonGfx.moveTo(MOON_X + zones[a].dx, MOON_Y + zones[a].dy);
+      moonGfx.lineTo(MOON_X + zones[b].dx, MOON_Y + zones[b].dy);
+      moonGfx.strokePath();
+    }
+
+    // Impact craters — smaller / sparser (colonised surface); sensor marker at rim
     const craters = [
-      { dx: -135, dy:  -55, r: 50, da: 0.22, la: 0.18 },
-      { dx:  165, dy:   75, r: 33, da: 0.17, la: 0.13 },
-      { dx:  -22, dy:  155, r: 54, da: 0.24, la: 0.19 },
-      { dx:  210, dy: -105, r: 21, da: 0.14, la: 0.11 },
-      { dx: -215, dy:   95, r: 29, da: 0.17, la: 0.14 },
-      { dx:   68, dy: -175, r: 17, da: 0.13, la: 0.10 },
-      { dx:  -62, dy: -215, r: 13, da: 0.11, la: 0.09 },
-      { dx:  -78, dy:  225, r: 24, da: 0.15, la: 0.12 },
-      { dx:  115, dy:  200, r: 18, da: 0.13, la: 0.10 },
+      { dx: -100, dy: -170, r: 28, da: 0.20, la: 0.15 },
+      { dx:  140, dy:   70, r: 20, da: 0.16, la: 0.12 },
+      { dx:  -80, dy:  200, r: 30, da: 0.22, la: 0.16 },
+      { dx:  220, dy: -150, r: 15, da: 0.12, la: 0.09 },
+      { dx: -195, dy:   75, r: 18, da: 0.14, la: 0.11 },
+      { dx:  -55, dy: -215, r: 10, da: 0.10, la: 0.08 },
+      { dx:  -62, dy:  212, r: 16, da: 0.13, la: 0.10 },
+      { dx:   93, dy:  193, r: 12, da: 0.11, la: 0.09 },
+      { dx: -238, dy:  -40, r: 11, da: 0.10, la: 0.08 },
     ];
     for (const c of craters) {
-      gfx.fillStyle(0x6a6858, c.da * 2);
-      gfx.fillCircle(MOON_X + c.dx, MOON_Y + c.dy, c.r);
-      gfx.fillStyle(0xcecab8, c.la);
-      gfx.fillCircle(MOON_X + c.dx + c.r * 0.28, MOON_Y + c.dy - c.r * 0.28, c.r * 0.62);
+      moonGfx.fillStyle(0x454a56, c.da * 2.2);
+      moonGfx.fillCircle(MOON_X + c.dx, MOON_Y + c.dy, c.r);
+      moonGfx.fillStyle(0x8a96a4, c.la);
+      moonGfx.fillCircle(MOON_X + c.dx + c.r * 0.28, MOON_Y + c.dy - c.r * 0.28, c.r * 0.60);
+      // Sensor/salvage station pixel at crater rim
+      moonGfx.fillStyle(0x55aacc, 0.55);
+      moonGfx.fillRect(MOON_X + c.dx + c.r - 2, MOON_Y + c.dy - 1, 4, 3);
+    }
+
+    // ── 3. Night-side shadow + city lights (masked, on top of terrain) ───────
+    const shadowGfx = this.add.graphics().setDepth(3).setMask(moonMask);
+
+    // Terminator shadow — offset so it clips cleanly inside the moon disc
+    shadowGfx.fillStyle(0x000b1e, 0.52);
+    shadowGfx.fillCircle(MOON_X + 155, MOON_Y + 45, MOON_R);
+
+    // City lights visible on the dark side — warm amber pixels with glow halo
+    const lights = [
+      { dx:  85, dy:  65 }, { dx: 125, dy: -28 }, { dx: 155, dy:  98 },
+      { dx: 195, dy: -18 }, { dx: 155, dy: 148 }, { dx: 248, dy:  75 },
+      { dx:  95, dy: -98 }, { dx: 218, dy: -98 }, { dx: 135, dy: -148 },
+      { dx: 258, dy:  28 }, { dx: 182, dy:  68 }, { dx: 230, dy: 145 },
+      { dx: 112, dy: 162 }, { dx: 270, dy: -45 },
+    ];
+    for (const l of lights) {
+      shadowGfx.fillStyle(0xffbb33, 0.80);
+      shadowGfx.fillRect(MOON_X + l.dx - 1, MOON_Y + l.dy - 1, 2, 2);
+      shadowGfx.fillStyle(0xff9900, 0.18);
+      shadowGfx.fillCircle(MOON_X + l.dx, MOON_Y + l.dy, 5);
     }
   }
 
