@@ -657,6 +657,107 @@ export class GameScene extends Phaser.Scene {
       .setDepth(3).setOrigin(0.5, 1).setScrollFactor(0);
 
     this.makeBackgroundDomes();
+
+    if (this.activeConfig?.nodeIndex === 0) this.makeSurfaceSignature();
+  }
+
+  // Surface-Ops-only sky signature: Earth on the horizon, twinkling stars,
+  // and slow moon-dust drift at ground level. Makes node 0 read as "lunar"
+  // rather than generic "industrial night."
+  private makeSurfaceSignature(): void {
+    // ── Earth ──
+    // scrollFactor 0.04 keeps it nearly locked to the sky but drifts a little
+    // so depth reads correctly against the faster dome layers.
+    const earthX = 360;
+    const earthY = 95;
+    const R = 88;
+    const earth = this.add.graphics()
+      .setDepth(1.1)
+      .setScrollFactor(0.04)
+      .setPosition(earthX, earthY);
+
+    // Outer atmosphere halo
+    earth.fillStyle(0x88bbff, 0.10);
+    earth.fillCircle(0, 0, R + 6);
+    earth.fillStyle(0x88bbff, 0.18);
+    earth.fillCircle(0, 0, R + 2);
+
+    // Ocean base
+    earth.fillStyle(0x1a3a78, 1);
+    earth.fillCircle(0, 0, R);
+
+    // Continent blobs (stylized, not geographic)
+    earth.fillStyle(0x2e6b3a, 1);
+    earth.fillCircle(-22, -18, 26);
+    earth.fillCircle(14, 8, 22);
+    earth.fillCircle(30, -28, 12);
+    earth.fillCircle(-8, 30, 14);
+    earth.fillStyle(0x3d8a4a, 0.8);
+    earth.fillCircle(-30, -8, 10);
+    earth.fillCircle(22, 22, 8);
+
+    // Cloud bands (low-alpha white arcs)
+    earth.fillStyle(0xffffff, 0.25);
+    earth.fillCircle(-14, -36, 10);
+    earth.fillCircle(6, -32, 14);
+    earth.fillCircle(36, -4, 10);
+    earth.fillCircle(-28, 18, 12);
+    earth.fillCircle(8, 40, 10);
+
+    // Terminator — dark side (lower-right, away from implied sun at upper-left)
+    earth.fillStyle(0x000000, 0.45);
+    earth.slice(0, 0, R, -Math.PI * 0.25, Math.PI * 0.75, false);
+    earth.fillPath();
+
+    // Highlight arc on sunlit edge (upper-left)
+    earth.lineStyle(2, 0xaaccff, 0.35);
+    earth.beginPath();
+    earth.arc(0, 0, R - 1, Math.PI * 0.9, Math.PI * 1.7, false);
+    earth.strokePath();
+
+    // ── Twinkling stars ──
+    // Fixed screen-space dots that tween alpha independently. Kept small (28)
+    // so the existing static starfield stays dominant — these are accents.
+    for (let i = 0; i < 28; i++) {
+      const sx = Phaser.Math.Between(20, GAME_W - 20);
+      const sy = Phaser.Math.Between(10, 200);
+      // Avoid overlapping the Earth disc
+      if (Phaser.Math.Distance.Between(sx, sy, earthX, earthY) < R + 12) continue;
+      const star = this.add.rectangle(sx, sy, 2, 2, 0xffffff, 1)
+        .setDepth(1.05)
+        .setScrollFactor(0);
+      this.tweens.add({
+        targets:  star,
+        alpha:    { from: 0.2, to: 1 },
+        duration: Phaser.Math.Between(900, 2400),
+        delay:    Phaser.Math.Between(0, 2000),
+        yoyo:     true,
+        repeat:   -1,
+        ease:     'Sine.InOut',
+      });
+    }
+
+    // ── Moon-dust drift ──
+    // Low-alpha particles rising near ground, drifting slowly right. World-space
+    // emitter spread across the level so dust passes the camera naturally.
+    const dustGfx = this.make.graphics({ x: 0, y: 0 }, false);
+    dustGfx.fillStyle(0xc8c8d8, 1);
+    dustGfx.fillRect(0, 0, 2, 2);
+    if (this.textures.exists('bgDust')) this.textures.remove('bgDust');
+    dustGfx.generateTexture('bgDust', 2, 2);
+    dustGfx.destroy();
+
+    this.add.particles(0, 0, 'bgDust', {
+      x:        { min: 0, max: WORLD_WIDTH },
+      y:        { min: GROUND_Y - 30, max: GROUND_Y - 2 },
+      speedX:   { min: 8, max: 22 },
+      speedY:   { min: -4, max: 2 },
+      lifespan: { min: 3500, max: 6000 },
+      alpha:    { start: 0.35, end: 0 },
+      scale:    { min: 0.8, max: 1.6 },
+      frequency: 180,
+      quantity: 1,
+    }).setDepth(3.4);
   }
 
   private makeBackgroundDomes(): void {
