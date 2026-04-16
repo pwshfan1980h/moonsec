@@ -6,7 +6,7 @@ import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
 import { MovingPlatform } from '../entities/MovingPlatform';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, PLATFORM_BANDS } from '../constants';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT } from '../constants';
 import { buildMap } from '../data/levelData';
 import { LEVEL_CONFIGS, NODE_GRAPH } from '../data/levelConfigs';
 import type { LevelConfig } from '../data/levelConfigs';
@@ -143,7 +143,9 @@ export class GameScene extends Phaser.Scene {
     );
 
     // --- Platforms ---
-    this.makePlatforms();
+    // Tilemap supplies the actual platform geometry via TMPL fixedPlatforms /
+    // extraPlatforms (see buildMap). makeTilemapGround also populates
+    // platformData for the radar.
     this.makeBaseProps();
     this.makeTerrainObstacles();
 
@@ -994,77 +996,26 @@ export class GameScene extends Phaser.Scene {
 
     this.groundLayer.setCollisionByExclusion([-1]);
     this.groundLayer.setDepth(4);
-  }
 
-  private makePlatforms(
-    counts: { low: number; mid: number; high: number } = { low: 7, mid: 5, high: 3 },
-  ): void {
+    // Populate platformData (used by the minimap) from tilemap geometry.
+    // Scan each row above the ground row for contiguous SURFACE-tile runs;
+    // each run becomes one platformData entry.
     this.platformData = [];
-
-    const hash = GameScene.hash;
-
-    const configs = [
-      { ...PLATFORM_BANDS[0], count: counts.low,  minW: 200, maxW: 380 },
-      { ...PLATFORM_BANDS[1], count: counts.mid,  minW: 160, maxW: 300 },
-      { ...PLATFORM_BANDS[2], count: counts.high, minW: 120, maxW: 220 },
-    ];
-
-    configs.forEach(({ yMin, yMax, count, minW, maxW }, bandIdx) => {
-      const span    = 5600;
-      const spacing = span / count;
-      let lastX     = 200;
-
-      for (let i = 0; i < count; i++) {
-        const seed = bandIdx * 100 + i;
-        const rawX = 400 + i * spacing + hash(seed) * spacing * 0.6;
-        const w    = minW + hash(seed + 2000) * (maxW - minW);
-        const x    = Math.min(
-          i === 0 ? rawX : Math.max(lastX + 200, rawX),
-          6000 - w / 2,
-        );
-        lastX = x;
-        const y = yMin + hash(seed + 1000) * (yMax - yMin);
-        this.platformData.push({ x, y, w });
-        this.addStructure(x, y, w);
+    const groundRow = this.activeConfig.template.groundRow;
+    for (let r = 0; r < groundRow; r++) {
+      let c = 0;
+      while (c < mapData[r].length) {
+        if (mapData[r][c] === -1) { c++; continue; }
+        const startC = c;
+        while (c < mapData[r].length && mapData[r][c] !== -1) c++;
+        const runLen = c - startC;
+        if (runLen >= 2) {
+          const x = (startC + runLen / 2) * 32;
+          const y = r * 32;
+          const w = runLen * 32;
+          this.platformData.push({ x, y, w });
+        }
       }
-    });
-  }
-
-  private addStructure(x: number, y: number, w: number): void {
-    const bodyColor   = 0x1c2040;
-    const slabColor   = 0x12122e;
-    const postColor   = 0x2a3a5a;
-    const glowColor   = 0x7799ff;
-    const accentColor = 0x334466;
-    const lightColor  = 0xff8800;
-
-    // Physics rect — one-way top surface, unchanged from before
-    const rect = this.add.rectangle(x, y, w, 8, bodyColor).setDepth(4);
-    this.ground.add(rect);
-    const body = rect.body as Phaser.Physics.Arcade.StaticBody;
-    body.checkCollision.down  = false;
-    body.checkCollision.left  = false;
-    body.checkCollision.right = false;
-
-    // Slab body below surface (visual only — no physics body)
-    this.add.rectangle(x, y + 14, w, 20, slabColor).setDepth(3);
-
-    // Corner posts
-    this.add.rectangle(x - w / 2 + 3, y + 14, 6, 20, postColor).setDepth(4);
-    this.add.rectangle(x + w / 2 - 3, y + 14, 6, 20, postColor).setDepth(4);
-
-    // Top edge glow
-    this.add.rectangle(x, y - 3, w, 2, glowColor).setDepth(5);
-
-    // Bottom accent line
-    this.add.rectangle(x, y + 24, w, 2, accentColor).setDepth(4);
-
-    // Amber indicator lights — 1 per ~50px of width
-    const lightCount = Math.max(1, Math.floor(w / 50));
-    const spacing    = w / (lightCount + 1);
-    for (let i = 0; i < lightCount; i++) {
-      const lx = x - w / 2 + spacing * (i + 1);
-      this.add.rectangle(lx, y + 14, 3, 3, lightColor).setDepth(5);
     }
   }
 

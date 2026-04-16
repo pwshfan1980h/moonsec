@@ -184,7 +184,16 @@ export class UIScene extends Phaser.Scene {
     // ── Listen for events from GameScene ──────────────────────────
     const game = this.scene.get('Game');
 
-    game.events.on('healthChange', (hp: number, maxHp: number) => {
+    // Guarded attach — handlers no-op if this scene is shutting down,
+    // preventing setText-on-destroyed-Text crashes during scene transitions.
+    const on = <T extends unknown[]>(ev: string, fn: (...a: T) => void): void => {
+      game.events.on(ev, (...a: T) => {
+        if (!this.sys.isActive()) return;
+        fn(...a);
+      });
+    };
+
+    on('healthChange', (hp: number, maxHp: number) => {
       this.healthFill.setDisplaySize(BAR_W * (hp / maxHp), BAR_H);
       this.healthValueText.setText(`${hp} / ${maxHp}`);
       if (!this.naniteActive) {
@@ -197,7 +206,7 @@ export class UIScene extends Phaser.Scene {
       this.lastHp = hp;
     });
 
-    game.events.on('missileCooldown', (progress: number) => {
+    on('missileCooldown', (progress: number) => {
       this.missileBar.setDisplaySize(BAR_W * progress, BAR_H);
       if (progress >= 1) {
         this.missileBar.setFillStyle(0x00ffff);
@@ -210,7 +219,7 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    game.events.on('turretCooldown', (progress: number) => {
+    on('turretCooldown', (progress: number) => {
       this.turretBar.setDisplaySize(BAR_W * progress, BAR_H2);
       if (progress >= 1) {
         this.turretBar.setFillStyle(0xff8844);
@@ -221,20 +230,20 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    game.events.on('jetpackFuel', (fuel: number, max: number) => {
+    on('jetpackFuel', (fuel: number, max: number) => {
       this.jetpackBar.setDisplaySize(BAR_W * (fuel / max), BAR_H2);
     });
 
-    game.events.on('naniteChange', (state: string, progress: number) => {
+    on('naniteChange', (state: string, progress: number) => {
       this.onNaniteChange(state, progress);
     });
 
-    game.events.on('scoreChange', (score: number) => {
+    on('scoreChange', (score: number) => {
       this.currentScore = score;
       this.scoreText.setText(`${score}`);
     });
 
-    game.events.on('waveStart', (wave: number) => {
+    on('waveStart', (wave: number) => {
       this.currentWave = wave;
       this.waveCounter.setText(`WAVE ${wave}`);
 
@@ -262,7 +271,7 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    game.events.on('dronesRemaining', (count: number) => {
+    on('dronesRemaining', (count: number) => {
       if (count > 0) {
         this.dronesRemainingText.setText(`▼ ${count}`).setAlpha(1);
       } else {
@@ -270,7 +279,7 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    game.events.on('killStreak', (count: number, bonus: number) => {
+    on('killStreak', (count: number, bonus: number) => {
       const t = this.add.text(W / 2, H / 2, `${count} KILLSTREAK!\n+${bonus}`, {
         fontFamily: 'monospace', fontSize: '26px', color: '#ffff00',
         align: 'center',
@@ -281,24 +290,24 @@ export class UIScene extends Phaser.Scene {
       });
     });
 
-    game.events.on('gameOver', () => {
+    on('gameOver', () => {
       this.showGameOver();
     });
 
-    game.events.on('bossKilled', () => {
+    on('bossKilled', () => {
       // Individual boss kill — clear telegraph but don't show level complete yet
       // (two-boss levels: levelComplete fires only after the second boss)
       this.clearTelegraph();
     });
 
-    game.events.on('levelComplete', () => {
+    on('levelComplete', () => {
       if (this.levelCompleteActive) return;
       this.levelCompleteActive = true;
       this.clearTelegraph();
       this.showLevelComplete();
     });
 
-    game.events.on('bossTelegraph', ({ side, duration }: { side: 'left' | 'right'; duration: number }) => {
+    on('bossTelegraph', ({ side, duration }: { side: 'left' | 'right'; duration: number }) => {
       this.clearTelegraph();
       const halfX = side === 'left' ? 0 : W / 2;
       this.telegraphOverlay = this.add.rectangle(halfX + W / 4, H / 2, W / 2, H, 0xff0000, 0.28)
@@ -318,9 +327,9 @@ export class UIScene extends Phaser.Scene {
       this.time.delayedCall(duration, () => this.clearTelegraph());
     });
 
-    game.events.on('bossTelegraphCancel', () => this.clearTelegraph());
+    on('bossTelegraphCancel', () => this.clearTelegraph());
 
-    game.events.on('bossBlastFired', ({ side, camScrollX }: { side: 'left' | 'right'; camScrollX: number }) => {
+    on('bossBlastFired', ({ side, camScrollX }: { side: 'left' | 'right'; camScrollX: number }) => {
       this.clearTelegraph();
       const halfX = side === 'left' ? 0 : W / 2;
       const flash = this.add.rectangle(halfX + W / 4, H / 2, W / 2, H, 0xff3300, 0.85)
@@ -382,7 +391,7 @@ export class UIScene extends Phaser.Scene {
     if (gs) {
       for (const ev of ['healthChange', 'missileCooldown', 'turretCooldown', 'jetpackFuel',
                         'naniteChange', 'scoreChange', 'waveStart', 'dronesRemaining',
-                        'killStreak', 'gameOver', 'bossKilled',
+                        'killStreak', 'gameOver', 'bossKilled', 'levelComplete',
                         'bossTelegraph', 'bossTelegraphCancel', 'bossBlastFired']) {
         gs.events.removeAllListeners(ev);
       }
