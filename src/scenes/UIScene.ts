@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
 import type { GameScene } from './GameScene';
+import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { GAME_W, GAME_H } from '../constants';
 
 const BAR_W   = 200;   // bar width (was 140)
@@ -259,7 +260,9 @@ export class UIScene extends Phaser.Scene {
 
       // Show level name on wave 1 only
       if (wave === 1) {
-        const t = this.add.text(W / 2, 80, 'SURFACE OPS', {
+        const gs    = this.scene.get('Game') as GameScene;
+        const label = LEVEL_CONFIGS[gs?.currentNode ?? 0]?.label ?? '';
+        const t = this.add.text(W / 2, 80, label, {
           fontFamily: 'monospace', fontSize: '28px',
           color: '#6699ff',
           stroke: '#000000', strokeThickness: 3,

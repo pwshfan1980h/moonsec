@@ -7,13 +7,6 @@ export const WORLD_HEIGHT = 1080;
 export const GROUND_Y = 960;       // top surface of ground
 export const GROUND_HEIGHT = 120;
 
-// Platform height bands (world Y — lower Y = higher on screen)
-export const PLATFORM_BANDS = [
-  { yMin: 672, yMax: 768 }, // low   — one jump from ground
-  { yMin: 480, yMax: 600 }, // mid   — requires jetpack assist
-  { yMin: 312, yMax: 432 }, // high  — full jetpack required
-] as const;
-
 // Radar minimap
 export const RADAR_WORLD_RADIUS = 320;  // world units visible around player
 export const RADAR_SCREEN_RADIUS = 65;  // px radius of drawn circle (right edge = 1830+65=1895, 25px from 1920px canvas)
