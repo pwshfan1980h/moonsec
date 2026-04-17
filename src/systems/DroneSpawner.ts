@@ -115,17 +115,14 @@ export class DroneSpawner {
     let bracket = WAVE_BRACKETS[0];
     for (const b of WAVE_BRACKETS) if (this.waveIndex >= b.minWave) bracket = b;
 
-    const baseHp  = 24;
-    const hp      = isSecond ? Math.round(baseHp * this.boss2HpMult) : baseHp;
-    const scale   = isSecond ? 5.5 : 5.0;
     const camX    = this.scene.cameras.main.scrollX + GAME_W / 2;
 
-    const boss = new NexusBoss(this.scene, camX, 180, bracket, hp, scale);
+    const boss = new NexusBoss(this.scene, camX, 180, bracket);
     this.scene.add.existing(boss);
     this.scene.physics.add.existing(boss);
     this.scene.drones.add(boss);
     boss.initBody();
-    this.scene.debugLog?.log(`[BOSS] NexusBoss #${isSecond ? 2 : 1} spawned (hp=${hp})`);
+    this.scene.debugLog?.log(`[BOSS] NexusBoss #${isSecond ? 2 : 1} spawned`);
 
     this.scene.physics.add.overlap(
       this.scene.playerBullets, boss,
@@ -134,12 +131,16 @@ export class DroneSpawner {
         const ix = blt.x, iy = blt.y;
         blt.setActive(false).setVisible(false);
         if (blt.body) (blt.body as Phaser.Physics.Arcade.Body).enable = false;
-        (b as unknown as NexusBoss).takeDamage(1);
+        // Rapid gun heavily nerfed against the boss — missiles are primary,
+        // turret still does chip damage, rapid just whittles.
+        const dmg = blt.texture.key === 'bullet-rapid' ? 0.33 : 1;
+        (b as unknown as NexusBoss).takeDamage(dmg);
         this.scene.spawnBulletImpact(ix, iy, 'enemy');
         this.scene.audio.play('hit');
-        // Boss is big — chunks fly off more often
         if (Math.random() < 0.7) this.scene.spawnEnemyChunks(ix, iy, 0xff6633, 4);
-        this.scene.spawnFloatingText((b as Phaser.GameObjects.Sprite).x, (b as Phaser.GameObjects.Sprite).y - 30, '-1', '#ffffff');
+        if (dmg >= 1) {
+          this.scene.spawnFloatingText((b as Phaser.GameObjects.Sprite).x, (b as Phaser.GameObjects.Sprite).y - 30, `-${dmg}`, '#ffffff');
+        }
       },
     );
     this.scene.physics.add.overlap(

@@ -6,7 +6,8 @@ import { GAME_W } from '../constants';
 
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'TELEGRAPH' | 'BLAST' | 'HURT' | 'DEATH';
 
-const HP             = 24;
+const LIFE_HP        = 6;   // HP drained per "down" cycle
+const MAX_LIVES      = 3;   // number of downs before permadeath
 const SCALE          = 3.0;
 const DRIFT_SPEED    = 55;
 const CHARGE_MS      = 1200;
@@ -20,7 +21,9 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   declare scene: GameScene;
 
   private bossState: BossState = 'DRIFT';
-  private hp: number;
+  private lifeHpMax: number;
+  private lifeHp: number;
+  private lives    = MAX_LIVES;
   private driftDir = -1;
   private phaseTimer = DRIFT_MS;
   private attackCycle = 0; // increments each CHARGE; every 3rd → orbital blast
@@ -35,13 +38,16 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private blastRect: Phaser.Geom.Rectangle | null = null;
   private blastOverlay: Phaser.GameObjects.Rectangle | null = null;
   private blastPulse: Phaser.Tweens.Tween | null = null;
+  private hurtBorder: Phaser.GameObjects.Graphics | null = null;
+  private hurtBorderTween: Phaser.Tweens.Tween | null = null;
 
-  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, hp = HP, scale = SCALE) {
+  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, lifeHp = LIFE_HP, scale = SCALE) {
     super(scene, x, y, 'juggernaut');
     this.scene   = scene;
     this.scaling = scaling;
 
-    this.hp = hp;
+    this.lifeHpMax = lifeHp;
+    this.lifeHp    = lifeHp;
     this.setOrigin(0.5, 0.5);
     this.setScale(scale);
     this.setDepth(10);
@@ -147,6 +153,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   update(_time: number, delta: number): void {
     if (!this.active || this.bossState === 'DEATH') return;
     this.glowAura?.setPosition(this.x, this.y);
+    this.hurtBorder?.setPosition(this.x, this.y);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
 
@@ -228,18 +235,85 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
 
   takeDamage(amount: number): void {
     if (this.bossState === 'DEATH' || this.bossState === 'HURT') return;
-    this.hp -= amount;
-    if (this.hp <= 0) {
+    this.lifeHp -= amount;
+
+    // Chip damage — just flash, do not enter HURT
+    if (this.lifeHp > 0) {
+      this.setTint(0xff8888);
+      this.scene.time.delayedCall(120, () => this.clearTint());
+      return;
+    }
+
+    // Life depleted — burn a life or die
+    this.lives--;
+    if (this.lives <= 0) {
       this.setBossState('DEATH');
       return;
     }
-    // Don't interrupt telegraph/blast with full hurt stun — just flash
+    this.lifeHp = this.lifeHpMax;
+
+    // During TELEGRAPH/BLAST, can't enter HURT mid-sequence — flash instead
     if (this.bossState === 'TELEGRAPH' || this.bossState === 'BLAST') {
       this.setTint(0xff8888);
       this.scene.time.delayedCall(120, () => this.clearTint());
       return;
     }
     this.setBossState('HURT');
+  }
+
+  private showHurtBorder(): void {
+    this.hideHurtBorder();
+    // Border shrinks as lives drop: 3 lives = big, 2 = mid, 1 = tight
+    const tierRadius: Record<number, number> = { 3: 155, 2: 115, 1: 80 };
+    const r = tierRadius[this.lives] ?? 80;
+
+    const g = this.scene.add.graphics();
+    g.setBlendMode(Phaser.BlendModes.ADD);
+    g.setDepth(11);
+    g.lineStyle(6, 0xffaa22, 1.0);
+    g.strokeCircle(0, 0, r);
+    g.lineStyle(2, 0xffffff, 0.8);
+    g.strokeCircle(0, 0, r + 4);
+    g.setPosition(this.x, this.y);
+    this.hurtBorder = g;
+    this.hurtBorderTween = this.scene.tweens.add({
+      targets: g, alpha: { from: 1.0, to: 0.35 },
+      duration: 120, yoyo: true, repeat: -1,
+    });
+  }
+
+  private hideHurtBorder(): void {
+    this.hurtBorderTween?.stop(); this.hurtBorderTween = null;
+    this.hurtBorder?.destroy();   this.hurtBorder = null;
+  }
+
+  private spawnDeathChunk(
+    offX: number, offY: number,
+    vx: number, vy: number,
+    size: { w: number; h: number },
+    detonateDelay: number,
+  ): void {
+    const chunk = this.scene.add.rectangle(
+      this.x + offX, this.y + offY, size.w, size.h, 0x45475a,
+    );
+    chunk.setStrokeStyle(2, 0x14141e);
+    chunk.setDepth(10);
+    this.scene.physics.add.existing(chunk);
+    const body = chunk.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(true);
+    body.setVelocity(vx, vy);
+    body.setAngularVelocity(Phaser.Math.Between(80, 140) * (Math.random() < 0.5 ? 1 : -1));
+
+    this.scene.time.delayedCall(detonateDelay, () => {
+      if (!this.scene?.sys.isActive() || !chunk.active) return;
+      this.scene.spawnExplosion(chunk.x, chunk.y);
+      this.scene.audio.playAt('explosion', { rate: 0.5, detune: -300, volume: 0.8 });
+      this.scene.cameras.main.shake(120, 0.008);
+      this.scene.tweens.add({
+        targets: chunk, alpha: 0, duration: 220,
+        onComplete: () => chunk.destroy(),
+      });
+    });
   }
 
   private setBossState(newState: BossState): void {
@@ -332,9 +406,11 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       case 'HURT':
         this.play('juggernaut-hurt');
         this.setTint(0xff8888);
+        this.showHurtBorder();
         this.scene.audio.playAt('hurt', { rate: 0.6, detune: -400, volume: 0.85 });
         this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
           this.clearTint();
+          this.hideHurtBorder();
           if (this.bossState === 'HURT') this.setBossState('DRIFT');
         });
         break;
@@ -357,12 +433,20 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         this.blastOverlay?.destroy(); this.blastOverlay = null;
         this.blastRect = null;
 
+        this.hideHurtBorder();
+
         for (const slot of this.escortSlots) {
           for (const col of slot.colliders) col.destroy();
           slot.colliders = [];
         }
 
         this.scene.events.emit('bossTelegraphCancel');
+
+        // Break off 2 pod chunks to sell the "large craft falling apart" read.
+        // Main hull keeps tumbling (boss sprite itself); chunks tumble
+        // independently and detonate at staggered delays.
+        this.spawnDeathChunk(-40, -10, -180, -140, { w: 30, h: 40 }, 500);
+        this.spawnDeathChunk( 40, -10,  180, -140, { w: 30, h: 40 }, 750);
 
         // Staggered multi-stage detonations across the tumble
         const detonations = [
