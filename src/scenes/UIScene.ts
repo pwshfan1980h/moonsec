@@ -39,11 +39,9 @@ export class UIScene extends Phaser.Scene {
   private dronesRemainingText!: Phaser.GameObjects.Text;
   private minimap!: MinimapRenderer;
 
-  // Boss telegraph overlay
-  private telegraphOverlay: Phaser.GameObjects.Rectangle | null = null;
+  // Boss telegraph text (overlay rect lives on the boss in world space)
   private telegraphLabel: Phaser.GameObjects.Text | null = null;
   private telegraphMoveLabel: Phaser.GameObjects.Text | null = null;
-  private telegraphPulse: Phaser.Tweens.Tween | null = null;
 
   // Pause elements
   private pauseBg!: Phaser.GameObjects.Rectangle;
@@ -312,46 +310,22 @@ export class UIScene extends Phaser.Scene {
 
     on('bossTelegraph', ({ side, duration }: { side: 'left' | 'right'; duration: number }) => {
       this.clearTelegraph();
-      const halfX = side === 'left' ? 0 : W / 2;
-      this.telegraphOverlay = this.add.rectangle(halfX + W / 4, H / 2, W / 2, H, 0xff0000, 0.28)
-        .setDepth(55).setScrollFactor(0);
-      this.telegraphLabel = this.add.text(halfX + W / 4, H / 2 - 20, 'INCOMING', {
+      const cx = side === 'left' ? W * 0.25 : W * 0.75;
+      this.telegraphLabel = this.add.text(cx, H / 2 - 20, 'INCOMING', {
         fontFamily: 'monospace', fontSize: '30px', color: '#ff4444',
         stroke: '#000000', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(56).setScrollFactor(0);
-      this.telegraphMoveLabel = this.add.text(halfX + W / 4, H / 2 + 20, 'MOVE!', {
+      this.telegraphMoveLabel = this.add.text(cx, H / 2 + 20, 'MOVE!', {
         fontFamily: 'monospace', fontSize: '18px', color: '#ffaa44',
       }).setOrigin(0.5).setDepth(56).setScrollFactor(0);
-      this.telegraphPulse = this.tweens.add({
-        targets: this.telegraphOverlay,
-        alpha: { from: 0.12, to: 0.38 },
-        duration: 350, yoyo: true, repeat: -1,
-      });
       this.time.delayedCall(duration, () => this.clearTelegraph());
     });
 
     on('bossTelegraphCancel', () => this.clearTelegraph());
 
-    on('bossBlastFired', ({ side, camScrollX }: { side: 'left' | 'right'; camScrollX: number }) => {
+    on('bossBlastFired', () => {
       this.clearTelegraph();
-      const halfX = side === 'left' ? 0 : W / 2;
-      const flash = this.add.rectangle(halfX + W / 4, H / 2, W / 2, H, 0xff3300, 0.85)
-        .setDepth(57).setScrollFactor(0);
-      this.tweens.add({
-        targets: flash, alpha: 0, duration: 700, ease: 'Power2',
-        onComplete: () => flash.destroy(),
-      });
       this.cameras.main.flash(250, 255, 50, 0, false);
-
-      // Damage player if they're still on the targeted half
-      const gameScene = this.scene.get('Game') as GameScene;
-      if (gameScene) {
-        const screenX = gameScene.player.x - camScrollX;
-        const onTargetSide = side === 'left' ? screenX < W / 2 : screenX >= W / 2;
-        if (onTargetSide) {
-          gameScene.player.takeDamage(3);
-        }
-      }
     });
 
     // ── Keyboard handlers ─────────────────────────────────────────
@@ -382,10 +356,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private clearTelegraph(): void {
-    this.telegraphOverlay?.destroy();   this.telegraphOverlay   = null;
     this.telegraphLabel?.destroy();     this.telegraphLabel     = null;
     this.telegraphMoveLabel?.destroy(); this.telegraphMoveLabel = null;
-    this.telegraphPulse?.stop();        this.telegraphPulse     = null;
   }
 
   shutdown(): void {

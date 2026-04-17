@@ -52,6 +52,9 @@ export class BootScene extends Phaser.Scene {
     this.load.spritesheet('sentinel', 'assets/Sentinel-sheet.png', {
       frameWidth: 37, frameHeight: 29,
     });
+    this.load.spritesheet('juggernaut', 'assets/Juggernaut-sheet.png', {
+      frameWidth: 80, frameHeight: 72,
+    });
     this.load.spritesheet('nexus', 'assets/Nexus-sheet.png', {
       frameWidth: 25, frameHeight: 27,
     });
@@ -84,6 +87,9 @@ export class BootScene extends Phaser.Scene {
 
     // Sentinel — 4 standard animations (same layout as Viper/Hornet)
     this.buildDroneAnims('sentinel');
+
+    // Juggernaut boss — same 15-frame layout as drones
+    this.buildDroneAnims('juggernaut');
 
     // Dart — StunDart kamikaze (same 4-anim layout)
     this.buildDroneAnims('dart');

@@ -7,7 +7,7 @@ import { GAME_W } from '../constants';
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'TELEGRAPH' | 'BLAST' | 'HURT' | 'DEATH';
 
 const HP             = 24;
-const SCALE          = 5.0;
+const SCALE          = 3.0;
 const DRIFT_SPEED    = 55;
 const CHARGE_MS      = 1200;
 const DRIFT_MS       = 1800;
@@ -32,9 +32,12 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private scaling: DroneScaling;
   private glowAura: Phaser.GameObjects.Graphics | null = null;
   private glowTween: Phaser.Tweens.Tween | null = null;
+  private blastRect: Phaser.Geom.Rectangle | null = null;
+  private blastOverlay: Phaser.GameObjects.Rectangle | null = null;
+  private blastPulse: Phaser.Tweens.Tween | null = null;
 
   constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, hp = HP, scale = SCALE) {
-    super(scene, x, y, 'sentinel');
+    super(scene, x, y, 'juggernaut');
     this.scene   = scene;
     this.scaling = scaling;
 
@@ -42,18 +45,18 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     this.setOrigin(0.5, 0.5);
     this.setScale(scale);
     this.setDepth(10);
-    this.play('sentinel-hover');
+    this.play('juggernaut-hover');
 
     // Pulsing glow aura — additive blend so it blooms over dark backgrounds
     const gfx = scene.add.graphics();
     gfx.setBlendMode(Phaser.BlendModes.ADD);
     gfx.setDepth(9);
     gfx.fillStyle(0xff2200, 0.22);
-    gfx.fillCircle(0, 0, 110);
+    gfx.fillCircle(0, 0, 150);
     gfx.fillStyle(0xff4400, 0.18);
-    gfx.fillCircle(0, 0, 78);
+    gfx.fillCircle(0, 0, 108);
     gfx.fillStyle(0xff8800, 0.14);
-    gfx.fillCircle(0, 0, 50);
+    gfx.fillCircle(0, 0, 70);
     gfx.setPosition(x, y);
     this.glowAura = gfx;
     this.glowTween = scene.tweens.add({
@@ -72,7 +75,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   initBody(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
-    body.setSize(28, 22, true);
+    body.setSize(60, 40, true);
     body.setCollideWorldBounds(true);
   }
 
@@ -245,30 +248,48 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
 
     switch (newState) {
       case 'DRIFT':
-        this.play('sentinel-hover');
+        this.play('juggernaut-hover');
         this.phaseTimer = DRIFT_MS;
         break;
 
       case 'CHARGE':
-        this.play('sentinel-attack');
+        this.play('juggernaut-attack');
         this.phaseTimer = CHARGE_MS;
         this.attackCycle++;
         this.scene.audio.playAt('hurt', { rate: 0.5, detune: -200, volume: 0.5 });
         break;
 
       case 'FIRE':
-        this.play('sentinel-attack');
+        this.play('juggernaut-attack');
         break;
 
       case 'TELEGRAPH': {
-        this.play('sentinel-attack');
+        this.play('juggernaut-attack');
         (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
 
+        // Lock a world-space danger zone from the current camera view.
+        // 45% of the view width (10% thinner than a raw half), anchored to
+        // the side the player is on at telegraph start. The rectangle does
+        // not move with the player after this frame.
+        const view = this.scene.cameras.main.worldView;
         const target = this.scene.getPlayerPos();
-        const camMid = this.scene.cameras.main.scrollX + GAME_W / 2;
-        this.telegraphSide = target.x < camMid ? 'left' : 'right';
+        this.telegraphSide = target.x < view.centerX ? 'left' : 'right';
 
-        // UIScene listens for this to show the warning overlay
+        const rectW = view.width * 0.45;
+        const rectX = this.telegraphSide === 'left' ? view.x : view.right - rectW;
+        this.blastRect = new Phaser.Geom.Rectangle(rectX, view.y, rectW, view.height);
+
+        const overlay = this.scene.add.rectangle(
+          rectX + rectW / 2, view.y + view.height / 2,
+          rectW, view.height, 0xff0000, 0.28,
+        ).setDepth(55);
+        this.blastOverlay = overlay;
+        this.blastPulse = this.scene.tweens.add({
+          targets: overlay,
+          alpha: { from: 0.12, to: 0.38 },
+          duration: 350, yoyo: true, repeat: -1,
+        });
+
         this.scene.events.emit('bossTelegraph', { side: this.telegraphSide, duration: TELEGRAPH_MS });
 
         this.scene.time.delayedCall(TELEGRAPH_MS, () => {
@@ -278,10 +299,27 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       }
 
       case 'BLAST': {
-        const camScrollX = this.scene.cameras.main.scrollX;
+        const rect = this.blastRect;
+        if (rect) {
+          const px = this.scene.getPlayerPos().x;
+          if (px >= rect.x && px <= rect.right) {
+            this.scene.player.takeDamage(3);
+          }
+        }
 
-        // Use the side locked in at telegraph time — recalculating here made escape impossible
-        this.scene.events.emit('bossBlastFired', { side: this.telegraphSide, camScrollX });
+        this.blastPulse?.stop(); this.blastPulse = null;
+        if (this.blastOverlay) {
+          const ov = this.blastOverlay;
+          ov.setFillStyle(0xff3300, 0.85);
+          this.scene.tweens.add({
+            targets: ov, alpha: 0, duration: 700, ease: 'Power2',
+            onComplete: () => ov.destroy(),
+          });
+          this.blastOverlay = null;
+        }
+        this.blastRect = null;
+
+        this.scene.events.emit('bossBlastFired', { side: this.telegraphSide });
         this.scene.audio.playAt('explosion', { rate: 0.35, detune: -700, volume: 1.0 });
         this.scene.cameras.main.shake(400, 0.025);
 
@@ -292,7 +330,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       }
 
       case 'HURT':
-        this.play('sentinel-hurt');
+        this.play('juggernaut-hurt');
         this.setTint(0xff8888);
         this.scene.audio.playAt('hurt', { rate: 0.6, detune: -400, volume: 0.85 });
         this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
@@ -314,6 +352,10 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         this.glowAura?.destroy();
         this.glowTween = null;
         this.glowAura = null;
+
+        this.blastPulse?.stop(); this.blastPulse = null;
+        this.blastOverlay?.destroy(); this.blastOverlay = null;
+        this.blastRect = null;
 
         for (const slot of this.escortSlots) {
           for (const col of slot.colliders) col.destroy();
