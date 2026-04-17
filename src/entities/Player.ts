@@ -17,7 +17,7 @@ const MECH_CONFIG: Record<MechType, {
   textureKey: string; animPrefix: string; scale: number;
   bodyW: number; bodyH: number; bodyOffX: number; bodyOffY: number;
 }> = {
-  mech:  { textureKey: 'mech',  animPrefix: '',       scale: 0.75, bodyW: 100, bodyH: 150, bodyOffX: 37.5, bodyOffY: 0  },
+  mech:  { textureKey: 'mech',  animPrefix: '',       scale: 0.9,  bodyW: 100, bodyH: 150, bodyOffX: 37.5, bodyOffY: 0  },
   mech4: { textureKey: 'mech4', animPrefix: 'mech4-', scale: 1.6,  bodyW: 36,  bodyH: 60,  bodyOffX: 17,   bodyOffY: 10 },
 };
 

@@ -355,6 +355,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Camera ---
     this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAME_H - 120));
+    this.cameras.main.setZoom(1.2);
     this.cameras.main.startFollow(this.player, false, 0.20, 0.18);
 
     // --- Moving platforms (Trade Lanes only) ---
