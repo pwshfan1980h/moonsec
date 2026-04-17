@@ -364,8 +364,8 @@ export class GameScene extends Phaser.Scene {
       this.physics.add.collider(this.player, this.movingPlatforms);
     }
 
-    // --- Void death zone (Trade Lanes / Orbital) ---
-    if (this.activeConfig.voidBottom) {
+    // --- Void death zone (all levels — pits and void bottoms both kill) ---
+    {
       const deathY = WORLD_HEIGHT + 80;
       const voidSensor = this.add.rectangle(WORLD_WIDTH / 2, deathY, WORLD_WIDTH, 40, 0xff0000, 0);
       this.physics.add.existing(voidSensor, true); // static
