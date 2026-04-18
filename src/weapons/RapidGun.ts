@@ -8,6 +8,7 @@ const SPREAD = 0.06; // radians
 export class RapidGun {
   private scene: GameScene;
   private lastFire = 0;
+  private lastDryClick = 0;
 
   constructor(scene: GameScene) {
     this.scene = scene;
@@ -16,6 +17,15 @@ export class RapidGun {
   update(time: number, facingRight: boolean): void {
     if (!this.scene.input.mousePointer.rightButtonDown()) return;
     if (time - this.lastFire < this.scene.player.rapidMinInterval) return;
+
+    if (!this.scene.player.consumeRapidAmmo()) {
+      // Dry-fire: soft click, rate-limited so holding RMB doesn't machine-gun the sfx
+      if (time - this.lastDryClick > 450) {
+        this.lastDryClick = time;
+        this.scene.audio.playAt('hit', { rate: 0.7, detune: -900, volume: 0.25 });
+      }
+      return;
+    }
     this.lastFire = time;
 
     const player = this.scene.player;

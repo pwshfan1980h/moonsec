@@ -6,7 +6,7 @@ import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
 import { MovingPlatform } from '../entities/MovingPlatform';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT } from '../constants';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, RAPID_AMMO_PER_PICKUP } from '../constants';
 import { buildMap } from '../data/levelData';
 import { LEVEL_CONFIGS, NODE_GRAPH } from '../data/levelConfigs';
 import type { LevelConfig } from '../data/levelConfigs';
@@ -296,8 +296,11 @@ export class GameScene extends Phaser.Scene {
         pk.setAlpha(1);
         pk.setActive(false).setVisible(false);
         if (pk.body) (pk.body as Phaser.Physics.Arcade.Body).enable = false;
-        if (pk.getData('type') === 'health') {
+        const pickupType = pk.getData('type') as string;
+        if (pickupType === 'health') {
           this.player.heal(1);
+        } else if (pickupType === 'ammo') {
+          this.player.refillRapidAmmo(RAPID_AMMO_PER_PICKUP);
         } else {
           this.player.restoreJetpackFuel(1000);
         }
@@ -408,12 +411,14 @@ export class GameScene extends Phaser.Scene {
         this.audio.playStreakChime(this.killStreak);
       }
 
-      // Random pickup drop (15% health, 15% fuel)
+      // Random pickup drop (15% health, 15% fuel, 20% ammo)
       const roll = Math.random();
       if (roll < 0.15) {
         this.spawnPickup(x, y, 'health');
       } else if (roll < 0.30) {
         this.spawnPickup(x, y, 'fuel');
+      } else if (roll < 0.50) {
+        this.spawnPickup(x, y, 'ammo');
       }
     });
 
@@ -444,6 +449,7 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('missileCooldown', 0);
     this.events.emit('turretCooldown', 1);
     this.events.emit('jetpackFuel', 1, 1);
+    this.events.emit('rapidAmmoChange', this.player.rapidAmmo, this.player.rapidAmmoMax);
     this.events.emit('scoreChange', this.score);
 
   }
@@ -504,14 +510,24 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 600, onComplete: () => t.destroy() });
   }
 
-  private spawnPickup(x: number, y: number, type: 'health' | 'fuel'): void {
-    const [key, frame] = type === 'health'
-      ? ['collectables', Math.random() < 0.5 ? 36 : 44]
-      : ['collectables', Math.random() < 0.5 ? 32 : 40];
+  private spawnPickup(x: number, y: number, type: 'health' | 'fuel' | 'ammo'): void {
+    let key = 'collectables';
+    let frame = 36;
+    let tint: number | null = null;
+    if (type === 'health') {
+      frame = Math.random() < 0.5 ? 36 : 44;
+    } else if (type === 'fuel') {
+      frame = Math.random() < 0.5 ? 32 : 40;
+    } else {
+      // ammo — cyan tint over a neutral shape to read as rapid-ammo cell
+      frame = Math.random() < 0.5 ? 9 : 17;
+      tint = 0x00ffff;
+    }
     const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
     p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
       .setDisplaySize(42, 42);
+    if (tint !== null) p.setTint(tint); else p.clearTint();
     p.setData('type', type);
     if (p.body) {
       const pb = p.body as Phaser.Physics.Arcade.Body;

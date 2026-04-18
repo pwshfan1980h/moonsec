@@ -34,6 +34,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   jetpackMaxFuel = 2200;
 
   rapidMinInterval  = 60;
+  rapidAmmo         = 150;
+  rapidAmmoMax      = 150;
   turretCooldownMs  = 650;
   missileSlots      = 6;
   naniteCooldownMs  = 20000;
@@ -94,6 +96,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jetpackAccel   = stats.jetpackAccel;
     this.jetpackMaxFuel = stats.jetpackMaxFuel;
     this.jetpackFuel    = stats.jetpackMaxFuel;
+    this.rapidAmmoMax   = stats.rapidAmmoMax;
+    this.rapidAmmo      = stats.rapidAmmoMax;
 
     this.setOrigin(0.5, 1); // feet at position
     this.setScale(cfg.scale);
@@ -367,6 +371,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   restoreJetpackFuel(amount: number): void {
     this.jetpackFuel = Math.min(this.jetpackMaxFuel, this.jetpackFuel + amount);
     this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
+  }
+
+  consumeRapidAmmo(): boolean {
+    if (this.rapidAmmo <= 0) return false;
+    this.rapidAmmo -= 1;
+    this.scene.events.emit('rapidAmmoChange', this.rapidAmmo, this.rapidAmmoMax);
+    return true;
+  }
+
+  refillRapidAmmo(amount: number): void {
+    if (this.dead) return;
+    this.rapidAmmo = Math.min(this.rapidAmmoMax, this.rapidAmmo + amount);
+    this.scene.events.emit('rapidAmmoChange', this.rapidAmmo, this.rapidAmmoMax);
   }
 
   takeDamage(amount: number): void {

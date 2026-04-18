@@ -36,6 +36,7 @@ export const MECH_STATS: Record<string, {
   jumpVelocity: number;
   jetpackAccel: number;
   jetpackMaxFuel: number;
+  rapidAmmoMax: number;
 }> = {
   mech: {   // STRIDER — speed archetype: fast, high fuel, low HP
     maxHp: 3,
@@ -44,6 +45,7 @@ export const MECH_STATS: Record<string, {
     jumpVelocity: -510,
     jetpackAccel: -1840,
     jetpackMaxFuel: 4400,
+    rapidAmmoMax: 220,
   },
   mech4: {  // SCOUT — balanced baseline
     maxHp: 5,
@@ -52,5 +54,8 @@ export const MECH_STATS: Record<string, {
     jumpVelocity: -510,
     jetpackAccel: -920,
     jetpackMaxFuel: 2200,
+    rapidAmmoMax: 150,
   },
 };
+
+export const RAPID_AMMO_PER_PICKUP = 18;

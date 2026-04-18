@@ -31,6 +31,10 @@ export class UIScene extends Phaser.Scene {
   private naniteBg!:    Phaser.GameObjects.Rectangle;
   private naniteLabel!: Phaser.GameObjects.Text;
   private naniteActive = false;
+  private ammoBar!:     Phaser.GameObjects.Rectangle;
+  private ammoBg!:      Phaser.GameObjects.Rectangle;
+  private ammoLabel!:   Phaser.GameObjects.Text;
+  private ammoValueText!: Phaser.GameObjects.Text;
   private healthValueText!: Phaser.GameObjects.Text;
   private levelCompleteActive = false;
   private titleActive = false;
@@ -80,9 +84,11 @@ export class UIScene extends Phaser.Scene {
     const r1BarY = r1LblY + LABEL_H;                  // 76  — row 1 bar
     const r2LblY = r1BarY + BAR_H2 + ROW_GAP;         // 94  — row 2 label (Nanoheal)
     const r2BarY = r2LblY + LABEL_H;                  // 110 — row 2 bar
+    const r3LblY = r2BarY + BAR_H2 + ROW_GAP;         // 128 — row 3 label (Rapid ammo)
+    const r3BarY = r3LblY + LABEL_H;                  // 144 — row 3 bar
 
     const panelW = PP + BAR_W + PP;                   // 220
-    const panelH = r2BarY + BAR_H2 + PP - PAD;        // 118
+    const panelH = r3BarY + BAR_H2 + PP - PAD;        // extended for ammo row
 
     const leftPanel = this.add.graphics();
     leftPanel.fillStyle(0x000812, 0.85);
@@ -113,6 +119,16 @@ export class UIScene extends Phaser.Scene {
     });
     this.naniteBg  = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x001a0d).setOrigin(0, 0);
     this.naniteBar = this.add.rectangle(barX, r2BarY, BAR_W, BAR_H2, 0x00ff88).setOrigin(0, 0);
+
+    // Rapid ammo row
+    this.ammoLabel = this.add.text(barX, r3LblY, 'RAPID AMMO', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#00ffff',
+    });
+    this.ammoValueText = this.add.text(barX + BAR_W, r3LblY, '', {
+      fontFamily: 'monospace', fontSize: '11px', color: '#00ffff',
+    }).setOrigin(1, 0);
+    this.ammoBg  = this.add.rectangle(barX, r3BarY, BAR_W, BAR_H2, 0x002233).setOrigin(0, 0);
+    this.ammoBar = this.add.rectangle(barX, r3BarY, BAR_W, BAR_H2, 0x00ffff).setOrigin(0, 0);
 
     // ── RIGHT STAT PANEL (top-right) ──────────────────────────────
     // Reuses r0LblY, r0BarY, r1LblY, r1BarY from the left-panel block above
@@ -235,6 +251,17 @@ export class UIScene extends Phaser.Scene {
 
     on('naniteChange', (state: string, progress: number) => {
       this.onNaniteChange(state, progress);
+    });
+
+    on('rapidAmmoChange', (ammo: number, max: number) => {
+      const t = max > 0 ? ammo / max : 0;
+      this.ammoBar.setDisplaySize(BAR_W * t, BAR_H2);
+      this.ammoValueText.setText(`${ammo} / ${max}`);
+      const color = t > 0.4 ? 0x00ffff : t > 0.2 ? 0xffaa22 : 0xff3344;
+      this.ammoBar.setFillStyle(color);
+      const labelColor = t > 0.4 ? '#00ffff' : t > 0.2 ? '#ffaa22' : '#ff3344';
+      this.ammoLabel.setColor(labelColor);
+      this.ammoValueText.setColor(labelColor);
     });
 
     on('scoreChange', (score: number) => {
@@ -365,7 +392,7 @@ export class UIScene extends Phaser.Scene {
     const gs = this.scene.get('Game');
     if (gs) {
       for (const ev of ['healthChange', 'missileCooldown', 'turretCooldown', 'jetpackFuel',
-                        'naniteChange', 'scoreChange', 'waveStart', 'dronesRemaining',
+                        'naniteChange', 'rapidAmmoChange', 'scoreChange', 'waveStart', 'dronesRemaining',
                         'killStreak', 'gameOver', 'bossKilled', 'levelComplete',
                         'bossTelegraph', 'bossTelegraphCancel', 'bossBlastFired']) {
         gs.events.removeAllListeners(ev);
