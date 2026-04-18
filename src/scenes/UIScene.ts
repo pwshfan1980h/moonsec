@@ -373,6 +373,7 @@ export class UIScene extends Phaser.Scene {
     // ── Keyboard handlers ─────────────────────────────────────────
     this.input.keyboard!.on('keydown-ESC', () => {
       if (this.gameOverActive) return;
+      if (this.controlsOpen) { this.closeControlsOverlay(); return; }
       this.togglePause();
     });
 
@@ -386,7 +387,14 @@ export class UIScene extends Phaser.Scene {
     // ── Radar minimap ─────────────────────────────────────────────
     this.minimap = new MinimapRenderer(this);
 
-    this.showTitleScreen();
+    // ── Controls overlay (toggleable with H) ──────────────────────
+    this.input.keyboard!.on('keydown-H', () => this.toggleControls());
+
+    // ── Title banner (first boot only, auto-dismisses) ────────────
+    if (this.registry.get('firstBoot') === true) {
+      this.registry.set('firstBoot', false);
+      this.showTitleBanner();
+    }
   }
 
   update(time: number, _delta: number): void {
@@ -517,92 +525,69 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  private showTitleScreen(): void {
+  private showTitleBanner(): void {
     if (this.titleActive) return;
     this.titleActive = true;
 
-    const W = GAME_W, H = GAME_H;
-    const titleObjs: Phaser.GameObjects.GameObject[] = [];
+    const W = GAME_W;
+    const bannerObjs: Phaser.GameObjects.GameObject[] = [];
 
-    // Mech silhouette watermark
-    const cx = W / 2;
-    const s  = H * 0.42;
-    const gy = H * 0.75;
-    const wm = this.add.graphics().setDepth(49).setScrollFactor(0);
-    wm.fillStyle(0xff3311, 0.05);
-    wm.fillRect(cx - s * 0.11, gy - s * 0.96, s * 0.22, s * 0.16); // head
-    wm.fillRect(cx - s * 0.22, gy - s * 0.78, s * 0.44, s * 0.32); // body
-    wm.fillRect(cx - s * 0.38, gy - s * 0.76, s * 0.16, s * 0.24); // left arm
-    wm.fillRect(cx + s * 0.22, gy - s * 0.76, s * 0.16, s * 0.24); // right arm
-    wm.fillRect(cx - s * 0.19, gy - s * 0.44, s * 0.15, s * 0.44); // left leg
-    wm.fillRect(cx + s * 0.04, gy - s * 0.44, s * 0.15, s * 0.44); // right leg
-    titleObjs.push(wm);
+    // Logo — small, top-center, non-blocking
+    const logo = this.add.image(W / 2, 96, 'logo').setDepth(50).setScrollFactor(0).setAlpha(0).setScale(0.6);
+    bannerObjs.push(logo);
 
-    // Logo with floating tween
-    const logo = this.add.image(W / 2, 150, 'logo').setDepth(50).setScrollFactor(0);
-    this.tweens.add({ targets: logo, y: 160, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    titleObjs.push(logo);
+    // Controls hint subtitle
+    const hint = this.add.text(W / 2, 150, 'Press H any time for controls', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#66aaff',
+    }).setOrigin(0.5).setDepth(50).setScrollFactor(0).setAlpha(0);
+    bannerObjs.push(hint);
 
-    // Start prompt
-    const prompt = this.add.text(W / 2, H * 0.58, 'PRESS  ENTER / SPACE  TO START', {
-      fontFamily: 'monospace', fontSize: '26px', color: '#ff3311',
-    }).setOrigin(0.5).setDepth(51).setScrollFactor(0);
-    this.tweens.add({ targets: prompt, alpha: { from: 0.75, to: 1 }, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    titleObjs.push(prompt);
-
-    // Version watermark
-    const ver = this.add.text(W - 16, H - 16, `ALPHA v${__APP_VERSION__}`, {
+    // Version watermark — stays through banner lifecycle
+    const ver = this.add.text(W - 16, GAME_H - 16, `ALPHA v${__APP_VERSION__}`, {
       fontFamily: 'monospace', fontSize: '12px', color: '#334455',
-    }).setOrigin(1, 1).setDepth(50).setScrollFactor(0);
-    titleObjs.push(ver);
+    }).setOrigin(1, 1).setDepth(50).setScrollFactor(0).setAlpha(0);
+    bannerObjs.push(ver);
 
-    // Title music
-    const titleMusic = this.sound.add('music-title', { loop: true, volume: 0 }) as Phaser.Sound.WebAudioSound;
-    titleMusic.play();
-    this.tweens.add({ targets: titleMusic, volume: 0.6, duration: 1500, ease: 'Linear' });
-
-    // Dismiss on ENTER, SPACE, or click
-    let dismissed = false;
-    const dismiss = () => {
-      if (dismissed) return;
-      dismissed = true;
-      this.titleActive = false;
-      this.input.keyboard!.off('keydown-ENTER', dismiss);
-      this.input.keyboard!.off('keydown-SPACE', dismiss);
-      this.input.off('pointerdown', dismiss);
-
-      this.tweens.add({ targets: titleMusic, volume: 0, duration: 600, ease: 'Linear',
-        onComplete: () => titleMusic.stop() });
-
-      this.tweens.add({ targets: titleObjs, alpha: 0, duration: 400, ease: 'Power2',
-        onComplete: () => titleObjs.forEach(o => o.destroy()) });
-
-      const game = this.scene.get('Game') as GameScene;
-      game.events.emit('titleDismissed');
-      this.showControlsModal();
-    };
-
-    this.input.keyboard!.on('keydown-ENTER', dismiss);
-    this.input.keyboard!.on('keydown-SPACE', dismiss);
-    this.input.on('pointerdown', dismiss);
+    // Fade in → hold → fade out → destroy
+    this.tweens.add({
+      targets: bannerObjs, alpha: 1, duration: 400, ease: 'Power2',
+      onComplete: () => {
+        this.time.delayedCall(1800, () => {
+          this.tweens.add({
+            targets: bannerObjs, alpha: 0, duration: 700, ease: 'Power2',
+            onComplete: () => {
+              bannerObjs.forEach(o => o.destroy());
+              this.titleActive = false;
+            },
+          });
+        });
+      },
+    });
   }
 
-  private showControlsModal(): void {
+  private controlsOpen = false;
+  private controlsObjs: Phaser.GameObjects.GameObject[] = [];
+
+  private toggleControls(): void {
+    if (this.gameOverActive || this.levelCompleteActive || this.paused) return;
+    if (this.controlsOpen) this.closeControlsOverlay();
+    else                   this.openControlsOverlay();
+  }
+
+  private openControlsOverlay(): void {
+    this.controlsOpen = true;
     this.scene.pause('Game');
 
     const W = GAME_W, H = GAME_H;
     const objs: Phaser.GameObjects.GameObject[] = [];
     const push = <T extends Phaser.GameObjects.GameObject>(o: T): T => { objs.push(o); return o; };
 
-    // ── Overlay ───────────────────────────────────────────────────────────────
     push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.92).setDepth(60).setScrollFactor(0));
 
-    // ── Scanline overlay ──────────────────────────────────────────────────────
     const gfx = push(this.add.graphics()).setDepth(60).setScrollFactor(0) as Phaser.GameObjects.Graphics;
     gfx.fillStyle(0x000000, 0.10);
     for (let y = 0; y < H; y += 4) gfx.fillRect(0, y, W, 2);
 
-    // ── Header ────────────────────────────────────────────────────────────────
     push(this.add.text(W / 2, H * 0.10, 'GLOBAL DEFENSE INITIATIVE // MECH-IV', {
       fontFamily: 'monospace', fontSize: '13px', color: '#004400',
     }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
@@ -616,14 +601,13 @@ export class UIScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '16px', color: '#004400',
     }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
 
-    // ── Bindings ──────────────────────────────────────────────────────────────
     const cx      = W / 2;
-    const prefX   = cx - 190;   // ">" prefix
-    const keyX    = cx - 95;    // keys right-align here
-    const sepX    = cx - 75;    // "──" left-aligns here
-    const actX    = cx - 30;    // action text left-aligns here
-    const startY  = H * 0.32;
-    const rowH    = 60;
+    const prefX   = cx - 190;
+    const keyX    = cx - 95;
+    const sepX    = cx - 75;
+    const actX    = cx - 30;
+    const startY  = H * 0.30;
+    const rowH    = 52;
 
     const bindings: [string, string, boolean?][] = [
       ['A / D',  'LOCOMOTION'],
@@ -632,38 +616,37 @@ export class UIScene extends Phaser.Scene {
       ['RMB',    'RAPID SUPPRESSION'],
       ['E',      'HOMING MISSILES',  true],
       ['Q',      'NANITE REPAIR'],
+      ['H',      'TOGGLE CONTROLS',  true],
       ['ESC',    'PAUSE / MENU'],
     ];
 
     bindings.forEach(([key, action, highlight], i) => {
       const y = startY + i * rowH;
-      const keyCol  = highlight ? '#ffff44' : '#00ff41';
-      const actCol  = highlight ? '#ffff44' : '#00cc33';
+      const keyCol = highlight ? '#ffff44' : '#00ff41';
+      const actCol = highlight ? '#ffff44' : '#00cc33';
       push(this.add.text(prefX, y, '>',      { fontFamily: 'monospace', fontSize: '18px', color: '#004400' }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
       push(this.add.text(keyX,  y, key,      { fontFamily: 'monospace', fontSize: '18px', color: keyCol   }).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
       push(this.add.text(sepX,  y, '\u2500\u2500', { fontFamily: 'monospace', fontSize: '18px', color: '#007700' }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
       push(this.add.text(actX,  y, action,   { fontFamily: 'monospace', fontSize: '18px', color: actCol   }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
     });
 
-    // ── Dismiss ───────────────────────────────────────────────────────────────
-    const dismissPrompt = push(this.add.text(W / 2, H * 0.92, 'press any key to engage_', {
+    const dismissPrompt = push(this.add.text(W / 2, H * 0.92, 'press H or ESC to resume_', {
       fontFamily: 'monospace', fontSize: '16px', color: '#005500',
     }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
-    const blinkTween = this.tweens.add({ targets: dismissPrompt, alpha: 0.15, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: dismissPrompt, alpha: 0.15, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    let dismissed = false;
-    const dismiss = () => {
-      if (dismissed) return;
-      dismissed = true;
-      this.input.keyboard!.off('keydown', dismiss);
-      this.input.off('pointerdown', dismiss);
-      blinkTween.stop();
-      objs.forEach(o => o.destroy());
-      this.scene.resume('Game');
-    };
+    this.controlsObjs = objs;
+  }
 
-    this.input.keyboard!.on('keydown', dismiss);
-    this.input.on('pointerdown', dismiss);
+  private closeControlsOverlay(): void {
+    if (!this.controlsOpen) return;
+    this.controlsOpen = false;
+    for (const o of this.controlsObjs) {
+      this.tweens.killTweensOf(o);
+      o.destroy();
+    }
+    this.controlsObjs = [];
+    this.scene.resume('Game');
   }
 
   private showLevelComplete(): void {

@@ -132,7 +132,9 @@ export class BootScene extends Phaser.Scene {
     // Procedural bullet/effect textures
     this.makeTextures();
 
-    this.scene.start('Overworld', { currentNode: 0, completedNodes: [], totalScore: 0, mechType: 'mech4' });
+    this.registry.set('firstBoot', true);
+    this.scene.start('Game', { mechType: 'mech4', level: 0, totalScore: 0, completedNodes: [] });
+    this.scene.launch('UI');
   }
 
   private buildAsepriteAnims(textureKey: string, prefix: string): void {

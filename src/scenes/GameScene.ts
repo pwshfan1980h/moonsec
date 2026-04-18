@@ -40,7 +40,6 @@ export class GameScene extends Phaser.Scene {
   private bgTerrain?: Phaser.GameObjects.TileSprite;
   private bgHaze?: Phaser.GameObjects.TileSprite;
   private isBossDead    = false;
-  private waitingForStart = true;
 
   // Campaign state — exposed so UIScene can read on level complete
   currentNode:    number   = 0;
@@ -58,7 +57,6 @@ export class GameScene extends Phaser.Scene {
     if (data.level      !== undefined) this.registry.set('currentLevel', data.level);
     this.currentNode    = data.level        ?? 0;
     this.completedNodes = data.completedNodes ?? [];
-    this.waitingForStart = true;
   }
 
   /** Returns the first next node from the active level that hasn't been completed yet. */
@@ -411,10 +409,7 @@ export class GameScene extends Phaser.Scene {
     // --- Spawner ---
     const cfg = this.activeConfig;
     this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossCount, cfg.boss2HpMult, cfg.enemyMix);
-    this.events.once('titleDismissed', () => {
-      this.waitingForStart = false;
-      this.music?.start(0.35);
-    });
+    this.music?.start(0.35);
 
     // --- Wave audio ---
     this.events.on('waveStart', (wave: number) => {
@@ -486,7 +481,6 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (this.isGameOver) return;
-    if (this.waitingForStart) return;
     this.player.update(time, delta);
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     this.audio.update({
