@@ -6,6 +6,7 @@ import { NexusBoss } from '../entities/NexusBoss';
 import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
 import { Mine } from '../entities/Mine';
+import { PPCPlatform } from '../entities/PPCPlatform';
 import type { DroneVariant, DroneType } from '../entities/Drone';
 import type { EnemyMix } from '../data/levelConfigs';
 import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, GAME_W, GAME_H, PATROL_LANES } from '../constants';
@@ -376,6 +377,44 @@ export class DroneSpawner {
             });
         }
       }
+    }
+
+    // PPC Platform — wave 4+, single floating turret at mid-air altitude
+    if (this.waveIndex >= 4 && Math.random() < 0.75) {
+      const cam = this.scene.cameras.main;
+      const px  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.7, 200, WORLD_WIDTH - 200);
+      const py  = Phaser.Math.Clamp(GROUND_Y - 340, 120, GROUND_Y - 200);
+      const platform = new PPCPlatform(this.scene, px, py);
+      this.scene.add.existing(platform);
+      this.scene.physics.add.existing(platform);
+      this.scene.drones.add(platform);
+      platform.initBody();
+      this.dronesAlive++;
+      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+
+      this.scene.physics.add.overlap(this.scene.playerBullets, platform,
+        (_p, bullet) => {
+          const b = bullet as Phaser.Physics.Arcade.Image;
+          const ix = b.x, iy = b.y;
+          b.setActive(false).setVisible(false);
+          if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+          const dmg = b.texture.key === 'bullet-rapid' ? 0.5 : 1;
+          (_p as unknown as PPCPlatform).takeDamage(dmg);
+          this.scene.spawnBulletImpact(ix, iy, 'enemy');
+          this.scene.audio.play('hit');
+          if (Math.random() < 0.5) this.scene.spawnEnemyChunks(ix, iy, 0xaa88cc, 3);
+        });
+      this.scene.physics.add.overlap(this.scene.missiles, platform,
+        (_p, missile) => {
+          const m = missile as Phaser.Physics.Arcade.Image;
+          m.setData('hitTarget', true);
+          m.setActive(false).setVisible(false);
+          if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+          this.scene.spawnExplosion(m.x, m.y);
+          (_p as unknown as PPCPlatform).takeDamage(3);
+          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.audio.play('explosion');
+        });
     }
 
     // Tanks — ground only

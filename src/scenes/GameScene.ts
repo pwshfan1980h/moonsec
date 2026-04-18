@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import type { MechType } from '../entities/Player';
 import { StunDart } from '../entities/StunDart';
+import { PPCRound } from '../entities/PPCRound';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
@@ -21,6 +22,7 @@ export class GameScene extends Phaser.Scene {
   tanks!: Phaser.Physics.Arcade.Group;
   pickups!: Phaser.Physics.Arcade.Group;
   bossProjectiles!: Phaser.Physics.Arcade.Group;
+  ppcRounds!: Phaser.Physics.Arcade.Group;
   movingPlatforms!: Phaser.Physics.Arcade.Group;
   debugLog?: DebugLog;
   audio!: AudioSystem;
@@ -188,6 +190,11 @@ export class GameScene extends Phaser.Scene {
       allowGravity: false,
     });
 
+    this.ppcRounds = this.physics.add.group({
+      runChildUpdate: false,
+      allowGravity: false,
+    });
+
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
     const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
@@ -339,6 +346,29 @@ export class GameScene extends Phaser.Scene {
       },
     );
 
+    // PPC rounds hit player — high damage, big shake, detonate
+    this.physics.add.overlap(
+      this.ppcRounds,
+      this.player,
+      (roundObj, playerObj) => {
+        const r = roundObj as PPCRound;
+        if (!r.active) return;
+        (playerObj as Player).takeDamage(3);
+        r.detonate(true);
+      },
+    );
+
+    // PPC rounds detonate on geometry
+    this.physics.add.overlap(this.ppcRounds, this.ground, (r) => {
+      const round = r as PPCRound;
+      if (round.active) round.detonate(false);
+    });
+    if (this.groundLayer) this.physics.add.overlap(this.ppcRounds, this.groundLayer, (r, tile) => {
+      if (!(tile as Phaser.Tilemaps.Tile).collides) return;
+      const round = r as PPCRound;
+      if (round.active) round.detonate(false);
+    });
+
     // Missiles are intercepted by boss projectiles
     this.physics.add.overlap(
       this.missiles,
@@ -467,6 +497,10 @@ export class GameScene extends Phaser.Scene {
     });
     this.spawner.update(time, delta);
     // Moving platforms: runChildUpdate is true on the group, so they self-update
+    this.ppcRounds.getChildren().forEach((go) => {
+      const r = go as PPCRound;
+      if (r.active) r.tick(delta);
+    });
     this.cullBullets();
     this.updateParallax();
   }
