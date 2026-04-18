@@ -7,6 +7,7 @@ import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
 import { Mine } from '../entities/Mine';
 import { PPCPlatform } from '../entities/PPCPlatform';
+import { Carrier } from '../entities/Carrier';
 import type { DroneVariant, DroneType } from '../entities/Drone';
 import type { EnemyMix } from '../data/levelConfigs';
 import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, GAME_W, GAME_H, PATROL_LANES } from '../constants';
@@ -377,6 +378,44 @@ export class DroneSpawner {
             });
         }
       }
+    }
+
+    // Carrier — wave 3+, mothership that deploys swarmlings periodically
+    if (this.waveIndex >= 3 && Math.random() < 0.6) {
+      const cam = this.scene.cameras.main;
+      const cx  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.65, 300, WORLD_WIDTH - 300);
+      const cy  = Phaser.Math.Clamp(GROUND_Y - 260, 160, GROUND_Y - 180);
+      const carrier = new Carrier(this.scene, cx, cy);
+      this.scene.add.existing(carrier);
+      this.scene.physics.add.existing(carrier);
+      this.scene.drones.add(carrier);
+      carrier.initBody();
+      this.dronesAlive++;
+      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+
+      this.scene.physics.add.overlap(this.scene.playerBullets, carrier,
+        (_c, bullet) => {
+          const b = bullet as Phaser.Physics.Arcade.Image;
+          const ix = b.x, iy = b.y;
+          b.setActive(false).setVisible(false);
+          if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
+          const dmg = b.texture.key === 'bullet-rapid' ? 0.5 : 1;
+          (_c as unknown as Carrier).takeDamage(dmg);
+          this.scene.spawnBulletImpact(ix, iy, 'enemy');
+          this.scene.audio.play('hit');
+          if (Math.random() < 0.5) this.scene.spawnEnemyChunks(ix, iy, 0xdd7766, 3);
+        });
+      this.scene.physics.add.overlap(this.scene.missiles, carrier,
+        (_c, missile) => {
+          const m = missile as Phaser.Physics.Arcade.Image;
+          m.setData('hitTarget', true);
+          m.setActive(false).setVisible(false);
+          if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
+          this.scene.spawnExplosion(m.x, m.y);
+          (_c as unknown as Carrier).takeDamage(3);
+          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.audio.play('explosion');
+        });
     }
 
     // PPC Platform — wave 4+, single floating turret at mid-air altitude
