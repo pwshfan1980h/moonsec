@@ -220,11 +220,23 @@ export const TMPL_TRADE_LANES: LevelTemplate = {
   fixedArenaWalls: false,
   tileK: TILE,
   fixedPlatforms: [
+    // Main deck — row 22, every 20 cols (~640px gaps, easily jumped)
     { col:   5, row: 22, width: 15 },
+    { col:  25, row: 22, width: 10 },
     { col:  45, row: 22, width: 15 },
+    { col:  65, row: 22, width: 10 },
     { col:  85, row: 22, width: 15 },
+    { col: 105, row: 22, width: 10 },
     { col: 125, row: 22, width: 15 },
-    { col: 165, row: 22, width: 12 },
+    { col: 145, row: 22, width: 10 },
+    { col: 165, row: 22, width: 15 },
+    { col: 185, row: 22, width: 10 },
+    // Upper deck — row 17, staggered between lower-deck groups
+    { col:  20, row: 17, width: 8 },
+    { col:  60, row: 17, width: 8 },
+    { col: 100, row: 17, width: 8 },
+    { col: 140, row: 17, width: 8 },
+    { col: 180, row: 17, width: 8 },
   ],
   fixedWalls: [
     { col:  30, rowStart: 10, height: 14 },
@@ -234,7 +246,7 @@ export const TMPL_TRADE_LANES: LevelTemplate = {
   ],
   variation: {
     pitCount:       [0, 0], pitWidth:       [0, 0],
-    extraPlatforms: [3, 6], platformRows:   [17, 20, 25],
+    extraPlatforms: [6, 10], platformRows:   [17, 20, 25],
     platformWidth:  [3, 6], wallCount:      [2, 4], wallHeight: 12,
   },
 };

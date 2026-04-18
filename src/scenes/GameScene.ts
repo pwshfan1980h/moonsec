@@ -39,6 +39,7 @@ export class GameScene extends Phaser.Scene {
   private bgStars?: Phaser.GameObjects.TileSprite;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
   private bgHaze?: Phaser.GameObjects.TileSprite;
+  private trainOffset = 0;
   private isBossDead    = false;
 
   // Campaign state — exposed so UIScene can read on level complete
@@ -196,8 +197,12 @@ export class GameScene extends Phaser.Scene {
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
     const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
-    const spawnY = GROUND_Y - 5;
-    this.player = new Player(this, 300, spawnY, mechType);
+    const spawnCol = this.activeConfig.spawnCol;
+    const spawnX = spawnCol !== undefined ? spawnCol * 32 : 300;
+    const spawnY = this.activeConfig.spawnRow !== undefined
+      ? this.activeConfig.spawnRow * 32 - 4
+      : GROUND_Y - 5;
+    this.player = new Player(this, spawnX, spawnY, mechType);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
 
@@ -496,7 +501,7 @@ export class GameScene extends Phaser.Scene {
       if (r.active) r.tick(delta);
     });
     this.cullBullets();
-    this.updateParallax();
+    this.updateParallax(delta);
   }
 
   shutdown(): void {
@@ -1022,8 +1027,15 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private updateParallax(): void {
+  private updateParallax(delta: number): void {
     const sx = this.cameras.main.scrollX;
+    if (this.activeConfig.trainEffect) {
+      this.trainOffset += delta * 0.12; // ~120 px/s leftward drift
+      if (this.bgStars)   this.bgStars.setTilePosition(sx * 0.05 - this.trainOffset * 0.15, 0);
+      if (this.bgTerrain) this.bgTerrain.setTilePosition(sx * 0.20 - this.trainOffset * 0.55, 0);
+      if (this.bgHaze)    this.bgHaze.setTilePosition(sx * 0.35 - this.trainOffset, 0);
+      return;
+    }
     if (this.bgStars)   this.bgStars.setTilePosition(sx * 0.05, 0);
     if (this.bgTerrain) this.bgTerrain.setTilePosition(sx * 0.20, 0);
     if (this.bgHaze)    this.bgHaze.setTilePosition(sx * 0.35, 0);

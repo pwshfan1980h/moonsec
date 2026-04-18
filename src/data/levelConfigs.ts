@@ -21,6 +21,9 @@ export type LevelConfig = {
   enemyMix:        EnemyMix;
   voidBottom:      boolean;  // true = falling is lethal (no ground)
   movingPlatforms: boolean;  // spawn horizontal moving platforms
+  spawnCol?:       number;   // tile column for player spawn (default 9)
+  spawnRow?:       number;   // tile row (feet); default uses GROUND_Y constant
+  trainEffect?:    boolean;  // BG parallax auto-drift to fake lateral motion
 };
 
 export const LEVEL_CONFIGS: LevelConfig[] = [
@@ -54,7 +57,10 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'trade-lanes',
     enemyMix:      'aerial',
     voidBottom:    true,
-    movingPlatforms: true,
+    movingPlatforms: false,
+    spawnCol:      8,
+    spawnRow:      21,
+    trainEffect:   true,
   },
   // ── Node 2: Deep Facility ─────────────────────────────────────────────────
   {
