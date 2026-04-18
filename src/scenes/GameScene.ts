@@ -695,43 +695,81 @@ export class GameScene extends Phaser.Scene {
       .setScrollFactor(0.04)
       .setPosition(earthX, earthY);
 
-    // Outer atmosphere halo
-    earth.fillStyle(0x88bbff, 0.10);
-    earth.fillCircle(0, 0, R + 6);
-    earth.fillStyle(0x88bbff, 0.18);
-    earth.fillCircle(0, 0, R + 2);
+    // Soft atmosphere halo — 6 rings, outer-most is dimmest. Layered this way
+    // so the edge reads as light scattering instead of a hard outline.
+    for (let i = 6; i >= 1; i--) {
+      earth.fillStyle(0x4488ff, 0.05 * i);
+      earth.fillCircle(0, 0, R + i * 3);
+    }
 
-    // Ocean base
-    earth.fillStyle(0x1a3a78, 1);
-    earth.fillCircle(0, 0, R);
+    // Ocean with limb darkening — successive rings brighten toward the
+    // sunlit core, offset slightly up-left so the center of brightness
+    // sits on the implied-sun side.
+    earth.fillStyle(0x0a1a40, 1); earth.fillCircle(0, 0, R);
+    earth.fillStyle(0x12285e, 1); earth.fillCircle(-2, -2, R - 6);
+    earth.fillStyle(0x1a3c82, 1); earth.fillCircle(-4, -4, R - 14);
+    earth.fillStyle(0x2350a0, 1); earth.fillCircle(-6, -6, R - 26);
 
-    // Continent blobs (stylized, not geographic)
+    // Polar ice caps (ellipses inside the disc)
+    earth.fillStyle(0xe8f4ff, 0.60);
+    earth.fillEllipse(0, -R * 0.88, R * 0.90, R * 0.22);
+    earth.fillEllipse(0,  R * 0.88, R * 0.80, R * 0.18);
+
+    // Continents — stylized polygon landmasses. Points hand-tuned so all
+    // vertices sit inside the ocean disc (max radius ~44 vs R=88) and the
+    // silhouette reads as land, not overlapping paint blobs.
+    const continents: number[][] = [
+      [-38, -26, -20, -34, -8, -20, -16, -4, -4, 12, -12, 26, -28, 20, -40, 4, -44, -8],
+      [10, -28, 30, -22, 42, -10, 40, 10, 26, 24, 14, 20, 4, 4, 16, -8, 2, -16],
+      [20, 36, 32, 38, 38, 46, 28, 48, 18, 44],
+    ];
     earth.fillStyle(0x2e6b3a, 1);
-    earth.fillCircle(-22, -18, 26);
-    earth.fillCircle(14, 8, 22);
-    earth.fillCircle(30, -28, 12);
-    earth.fillCircle(-8, 30, 14);
-    earth.fillStyle(0x3d8a4a, 0.8);
-    earth.fillCircle(-30, -8, 10);
-    earth.fillCircle(22, 22, 8);
+    for (const flat of continents) {
+      const pts: Phaser.Geom.Point[] = [];
+      for (let i = 0; i < flat.length; i += 2) {
+        pts.push(new Phaser.Geom.Point(flat[i], flat[i + 1]));
+      }
+      earth.fillPoints(pts, true);
+    }
 
-    // Cloud bands (low-alpha white arcs)
-    earth.fillStyle(0xffffff, 0.25);
-    earth.fillCircle(-14, -36, 10);
-    earth.fillCircle(6, -32, 14);
-    earth.fillCircle(36, -4, 10);
-    earth.fillCircle(-28, 18, 12);
-    earth.fillCircle(8, 40, 10);
+    // Interior land highlights — brighter green dots to suggest lit terrain
+    earth.fillStyle(0x5cbf6b, 0.75);
+    earth.fillCircle(-30, -16, 5);
+    earth.fillCircle(26,  -6, 5);
+    earth.fillCircle(34,   8, 4);
+    earth.fillCircle(-16, 18, 4);
+    earth.fillCircle(28,  42, 3);
 
-    // Terminator — dark side (lower-right, away from implied sun at upper-left)
-    earth.fillStyle(0x000000, 0.45);
-    earth.slice(0, 0, R, -Math.PI * 0.25, Math.PI * 0.75, false);
-    earth.fillPath();
+    // Cloud bands — thin stretched ellipses at varying latitudes,
+    // two alpha tiers so some bands read as high-cirrus wisps.
+    earth.fillStyle(0xffffff, 0.22);
+    earth.fillEllipse(-16, -46, 44, 6);
+    earth.fillEllipse( 12, -12, 56, 6);
+    earth.fillEllipse(-30,  36, 40, 6);
+    earth.fillEllipse( 28,  22, 34, 5);
+    earth.fillStyle(0xffffff, 0.42);
+    earth.fillEllipse(  4, -38, 28, 3);
+    earth.fillEllipse(-12,   4, 22, 3);
+    earth.fillEllipse( 22,  48, 20, 3);
 
-    // Highlight arc on sunlit edge (upper-left)
-    earth.lineStyle(2, 0xaaccff, 0.35);
+    // Terminator — feathered dark side via stacked slice fills with
+    // increasing offset, producing a soft gradient instead of a hard line.
+    for (let i = 0; i < 5; i++) {
+      const alpha = 0.12 + i * 0.05;
+      earth.fillStyle(0x000000, alpha);
+      earth.beginPath();
+      earth.slice(i * 3, i * 2, R - i * 2, -Math.PI * 0.18, Math.PI * 0.82, false);
+      earth.fillPath();
+    }
+
+    // Specular rim — two stacked arcs on sunlit edge for a brighter hit
+    earth.lineStyle(1.5, 0xcce4ff, 0.75);
     earth.beginPath();
-    earth.arc(0, 0, R - 1, Math.PI * 0.9, Math.PI * 1.7, false);
+    earth.arc(0, 0, R - 0.5, Math.PI * 1.0, Math.PI * 1.55, false);
+    earth.strokePath();
+    earth.lineStyle(1, 0xffffff, 0.45);
+    earth.beginPath();
+    earth.arc(0, 0, R - 1, Math.PI * 1.12, Math.PI * 1.40, false);
     earth.strokePath();
 
     // ── Twinkling stars ──
