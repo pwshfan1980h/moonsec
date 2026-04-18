@@ -35,6 +35,13 @@ export class UIScene extends Phaser.Scene {
   private ammoBg!:      Phaser.GameObjects.Rectangle;
   private ammoLabel!:   Phaser.GameObjects.Text;
   private ammoValueText!: Phaser.GameObjects.Text;
+
+  // Low-HP nanite prompt — flashes when HP < 25% and nanite is ready
+  private lowHpPrompt: Phaser.GameObjects.Text | null = null;
+  private lowHpPulseTween: Phaser.Tweens.Tween | null = null;
+  private naniteReady = true;
+  private curHp = 0;
+  private curMaxHp = 1;
   private healthValueText!: Phaser.GameObjects.Text;
   private levelCompleteActive = false;
   private titleActive = false;
@@ -72,6 +79,11 @@ export class UIScene extends Phaser.Scene {
     this.currentWave = 0;
     this.currentScore = 0;
     this.lastHp = 0;
+    this.naniteReady = true;
+    this.curHp = 0;
+    this.curMaxHp = 1;
+    this.lowHpPrompt = null;
+    this.lowHpPulseTween = null;
 
     // ── LEFT STAT PANEL (top-left) ────────────────────────────────
     // Vertical rhythm — same offsets reused by the right panel
@@ -209,6 +221,8 @@ export class UIScene extends Phaser.Scene {
     };
 
     on('healthChange', (hp: number, maxHp: number) => {
+      this.curHp = hp;
+      this.curMaxHp = maxHp;
       this.healthFill.setDisplaySize(BAR_W * (hp / maxHp), BAR_H);
       this.healthValueText.setText(`${hp} / ${maxHp}`);
       if (!this.naniteActive) {
@@ -219,6 +233,7 @@ export class UIScene extends Phaser.Scene {
         this.cameras.main.flash(200, 220, 30, 30, false);
       }
       this.lastHp = hp;
+      this.updateLowHpPrompt();
     });
 
     on('missileCooldown', (progress: number) => {
@@ -402,6 +417,12 @@ export class UIScene extends Phaser.Scene {
       this.nanitePulseTween.stop();
       this.nanitePulseTween = null;
     }
+    if (this.lowHpPulseTween) {
+      this.lowHpPulseTween.stop();
+      this.lowHpPulseTween = null;
+    }
+    this.lowHpPrompt?.destroy();
+    this.lowHpPrompt = null;
   }
 
   private togglePause(): void {
@@ -457,6 +478,42 @@ export class UIScene extends Phaser.Scene {
       this.naniteBar.setAlpha(1);
       this.naniteBar.setDisplaySize(BAR_W, BAR_H2);
       this.naniteBar.setFillStyle(0x00ff88);
+    }
+    this.naniteReady = (state === 'ready');
+    this.updateLowHpPrompt();
+  }
+
+  private updateLowHpPrompt(): void {
+    const hpRatio = this.curMaxHp > 0 ? this.curHp / this.curMaxHp : 1;
+    const shouldShow = hpRatio < 0.25
+      && this.curHp > 0
+      && this.naniteReady
+      && !this.gameOverActive
+      && !this.levelCompleteActive
+      && !this.titleActive;
+
+    if (shouldShow && !this.lowHpPrompt) {
+      this.lowHpPrompt = this.add.text(
+        GAME_W / 2, GAME_H - 120,
+        '⟨ NANITE PROTOCOL — PRESS Q TO REKNIT ⟩',
+        {
+          fontFamily: 'monospace', fontSize: '22px', color: '#00ffcc',
+          stroke: '#001a12', strokeThickness: 3,
+        },
+      ).setOrigin(0.5).setDepth(45);
+      this.lowHpPulseTween = this.tweens.add({
+        targets: this.lowHpPrompt,
+        alpha: { from: 0.35, to: 1.0 },
+        duration: 520,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else if (!shouldShow && this.lowHpPrompt) {
+      this.lowHpPulseTween?.stop();
+      this.lowHpPulseTween = null;
+      this.lowHpPrompt.destroy();
+      this.lowHpPrompt = null;
     }
   }
 
