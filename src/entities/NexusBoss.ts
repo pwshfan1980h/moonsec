@@ -3,6 +3,7 @@ import type { GameScene } from '../scenes/GameScene';
 import { Drone } from './Drone';
 import type { DroneScaling } from '../systems/DroneSpawner';
 import { GAME_W } from '../constants';
+import { playJuggernautDeath } from './effects/juggernautDeath';
 
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'TELEGRAPH' | 'BLAST' | 'HURT' | 'DEATH';
 
@@ -287,35 +288,6 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     this.hurtBorder?.destroy();   this.hurtBorder = null;
   }
 
-  private spawnDeathChunk(
-    offX: number, offY: number,
-    vx: number, vy: number,
-    size: { w: number; h: number },
-    detonateDelay: number,
-  ): void {
-    const chunk = this.scene.add.rectangle(
-      this.x + offX, this.y + offY, size.w, size.h, 0x45475a,
-    );
-    chunk.setStrokeStyle(2, 0x14141e);
-    chunk.setDepth(10);
-    this.scene.physics.add.existing(chunk);
-    const body = chunk.body as Phaser.Physics.Arcade.Body;
-    body.setAllowGravity(true);
-    body.setVelocity(vx, vy);
-    body.setAngularVelocity(Phaser.Math.Between(80, 140) * (Math.random() < 0.5 ? 1 : -1));
-
-    this.scene.time.delayedCall(detonateDelay, () => {
-      if (!this.scene?.sys.isActive() || !chunk.active) return;
-      this.scene.spawnExplosion(chunk.x, chunk.y);
-      this.scene.audio.playAt('explosion', { rate: 0.5, detune: -300, volume: 0.8 });
-      this.scene.cameras.main.shake(120, 0.008);
-      this.scene.tweens.add({
-        targets: chunk, alpha: 0, duration: 220,
-        onComplete: () => chunk.destroy(),
-      });
-    });
-  }
-
   private setBossState(newState: BossState): void {
     if (this.bossState === 'DEATH') return;
     this.bossState = newState;
@@ -416,14 +388,6 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         break;
 
       case 'DEATH': {
-        this.stop();
-
-        const body = this.body as Phaser.Physics.Arcade.Body;
-        body.setCollideWorldBounds(false);
-        body.setAllowGravity(true);
-        body.setVelocity(Phaser.Math.Between(-40, 40), -60);
-        body.setAngularVelocity(Phaser.Math.Between(80, 140) * (Math.random() < 0.5 ? 1 : -1));
-
         this.glowTween?.stop();
         this.glowAura?.destroy();
         this.glowTween = null;
@@ -442,56 +406,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
 
         this.scene.events.emit('bossTelegraphCancel');
 
-        // Break off 2 pod chunks to sell the "large craft falling apart" read.
-        // Main hull keeps tumbling (boss sprite itself); chunks tumble
-        // independently and detonate at staggered delays.
-        this.spawnDeathChunk(-40, -10, -180, -140, { w: 30, h: 40 }, 500);
-        this.spawnDeathChunk( 40, -10,  180, -140, { w: 30, h: 40 }, 750);
-
-        // Staggered multi-stage detonations across the tumble
-        const detonations = [
-          { delay:    0, dx:   0, dy:   0 },
-          { delay:  320, dx: -50, dy:  20 },
-          { delay:  640, dx:  45, dy: -25 },
-          { delay:  960, dx: -20, dy:  35 },
-          { delay: 1280, dx:  55, dy:  10 },
-          { delay: 1650, dx: -35, dy: -15 },
-          { delay: 2050, dx:   0, dy:   0 }, // final
-        ];
-
-        detonations.forEach(({ delay, dx, dy }, i) => {
-          this.scene.time.delayedCall(delay, () => {
-            if (!this.scene?.sys.isActive()) return;
-            const isFinal = i === detonations.length - 1;
-            this.scene.spawnExplosion(this.x + dx, this.y + dy);
-            this.scene.audio.playAt('explosion', {
-              rate:   0.38 + i * 0.06,
-              detune: -600 + i * 80,
-              volume: isFinal ? 1.0 : 0.85,
-            });
-            this.scene.cameras.main.shake(isFinal ? 280 : 90, isFinal ? 0.018 : 0.007);
-          });
-        });
-
-        this.scene.time.delayedCall(400, () => {
-          if (this.scene?.sys.isActive()) {
-            this.scene.audio.playAt('death', { rate: 0.4, detune: -400, volume: 0.7 });
-          }
-        });
-
-        // Fade out then fire bossKilled
-        this.scene.time.delayedCall(2400, () => {
-          if (!this.scene?.sys.isActive()) return;
-          this.scene.tweens.add({
-            targets:  this,
-            alpha:    0,
-            duration: 700,
-            onComplete: () => {
-              this.scene.events.emit('bossKilled', this.x, this.y);
-              this.destroy();
-            },
-          });
-        });
+        playJuggernautDeath(this.scene, this, { deathEvent: 'bossKilled' });
         break;
       }
     }
