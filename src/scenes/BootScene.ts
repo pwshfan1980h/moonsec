@@ -1,5 +1,15 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
+import { LEVEL_CONFIGS } from '../data/levelConfigs';
+
+// Dev-only: `?level=N` jumps straight to level N on boot (0-indexed, clamped).
+function bootLevel(): number {
+  if (!import.meta.env.DEV) return 0;
+  const raw = new URLSearchParams(window.location.search).get('level');
+  const n = raw == null ? 0 : parseInt(raw, 10);
+  if (!Number.isFinite(n)) return 0;
+  return Phaser.Math.Clamp(n, 0, LEVEL_CONFIGS.length - 1);
+}
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -133,7 +143,7 @@ export class BootScene extends Phaser.Scene {
     this.makeTextures();
 
     this.registry.set('firstBoot', true);
-    this.scene.start('Game', { mechType: 'mech4', level: 0, totalScore: 0, completedNodes: [] });
+    this.scene.start('Game', { mechType: 'mech4', level: bootLevel(), totalScore: 0, completedNodes: [] });
     this.scene.launch('UI');
   }
 

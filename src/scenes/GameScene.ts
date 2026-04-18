@@ -108,6 +108,24 @@ export class GameScene extends Phaser.Scene {
     this.debugLog = new DebugLog(this);
     kb.addKey(Phaser.Input.Keyboard.KeyCodes.BACKTICK).on('down', () => this.debugLog?.toggle());
 
+    // Dev-only: number keys 1–5 warp to that level (restart Game scene with new config).
+    if (import.meta.env.DEV) {
+      const maxLevel = LEVEL_CONFIGS.length;
+      for (let i = 0; i < maxLevel; i++) {
+        const keyCode = Phaser.Input.Keyboard.KeyCodes.ONE + i;
+        kb.addKey(keyCode).on('down', () => {
+          this.scene.stop('UI');
+          this.scene.start('Game', {
+            mechType: (this.registry.get('mechType') as MechType) ?? 'mech4',
+            level: i,
+            totalScore: this.score,
+            completedNodes: this.completedNodes,
+          });
+          this.scene.launch('UI');
+        });
+      }
+    }
+
     // Boss projectile — large orange orb
     const bpg = this.add.graphics();
     bpg.fillStyle(0xff6600, 0.9);
