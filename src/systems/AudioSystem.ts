@@ -158,30 +158,43 @@ export class AudioSystem {
       }
 
       if (id === 'missile') {
-        // Sine whine ~1380 Hz with slow LFO pitch wobble — tracking scream
+        // Rocket roar: lowpassed noise (exhaust) + sub rumble + slow cutoff LFO for "breath"
+        const noiseSrc = this.ctx.createBufferSource();
+        noiseSrc.buffer = this.noiseBuffer;
+        noiseSrc.loop = true;
+
+        const lp = this.ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(1400, t);
+        lp.Q.setValueAtTime(0.9, t);
+
+        // LFO sweeps the cutoff ±250 Hz for a crackling-exhaust feel
         const lfo = this.ctx.createOscillator();
         lfo.type = 'sine';
-        lfo.frequency.setValueAtTime(5.5, t);
+        lfo.frequency.setValueAtTime(6.5, t);
         const lfoGain = this.ctx.createGain();
-        lfoGain.gain.setValueAtTime(28, t); // ±28 Hz wobble
+        lfoGain.gain.setValueAtTime(250, t);
         lfo.connect(lfoGain);
+        lfoGain.connect(lp.frequency);
 
-        const whine = this.ctx.createOscillator();
-        whine.type = 'sawtooth';
-        whine.frequency.setValueAtTime(1380, t);
-        lfoGain.connect(whine.frequency);
-
-        const hp = this.ctx.createBiquadFilter();
-        hp.type = 'highpass';
-        hp.frequency.setValueAtTime(900, t);
-
-        whine.connect(hp);
-        hp.connect(gainNode);
-        whine.start(t);
+        noiseSrc.connect(lp);
+        lp.connect(gainNode);
+        noiseSrc.start(t);
         lfo.start(t);
-        sources.push(whine, lfo);
+        sources.push(noiseSrc, lfo);
 
-        gainNode.gain.linearRampToValueAtTime(0.18, t + FADE_IN);
+        // Sub-sine 48 Hz — thrust body
+        const subOsc = this.ctx.createOscillator();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(48, t);
+        const subGain = this.ctx.createGain();
+        subGain.gain.setValueAtTime(0.6, t); // attenuate vs. noise
+        subOsc.connect(subGain);
+        subGain.connect(gainNode);
+        subOsc.start(t);
+        sources.push(subOsc);
+
+        gainNode.gain.linearRampToValueAtTime(0.28, t + FADE_IN);
       }
 
       this.loops.set(id, { sources, gainNode });
