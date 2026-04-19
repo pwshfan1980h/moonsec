@@ -985,43 +985,6 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // ── Communication Towers (6) ─────────────────────────────────────
-    for (let i = 0; i < 6; i++) {
-      const x   = Math.max(300, Math.min(6000, 500 + i * 900 + (hash(i + 110) * 300 - 150)));
-      const mh  = 80 + hash(i + 120) * 60; // mast height 80–140px
-      const dmg = hash(i + 130) < 0.5;
-      const g   = this.add.graphics().setDepth(3.5).setPosition(x, GROUND_Y);
-      if (dmg) g.setAngle(hash(i + 140) * 12 - 6); // −6° to +6° lean
-
-      // Base block
-      g.fillStyle(0x1e2040, 1);
-      g.fillRect(-10, -10, 20, 10);
-
-      // Mast — drawn upward from origin so setAngle rotates around base
-      g.fillStyle(0x1e2040, 1);
-      g.fillRect(-3, -mh, 6, mh);
-
-      // Support struts (undamaged towers only)
-      if (!dmg) {
-        g.lineStyle(1, 0x1a1a38, 1);
-        g.lineBetween(0, -mh * 0.6, -25, 0);
-        g.lineBetween(0, -mh * 0.6, 25, 0);
-      }
-
-      // Dish or broken stub
-      if (!dmg) {
-        g.fillStyle(0x252545, 1);
-        g.fillEllipse(0, -mh, 28, 14);
-        g.lineStyle(1, 0x3a3a60, 1);
-        g.lineBetween(-14, -mh, 14, -mh);
-      } else {
-        g.fillStyle(0x252545, 1);
-        g.fillEllipse(0, -mh, 14, 6);
-        g.lineStyle(1, 0x3a3a60, 1);
-        g.lineBetween(-7, -mh, 7, -mh + 5);
-      }
-    }
-
     // ── Solar Array Clusters (5) ─────────────────────────────────────
     for (let i = 0; i < 5; i++) {
       const cx   = Math.max(300, Math.min(6000, 400 + i * 1100 + (hash(i + 210) * 300 - 150)));
