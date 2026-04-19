@@ -431,7 +431,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Spawner ---
     const cfg = this.activeConfig;
-    this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossCount, cfg.boss2HpMult, cfg.enemyMix);
+    this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossType, cfg.enemyMix);
     this.music?.start(0.35);
 
     // --- Wave audio ---
@@ -482,7 +482,6 @@ export class GameScene extends Phaser.Scene {
       this.isGameOver = true;
     });
 
-    // Each boss kill adds score; two-boss sequence tracked by DroneSpawner
     this.events.on('bossKilled', () => {
       this.score += 1000;
       this.events.emit('scoreChange', this.score);

@@ -3,6 +3,7 @@ import {
   TMPL_SURFACE_OPS, TMPL_TRADE_LANES, TMPL_DEEP_FACILITY,
   TMPL_ORBITAL, TMPL_NEXUS_CORE,
 } from './levelData';
+import type { BossType } from '../entities/NexusBoss';
 
 export type MusicTheme  = 'surface' | 'trade-lanes' | 'deep-facility' | 'orbital' | 'nexus-core';
 export type EnemyMix    = 'balanced' | 'aerial' | 'ground-heavy' | 'elite' | 'boss-rush';
@@ -14,9 +15,8 @@ export type LevelConfig = {
   bgSkyColor:      number;   // hex — sky rect fill color
   bgTerrainTint:   number;   // hex — tint applied to terrain parallax layer
   template:        LevelTemplate;
-  waveCount:       number;   // normal waves before boss phase (set to 1 for testing)
-  bossCount:       number;   // sequential bosses
-  boss2HpMult:     number;   // HP multiplier for the second boss
+  waveCount:       number;   // normal waves before boss phase
+  bossType:        BossType; // per-node boss reskin
   musicTheme:      MusicTheme;
   enemyMix:        EnemyMix;
   voidBottom:      boolean;  // true = falling is lethal (no ground)
@@ -35,9 +35,8 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     bgSkyColor:    0x030318,
     bgTerrainTint: 0xffffff,
     template:      TMPL_SURFACE_OPS,
-    waveCount:     1,  // raise to 5 for production
-    bossCount:     1,
-    boss2HpMult:   1.5,
+    waveCount:     5,
+    bossType:      'nexus-red',
     musicTheme:    'surface',
     enemyMix:      'balanced',
     voidBottom:    false,
@@ -51,9 +50,8 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     bgSkyColor:    0x020a18,
     bgTerrainTint: 0x4488ff,
     template:      TMPL_TRADE_LANES,
-    waveCount:     1,
-    bossCount:     1,
-    boss2HpMult:   1.5,
+    waveCount:     5,
+    bossType:      'nexus-blue',
     musicTheme:    'trade-lanes',
     enemyMix:      'aerial',
     voidBottom:    true,
@@ -70,9 +68,8 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     bgSkyColor:    0x08020f,
     bgTerrainTint: 0xaa44ff,
     template:      TMPL_DEEP_FACILITY,
-    waveCount:     1,
-    bossCount:     1,
-    boss2HpMult:   1.5,
+    waveCount:     5,
+    bossType:      'nexus-violet',
     musicTheme:    'deep-facility',
     enemyMix:      'ground-heavy',
     voidBottom:    false,
@@ -86,9 +83,8 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     bgSkyColor:    0x000008,
     bgTerrainTint: 0x88ccff,
     template:      TMPL_ORBITAL,
-    waveCount:     1,
-    bossCount:     1,
-    boss2HpMult:   1.75,
+    waveCount:     5,
+    bossType:      'nexus-cyan',
     musicTheme:    'orbital',
     enemyMix:      'elite',
     voidBottom:    true,
@@ -102,9 +98,8 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     bgSkyColor:    0x120003,
     bgTerrainTint: 0xff2200,
     template:      TMPL_NEXUS_CORE,
-    waveCount:     1,
-    bossCount:     1,
-    boss2HpMult:   2.0,
+    waveCount:     5,
+    bossType:      'nexus-core',
     musicTheme:    'nexus-core',
     enemyMix:      'boss-rush',
     voidBottom:    false,

@@ -1,15 +1,54 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from './Drone';
+import type { DroneType, DroneVariant } from './Drone';
 import type { DroneScaling } from '../systems/DroneSpawner';
 import { GAME_W } from '../constants';
 import { playJuggernautDeath } from './effects/juggernautDeath';
 
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'TELEGRAPH' | 'BLAST' | 'HURT' | 'DEATH';
 
-const LIFE_HP        = 6;   // HP drained per "down" cycle
-const MAX_LIVES      = 3;   // number of downs before permadeath
-const SCALE          = 3.0;
+export type BossType = 'nexus-red' | 'nexus-blue' | 'nexus-violet' | 'nexus-cyan' | 'nexus-core';
+
+export interface BossVariantConfig {
+  auraColors: [number, number, number]; // outer / mid / inner fills, additive
+  escortType:    DroneType;
+  escortVariant: DroneVariant;
+  lifeHp: number;   // HP drained per "down" cycle
+  scale:  number;
+  maxLives?: number;
+  escortCount?: number; // default 2
+}
+
+export const BOSS_VARIANTS: Record<BossType, BossVariantConfig> = {
+  'nexus-red': {
+    auraColors: [0xff2200, 0xff4400, 0xff8800],
+    escortType: 'drone-red', escortVariant: 'normal',
+    lifeHp: 6, scale: 3.0,
+  },
+  'nexus-blue': {
+    auraColors: [0x2244ff, 0x4488ff, 0x88bbff],
+    escortType: 'drone-red', escortVariant: 'sniper',
+    lifeHp: 6, scale: 3.0,
+  },
+  'nexus-violet': {
+    auraColors: [0x8800ff, 0xaa44ff, 0xcc88ff],
+    escortType: 'sentinel', escortVariant: 'normal',
+    lifeHp: 8, scale: 3.1,
+  },
+  'nexus-cyan': {
+    auraColors: [0x00aaff, 0x44ccff, 0x88eeff],
+    escortType: 'drone-green', escortVariant: 'sniper',
+    lifeHp: 8, scale: 3.1,
+  },
+  'nexus-core': {
+    auraColors: [0xff0033, 0xff4400, 0xffaa22],
+    escortType: 'drone-red', escortVariant: 'sniper',
+    lifeHp: 10, scale: 3.75, maxLives: 4, escortCount: 3,
+  },
+};
+
+const DEFAULT_MAX_LIVES = 3;
 const DRIFT_SPEED    = 55;
 const CHARGE_MS      = 1200;
 const DRIFT_MS       = 1800;
@@ -24,15 +63,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private bossState: BossState = 'DRIFT';
   private lifeHpMax: number;
   private lifeHp: number;
-  private lives    = MAX_LIVES;
+  private lives: number;
   private driftDir = -1;
   private phaseTimer = DRIFT_MS;
   private attackCycle = 0; // increments each CHARGE; every 3rd → orbital blast
   private telegraphSide: 'left' | 'right' = 'left';
-  private escortSlots: Array<{ drone: Drone | null; colliders: Phaser.Physics.Arcade.Collider[] }> = [
-    { drone: null, colliders: [] },
-    { drone: null, colliders: [] },
-  ];
+  private escortSlots: Array<{ drone: Drone | null; colliders: Phaser.Physics.Arcade.Collider[] }> = [];
+  private variant: BossVariantConfig;
   private scaling: DroneScaling;
   private glowAura: Phaser.GameObjects.Graphics | null = null;
   private glowTween: Phaser.Tweens.Tween | null = null;
@@ -42,27 +79,35 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
   private hurtBorder: Phaser.GameObjects.Graphics | null = null;
   private hurtBorderTween: Phaser.Tweens.Tween | null = null;
 
-  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, lifeHp = LIFE_HP, scale = SCALE) {
+  constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, variant: BossVariantConfig) {
     super(scene, x, y, 'juggernaut');
     this.scene   = scene;
     this.scaling = scaling;
+    this.variant = variant;
 
-    this.lifeHpMax = lifeHp;
-    this.lifeHp    = lifeHp;
+    this.lifeHpMax = variant.lifeHp;
+    this.lifeHp    = variant.lifeHp;
+    this.lives     = variant.maxLives ?? DEFAULT_MAX_LIVES;
     this.setOrigin(0.5, 0.5);
-    this.setScale(scale);
+    this.setScale(variant.scale);
     this.setDepth(10);
     this.play('juggernaut-hover');
 
+    const escortCount = variant.escortCount ?? 2;
+    for (let i = 0; i < escortCount; i++) {
+      this.escortSlots.push({ drone: null, colliders: [] });
+    }
+
     // Pulsing glow aura — additive blend so it blooms over dark backgrounds
+    const [c0, c1, c2] = variant.auraColors;
     const gfx = scene.add.graphics();
     gfx.setBlendMode(Phaser.BlendModes.ADD);
     gfx.setDepth(9);
-    gfx.fillStyle(0xff2200, 0.22);
+    gfx.fillStyle(c0, 0.22);
     gfx.fillCircle(0, 0, 150);
-    gfx.fillStyle(0xff4400, 0.18);
+    gfx.fillStyle(c1, 0.18);
     gfx.fillCircle(0, 0, 108);
-    gfx.fillStyle(0xff8800, 0.14);
+    gfx.fillStyle(c2, 0.14);
     gfx.fillCircle(0, 0, 70);
     gfx.setPosition(x, y);
     this.glowAura = gfx;
@@ -75,8 +120,9 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
       ease: 'Sine.easeInOut',
     });
 
-    scene.time.delayedCall(500, () => this.spawnEscort(0));
-    scene.time.delayedCall(800, () => this.spawnEscort(1));
+    for (let i = 0; i < escortCount; i++) {
+      scene.time.delayedCall(500 + i * 300, () => this.spawnEscort(i));
+    }
   }
 
   initBody(): void {
@@ -93,10 +139,13 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     for (const col of this.escortSlots[slot].colliders) col.destroy();
     this.escortSlots[slot].colliders = [];
 
-    const dx = slot === 0 ? -120 : 120;
+    // Spread escorts symmetrically around the boss: -120, +120 for 2; -160, 0, +160 for 3.
+    const count = this.escortSlots.length;
+    const spacing = count >= 3 ? 160 : 120;
+    const dx = (slot - (count - 1) / 2) * spacing;
     const escort = new Drone(
       this.scene, this.x + dx, this.y,
-      'drone-red', this.scaling, 'normal',
+      this.variant.escortType, this.scaling, this.variant.escortVariant,
     );
     this.scene.add.existing(escort);
     this.scene.physics.add.existing(escort);

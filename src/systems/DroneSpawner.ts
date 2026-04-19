@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from '../entities/Drone';
 import { ShieldedTank } from '../entities/ShieldedTank';
-import { NexusBoss } from '../entities/NexusBoss';
+import { NexusBoss, BOSS_VARIANTS } from '../entities/NexusBoss';
+import type { BossType } from '../entities/NexusBoss';
 import { StunDart } from '../entities/StunDart';
 import { BomberDrone } from '../entities/BomberDrone';
 import { Mine } from '../entities/Mine';
@@ -30,24 +31,21 @@ export class DroneSpawner {
   private dronesAlive = 0;
   private isBossDead  = false;
 
-  private readonly waveCount:  number;
-  private readonly bossCount:  number;
-  private readonly boss2HpMult: number;
-  private readonly enemyMix:   EnemyMix;
-  private bossPhase: 0 | 1 | 2 = 0;  // 0=pre-boss, 1=boss1 alive, 2=boss2 alive
+  private readonly waveCount: number;
+  private readonly bossType:  BossType;
+  private readonly enemyMix:  EnemyMix;
+  private bossActive = false;
 
   constructor(
-    scene:       GameScene,
-    waveCount:   number,
-    bossCount:   number,
-    boss2HpMult: number,
-    enemyMix:    EnemyMix,
+    scene:     GameScene,
+    waveCount: number,
+    bossType:  BossType,
+    enemyMix:  EnemyMix,
   ) {
-    this.scene       = scene;
-    this.waveCount   = waveCount;
-    this.bossCount   = bossCount;
-    this.boss2HpMult = boss2HpMult;
-    this.enemyMix    = enemyMix;
+    this.scene     = scene;
+    this.waveCount = waveCount;
+    this.bossType  = bossType;
+    this.enemyMix  = enemyMix;
 
     scene.events.on('droneKilled', () => {
       this.dronesAlive = Math.max(0, this.dronesAlive - 1);
@@ -57,24 +55,12 @@ export class DroneSpawner {
       }
     });
 
-    // bossKilled fires once per boss; we intercept here to drive two-boss sequence
     scene.events.on('bossKilled', () => {
       this.dronesAlive = Math.max(0, this.dronesAlive - 1);
       scene.events.emit('dronesRemaining', this.dronesAlive);
-
-      if (this.bossPhase === 1 && this.bossCount >= 2) {
-        // Boss 1 down — spawn boss 2 with elevated stats
-        this.bossPhase = 2;
-        scene.events.emit('boss2Start');
-        this.scene.time.delayedCall(1200, () => {
-          if (this.scene?.sys.isActive()) this.spawnBoss(true);
-        });
-      } else {
-        // Final boss down — level complete
-        this.isBossDead = true;
-        if (this.dronesAlive === 0) {
-          scene.events.emit('levelComplete');
-        }
+      this.isBossDead = true;
+      if (this.dronesAlive === 0) {
+        scene.events.emit('levelComplete');
       }
     });
   }
@@ -83,7 +69,7 @@ export class DroneSpawner {
 
   update(time: number, _delta: number): void {
     if (this.spawning || this.isBossDead) return;
-    if (this.bossPhase > 0) return;   // hold once boss phase begins
+    if (this.bossActive) return;   // hold once boss phase begins
     if (this.isBossWave()) return;
     if (time < this.nextWaveTime) return;
 
@@ -102,9 +88,9 @@ export class DroneSpawner {
 
     // Final wave — trigger boss phase
     if (this.waveIndex >= this.waveCount) {
-      this.spawning  = false;
-      this.bossPhase = 1;
-      this.spawnBoss(false);
+      this.spawning   = false;
+      this.bossActive = true;
+      this.spawnBoss();
       return;
     }
 
@@ -113,18 +99,19 @@ export class DroneSpawner {
 
   // ── Boss spawn ─────────────────────────────────────────────────────────────
 
-  private spawnBoss(isSecond: boolean): void {
+  private spawnBoss(): void {
     let bracket = WAVE_BRACKETS[0];
     for (const b of WAVE_BRACKETS) if (this.waveIndex >= b.minWave) bracket = b;
 
     const camX    = this.scene.cameras.main.scrollX + GAME_W / 2;
+    const variant = BOSS_VARIANTS[this.bossType];
 
-    const boss = new NexusBoss(this.scene, camX, 180, bracket);
+    const boss = new NexusBoss(this.scene, camX, 180, bracket, variant);
     this.scene.add.existing(boss);
     this.scene.physics.add.existing(boss);
     this.scene.drones.add(boss);
     boss.initBody();
-    this.scene.debugLog?.log(`[BOSS] NexusBoss #${isSecond ? 2 : 1} spawned`);
+    this.scene.debugLog?.log(`[BOSS] ${this.bossType} spawned`);
 
     this.scene.physics.add.overlap(
       this.scene.playerBullets, boss,
