@@ -5,11 +5,21 @@ import type { DroneScaling } from '../systems/DroneSpawner';
 type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DOWNED' | 'DEATH';
 export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
 export type DroneVariant = 'normal' | 'sniper';
+type Personality = 'charger' | 'strafer' | 'kiter';
 
 const BASE_HOVER_SPEED      = 110;
 const BASE_ATTACK_RANGE     = 320;
 const BASE_BULLET_SPEED     = 300;
 const HP_MAP                = { 'drone-red': 2, 'drone-green': 3, 'sentinel': 3 };
+
+// Engagement tuning — keep drones mobile instead of parking directly overhead
+const STANDOFF_MIN          = 140;   // px: reverse patrol if closer than this on X
+const STANDOFF_STRAFE       = 220;   // px: preferred strafer orbit distance
+const KITER_BACKOFF         = 260;   // px: kiter retreats when closer than this
+const ALTITUDE_MIN_OFFSET   = -120;  // px above player (negative = above)
+const ALTITUDE_MAX_OFFSET   =   60;  // px below player
+const ALTITUDE_SEEK_SPEED   = 90;    // px/s Y-seek toward preferred altitude
+const PERSONALITY_REROLL_MS = 2600;  // how often to re-pick a personality mid-fight
 
 const SNIPER_HP             = 1;
 const SNIPER_SCALE          = 1.54;
@@ -42,6 +52,11 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   private bulletSpeed: number;
   private attackRange: number;
   private hoverSpeed: number;
+
+  // Behaviour personality — re-rolled periodically during ATTACK
+  private personality: Personality = 'charger';
+  private altitudeOffset = 0;        // preferred Y relative to player (negative = above)
+  private personalityTimer = 0;
 
   constructor(
     scene: GameScene,
@@ -82,6 +97,17 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     this.sinOffset = Math.random() * Math.PI * 2;
     this.setDepth(8);
     this.play(`${type}-hover`);
+
+    // Stagger first shot so a spawned wave doesn't fire in unison
+    this.shootTimer = Math.random() * this.shootInterval;
+    this.rollPersonality();
+  }
+
+  private rollPersonality(): void {
+    const r = Math.random();
+    this.personality = r < 0.5 ? 'charger' : r < 0.82 ? 'strafer' : 'kiter';
+    this.altitudeOffset = Phaser.Math.Between(ALTITUDE_MIN_OFFSET, ALTITUDE_MAX_OFFSET);
+    this.personalityTimer = PERSONALITY_REROLL_MS + Math.random() * 800;
   }
 
   startPatrol(dir: number): void {
@@ -115,6 +141,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
 
       case 'ATTACK': {
         const dx = target.x - this.x;
+        const absDx = Math.abs(dx);
 
         if (this.droneVariant === 'sniper') {
           // Flee if player closes in
@@ -130,9 +157,52 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
             break;
           }
         } else {
-          // Charge toward target
-          body.setVelocityX(Math.sign(dx) * this.attackSpeed);
-          body.setVelocityY(Math.sin(time * 0.003 + this.sinOffset) * 60);
+          // Periodically re-roll personality so a drone caught directly overhead shifts behaviour
+          this.personalityTimer -= delta;
+          if (this.personalityTimer <= 0) this.rollPersonality();
+
+          // Horizontal: each personality picks a different engagement style
+          let vx = 0;
+          switch (this.personality) {
+            case 'charger':
+              // Close to the player, but if directly overhead peel off laterally
+              if (absDx < STANDOFF_MIN) {
+                vx = this.patrolDir * this.attackSpeed;
+              } else {
+                vx = Math.sign(dx) * this.attackSpeed;
+              }
+              break;
+            case 'strafer': {
+              // Orbit at STANDOFF_STRAFE — push out if too close, pull in if too far
+              const err = absDx - STANDOFF_STRAFE;
+              const inward = Math.sign(dx);
+              vx = (err > 0 ? inward : -inward) * this.attackSpeed * 0.9;
+              // Add lateral drift for side-to-side weave
+              vx += this.patrolDir * this.attackSpeed * 0.3;
+              break;
+            }
+            case 'kiter':
+              // Retreat if player is close, hold ground otherwise
+              if (absDx < KITER_BACKOFF) {
+                vx = -Math.sign(dx) * this.attackSpeed;
+              } else {
+                vx = this.patrolDir * this.attackSpeed * 0.4;
+              }
+              break;
+          }
+          body.setVelocityX(vx);
+
+          // Reverse patrol on screen edges (ground / ceiling kept out of it — drones fly)
+          if ((this.x < 180 && this.patrolDir < 0) || (this.x > this.scene.physics.world.bounds.width - 180 && this.patrolDir > 0)) {
+            this.patrolDir *= -1;
+          }
+
+          // Vertical: seek preferred altitude relative to player so they aren't all at one height
+          const targetY   = target.y + this.altitudeOffset;
+          const vyOffset  = Math.sin(time * 0.003 + this.sinOffset) * 40;
+          const vySeek    = Phaser.Math.Clamp((targetY - this.y) * 1.6, -ALTITUDE_SEEK_SPEED, ALTITUDE_SEEK_SPEED);
+          body.setVelocityY(vySeek + vyOffset);
+
           if (dist > this.attackRange * 1.4) {
             this.setDroneState('HOVER');
             break;

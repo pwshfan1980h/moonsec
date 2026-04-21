@@ -22,13 +22,15 @@ export class Turret {
     if (time - this.lastFire < this.scene.player.turretCooldownMs) return;
     this.lastFire = time;
 
-    const baseAngle = Phaser.Math.Angle.Between(fromX, fromY, toX, toY);
+    const spawnX = fromX;
+    const spawnY = fromY - 100;
+    const baseAngle = Phaser.Math.Angle.Between(spawnX, spawnY, toX, toY);
     const jitter = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-SPREAD_DEG, SPREAD_DEG));
     const angle = baseAngle + jitter;
     const vx = Math.cos(angle) * SPEED;
     const vy = Math.sin(angle) * SPEED;
 
-    const b = this.scene.playerBullets.get(fromX, fromY - 100, 'bullet-turret') as Phaser.Physics.Arcade.Image;
+    const b = this.scene.playerBullets.get(spawnX, spawnY, 'bullet-turret') as Phaser.Physics.Arcade.Image;
     if (!b) return;
 
     b.setActive(true).setVisible(true).setDepth(15);
@@ -38,7 +40,7 @@ export class Turret {
     b.setVelocity(vx, vy);
 
     this.spawnTrail(b, 0xff6600);
-    this.spawnMuzzleFlash(fromX, fromY - 100, angle);
+    this.spawnMuzzleFlash(spawnX, spawnY, angle);
 
     this.scene.cameras.main.shake(80, 0.006);
     this.scene.audio.play('turret');
