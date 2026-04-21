@@ -45,8 +45,6 @@ export type LevelTemplate = {
     extraPlatforms: [number, number];
     platformRows:   number[];
     platformWidth:  [number, number];
-    wallCount:      [number, number];
-    wallHeight:     number;
   };
 };
 
@@ -170,24 +168,6 @@ export function buildMap(tmpl: LevelTemplate, seed: number): number[][] {
     if (!placed) continue;
   }
 
-  // Variation: random walls (vertical fill columns, min 15-col spacing)
-  const wallCount = randi(tmpl.variation.wallCount[0], tmpl.variation.wallCount[1]);
-  let lastWallCol = -20;
-  for (let w = 0; w < wallCount; w++) {
-    let col = 15;
-    for (let attempt = 0; attempt < 30; attempt++) {
-      col = randi(15, tmpl.cols - 15);
-      if (Math.abs(col - lastWallCol) >= 15) break;
-    }
-    lastWallCol = col;
-    const rowEnd   = tmpl.hasGround ? tmpl.groundRow : tmpl.rows - 2;
-    const rowStart = rowEnd - tmpl.variation.wallHeight;
-    for (let h = 0; h < tmpl.variation.wallHeight; h++) {
-      const r = rowStart + h;
-      if (r >= 0 && r < tmpl.rows) map[r][col] = T.FILL_B;
-    }
-  }
-
   return map;
 }
 
@@ -209,7 +189,7 @@ export const TMPL_SURFACE_OPS: LevelTemplate = {
   variation: {
     pitCount:       [2, 4], pitWidth:       [4, 8],
     extraPlatforms: [2, 5], platformRows:   [20, 23, 26],
-    platformWidth:  [4, 8], wallCount:      [1, 3], wallHeight: 5,
+    platformWidth:  [4, 8],
   },
 };
 
@@ -247,7 +227,7 @@ export const TMPL_TRADE_LANES: LevelTemplate = {
   variation: {
     pitCount:       [0, 0], pitWidth:       [0, 0],
     extraPlatforms: [6, 10], platformRows:   [17, 20, 25],
-    platformWidth:  [3, 6], wallCount:      [2, 4], wallHeight: 12,
+    platformWidth:  [3, 6],
   },
 };
 
@@ -268,7 +248,7 @@ export const TMPL_DEEP_FACILITY: LevelTemplate = {
   variation: {
     pitCount:       [3, 6], pitWidth:       [6, 10],
     extraPlatforms: [1, 3], platformRows:   [14, 17, 21],
-    platformWidth:  [4, 7], wallCount:      [2, 4], wallHeight: 8,
+    platformWidth:  [4, 7],
   },
 };
 
@@ -288,7 +268,7 @@ export const TMPL_ORBITAL: LevelTemplate = {
   variation: {
     pitCount:       [0, 0], pitWidth:       [0, 0],
     extraPlatforms: [4, 8], platformRows:   [8, 12, 16, 20, 24],
-    platformWidth:  [4, 8], wallCount:      [0, 0], wallHeight: 0,
+    platformWidth:  [4, 8],
   },
 };
 
@@ -312,6 +292,6 @@ export const TMPL_NEXUS_CORE: LevelTemplate = {
   variation: {
     pitCount:       [1, 2], pitWidth:       [4, 6],
     extraPlatforms: [2, 4], platformRows:   [14, 18, 22],
-    platformWidth:  [4, 7], wallCount:      [1, 2], wallHeight: 6,
+    platformWidth:  [4, 7],
   },
 };

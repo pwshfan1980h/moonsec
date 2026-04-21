@@ -166,7 +166,6 @@ export class GameScene extends Phaser.Scene {
     // extraPlatforms (see buildMap). makeTilemapGround also populates
     // platformData for the radar.
     this.makeBaseProps();
-    this.makeTerrainObstacles();
 
     // --- Physics groups ---
     this.playerBullets = this.physics.add.group({
@@ -1019,38 +1018,6 @@ export class GameScene extends Phaser.Scene {
     if (this.bgStars)   this.bgStars.setTilePosition(sx * 0.05, 0);
     if (this.bgTerrain) this.bgTerrain.setTilePosition(sx * 0.20, 0);
     if (this.bgHaze)    this.bgHaze.setTilePosition(sx * 0.35, 0);
-  }
-
-  private makeTerrainObstacles(): void {
-    const hash = GameScene.hash;
-    const bodyColor  = 0x0e1228;
-    const glowColor  = 0x3355aa;
-    const edgeColor  = 0x1a2a55;
-
-    // 14 ground-level obstacles across the world — rocks/ruins the player must jump over
-    for (let i = 0; i < 14; i++) {
-      const seed = i * 77 + 3000;
-      const x   = 500 + i * 400 + (hash(seed) * 200 - 100);
-      const w   = 60  + hash(seed + 1) * 100;  // 60–160px wide
-      const h   = 80  + hash(seed + 2) * 120;  // 80–200px tall
-      const cx  = Math.max(w / 2 + 50, Math.min(WORLD_WIDTH - w / 2 - 50, x));
-      const top = GROUND_Y - h;
-
-      // Physics rect (player/crawler land on top)
-      const rect = this.add.rectangle(cx, top + h / 2, w, h, bodyColor).setDepth(4);
-      this.ground.add(rect);
-      const body = rect.body as Phaser.Physics.Arcade.StaticBody;
-      body.checkCollision.down = false;
-      body.checkCollision.left = false;
-      body.checkCollision.right = false;
-
-      // Top glow edge
-      this.add.rectangle(cx, top, w, 2, glowColor).setDepth(5);
-
-      // Side detail lines
-      this.add.rectangle(cx - w / 2 + 3, top + h / 2, 3, h, edgeColor).setDepth(5);
-      this.add.rectangle(cx + w / 2 - 3, top + h / 2, 3, h, edgeColor).setDepth(5);
-    }
   }
 
   private makeTilemapGround(mapData: number[][], tilesetKey = 'industrial-tileset'): void {
