@@ -7,11 +7,11 @@ export const WORLD_HEIGHT = 1080;
 export const GROUND_Y = 960;       // top surface of ground
 export const GROUND_HEIGHT = 120;
 
-// Radar minimap
-export const RADAR_WORLD_RADIUS = 320;  // world units visible around player
-export const RADAR_SCREEN_RADIUS = 65;  // px radius of drawn circle (right edge = 1830+65=1895, 25px from 1920px canvas)
-export const RADAR_X = 1830;            // screen-space center X
-export const RADAR_Y = 880;             // screen-space center Y
+// Radar minimap — upgraded to a readable tactical scope
+export const RADAR_WORLD_RADIUS = 460;   // world units visible around player (widened with bigger radar)
+export const RADAR_SCREEN_RADIUS = 115;  // px radius of drawn circle (right edge = 1790+115=1905, 15px from 1920px canvas)
+export const RADAR_X = 1790;             // screen-space center X
+export const RADAR_Y = 830;              // screen-space center Y
 
 export const MISSILE_SEEK_RANGE = 650;
 

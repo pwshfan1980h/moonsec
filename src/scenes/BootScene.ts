@@ -26,8 +26,8 @@ export class BootScene extends Phaser.Scene {
       bar.clear().fillStyle(0x4488ff).fillRect(x, y, w * v, h);
     });
 
-    this.add.text(GAME_W / 2, Math.round(GAME_H * 0.43), 'MOONSEC // LOADING', {
-      fontFamily: 'monospace', fontSize: '13px', color: '#6688bb',
+    this.add.text(GAME_W / 2, Math.round(GAME_H * 0.43), 'M O O N S E C  / /  L O A D I N G', {
+      fontFamily: 'VT323, "Share Tech Mono", monospace', fontSize: '22px', color: '#6de3ff',
     }).setOrigin(0.5);
 
     // One-shot sound effects (loops handled procedurally in AudioSystem)

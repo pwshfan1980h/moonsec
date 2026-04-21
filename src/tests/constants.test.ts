@@ -50,8 +50,8 @@ describe('constants', () => {
   });
 
   it('RADAR_X near right edge of 1920 screen', () => {
-    expect(RADAR_X).toBe(1830);
-    expect(RADAR_Y).toBe(880);
+    expect(RADAR_X).toBe(1790);
+    expect(RADAR_Y).toBe(830);
   });
 
   it('pickup lifetime is 10000ms (not the old 6000)', () => {

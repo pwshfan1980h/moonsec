@@ -352,13 +352,13 @@ export class OverworldScene extends Phaser.Scene {
 
       // Number label inside node
       this.add.text(x, y, `${i + 1}`, {
-        fontFamily: 'monospace', fontSize: '16px',
-        color: isCompleted ? '#000000' : isSelectable ? '#000000' : '#334455',
+        fontFamily: 'VT323, "Share Tech Mono", monospace', fontSize: '22px',
+        color: isCompleted ? '#000814' : isSelectable ? '#000814' : '#334455',
       }).setOrigin(0.5).setDepth(6);
 
       // Level name below
       this.add.text(x, y + 38, label, {
-        fontFamily:      'monospace', fontSize: '13px',
+        fontFamily:      'VT323, "Share Tech Mono", monospace', fontSize: '18px',
         color:           isCompleted ? '#ffcc22' : isSelectable ? '#ffe866' : '#2a3a55',
         stroke: '#000000', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(6);
@@ -366,9 +366,9 @@ export class OverworldScene extends Phaser.Scene {
       // Flavour subtitle (cosmetic, random pick per session)
       const subs = NODE_SUBTITLES[i] ?? [];
       const sub  = subs[Math.floor(Math.random() * subs.length)] ?? '';
-      const subTxt = this.add.text(x, y + 56, sub, {
-        fontFamily: 'monospace', fontSize: '10px',
-        color:      isAvailable ? '#667799' : '#1a2535',
+      const subTxt = this.add.text(x, y + 58, sub, {
+        fontFamily: 'VT323, "Share Tech Mono", monospace', fontSize: '14px',
+        color:      isAvailable ? '#6de3ff' : '#1a2535',
         stroke: '#000000', strokeThickness: 2,
       }).setOrigin(0.5).setDepth(6);
       this.nodeSubtitles.push(subTxt);
@@ -425,25 +425,41 @@ export class OverworldScene extends Phaser.Scene {
   // ── UI ────────────────────────────────────────────────────────────────────
 
   private buildUI(): void {
-    this.add.text(GAME_W / 2, 38, 'MISSION SELECT', {
-      fontFamily: 'monospace', fontSize: '30px', color: '#aaccff',
-      stroke: '#000011', strokeThickness: 5,
+    // Title strip with corner brackets
+    const title = this.add.text(GAME_W / 2, 44, '[ MISSION  SELECT ]', {
+      fontFamily: 'VT323, "Share Tech Mono", monospace', fontSize: '42px', color: '#6de3ff',
+      stroke: '#001122', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(10);
+
+    // Subtitle
+    this.add.text(GAME_W / 2, 76, 'GDI TACTICAL NETWORK // MOONBASE THETA', {
+      fontFamily: 'VT323, "Share Tech Mono", monospace', fontSize: '16px', color: '#3a7a96',
     }).setOrigin(0.5).setDepth(10);
 
     if (this.totalScore > 0) {
-      this.add.text(GAME_W / 2, 82, `SCORE  ${this.totalScore.toLocaleString()}`, {
-        fontFamily: 'monospace', fontSize: '15px', color: '#ffee88',
+      this.add.text(GAME_W / 2, 104, `SCORE  ${this.totalScore.toLocaleString()}`, {
+        fontFamily: '"Share Tech Mono", VT323, monospace', fontSize: '18px', color: '#ffb347',
         stroke: '#000000', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(10);
     }
 
     const hasChoice = this.selectableNodes.length > 1;
     const hint = hasChoice
-      ? '← → CHOOSE MISSION     ENTER / SPACE  —  DEPLOY'
-      : 'ENTER / SPACE  —  DEPLOY';
-    this.add.text(GAME_W / 2, GAME_H - 26, hint, {
-      fontFamily: 'monospace', fontSize: '15px', color: '#445566',
+      ? '◄ ►  CHOOSE MISSION     [ ENTER / SPACE ]  DEPLOY'
+      : '[ ENTER / SPACE ]  DEPLOY';
+    this.add.text(GAME_W / 2, GAME_H - 30, hint, {
+      fontFamily: 'VT323, "Share Tech Mono", monospace', fontSize: '20px', color: '#6de3ff',
     }).setOrigin(0.5).setDepth(10);
+
+    // Bracketed corner frame
+    const g = this.add.graphics().setDepth(10);
+    g.lineStyle(2, 0x6de3ff, 0.9);
+    const b = 28, s = 36;
+    g.lineBetween(b, b, b + s, b); g.lineBetween(b, b, b, b + s);
+    g.lineBetween(GAME_W - b, b, GAME_W - b - s, b); g.lineBetween(GAME_W - b, b, GAME_W - b, b + s);
+    g.lineBetween(b, GAME_H - b, b + s, GAME_H - b); g.lineBetween(b, GAME_H - b, b, GAME_H - b - s);
+    g.lineBetween(GAME_W - b, GAME_H - b, GAME_W - b - s, GAME_H - b);
+    g.lineBetween(GAME_W - b, GAME_H - b, GAME_W - b, GAME_H - b - s);
   }
 
   // ── Input ─────────────────────────────────────────────────────────────────
