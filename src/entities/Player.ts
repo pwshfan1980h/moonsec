@@ -36,7 +36,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   rapidMinInterval  = 60;
   rapidAmmo         = 150;
   rapidAmmoMax      = 150;
-  turretCooldownMs  = 650;
+  turretCooldownMs  = 420;
   missileSlots      = 6;
   naniteCooldownMs  = 20000;
   naniteHealAmount  = 1;

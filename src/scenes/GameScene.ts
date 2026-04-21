@@ -328,18 +328,24 @@ export class GameScene extends Phaser.Scene {
         pk.setActive(false).setVisible(false);
         if (pk.body) (pk.body as Phaser.Physics.Arcade.Body).enable = false;
         const pickupType = pk.getData('type') as string;
+        // Distinct pitch per type makes the feedback readable without a new sample.
+        let rate = 1;
         if (pickupType === 'health') {
           this.player.heal(1);
+          rate = 1.25;
         } else if (pickupType === 'ammo') {
           this.player.refillRapidAmmo(RAPID_AMMO_PER_PICKUP);
+          rate = 0.85;
         } else if (pickupType === 'score') {
           const pts = (pk.getData('points') as number | undefined) ?? 100;
           this.score += pts;
           this.events.emit('scoreChange', this.score);
+          rate = 1.5;
         } else {
           this.player.restoreJetpackFuel(1000);
+          rate = 0.95;
         }
-        this.audio.play('pickup');
+        this.audio.playAt('pickup', { rate });
       },
     );
 
@@ -466,13 +472,15 @@ export class GameScene extends Phaser.Scene {
         this.audio.playStreakChime(this.killStreak);
       }
 
-      // Random supply drop — ammo most common, then health/fuel
+      // Random supply drop — ammo most common, then health/fuel.
+      // Rates shaved ~18% to offset faster turret kill-rate → drop cadence stays
+      // in the same ballpark as pre-rebalance.
       const roll = Math.random();
-      if (roll < 0.18) {
+      if (roll < 0.15) {
         this.spawnPickup(x, y, 'health');
-      } else if (roll < 0.36) {
+      } else if (roll < 0.30) {
         this.spawnPickup(x, y, 'fuel');
-      } else if (roll < 0.71) {
+      } else if (roll < 0.58) {
         this.spawnPickup(x, y, 'ammo');
       }
     });
@@ -587,16 +595,25 @@ export class GameScene extends Phaser.Scene {
     }
     const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
-    const size = 63; // 42 * 1.5
+    const size = 44;
+    // Crop out the transparent padding baked into each 16x16 frame so the
+    // sprite hugs its artwork and sits flush on the ground.
+    const CONTENT = 12; // source-pixel content area inside the 16x16 frame
+    const PAD = (16 - CONTENT) / 2;
+    p.setCrop(PAD, PAD, CONTENT, CONTENT);
     p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
-      .setDisplaySize(size, size);
+      .setScale(1, 1).setDisplaySize(size, size);
     if (tint !== null) p.setTint(tint); else p.clearTint();
     p.setData('type', type);
+    p.setData('landed', false);
+    p.setData('hopped', false);
     if (type === 'score') p.setData('points', 100);
     if (p.body) {
       const pb = p.body as Phaser.Physics.Arcade.Body;
       pb.enable = true;
-      pb.setSize(size * 0.7, size * 0.7, true);
+      // Body matches the cropped content so it lands flush with the ground.
+      const bodySize = size * (CONTENT / 16);
+      pb.setSize(bodySize, bodySize, true);
       pb.setAllowGravity(true);
       pb.setVelocity(
         Phaser.Math.Between(-140, 140),
@@ -605,6 +622,23 @@ export class GameScene extends Phaser.Scene {
       pb.setDrag(60, 0);
       pb.setBounce(0.25, 0.2);
     }
+
+    // Spawn-pop: brief scale-up + white flash so drops read at the moment of birth.
+    const popDx = p.displayWidth;
+    const popDy = p.displayHeight;
+    p.setDisplaySize(popDx * 0.6, popDy * 0.6);
+    this.tweens.add({
+      targets: p,
+      displayWidth:  popDx,
+      displayHeight: popDy,
+      duration: 180,
+      ease: 'Back.easeOut',
+    });
+    p.setTintFill(0xffffff);
+    this.time.delayedCall(80, () => {
+      if (!p.active) return;
+      if (tint !== null) p.setTint(tint); else p.clearTint();
+    });
 
     // Start pulse warning 3s before despawn (at t=7s)
     this.time.delayedCall(7000, () => {
@@ -617,6 +651,14 @@ export class GameScene extends Phaser.Scene {
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
+    });
+
+    // Attention-grab hop at t=8s (2s before despawn) — small jump if still grounded.
+    this.time.delayedCall(8000, () => {
+      if (!p.active || p.getData('hopped')) return;
+      p.setData('hopped', true);
+      const pb = p.body as Phaser.Physics.Arcade.Body | null;
+      if (pb && pb.blocked.down) pb.setVelocityY(-240);
     });
 
     // Despawn after 10s
@@ -1119,6 +1161,22 @@ export class GameScene extends Phaser.Scene {
       if (!p.active) return;
       const body = p.body as Phaser.Physics.Arcade.Body | null;
       if (!body) return;
+
+      // First ground contact → squash tween for weight
+      if (!p.getData('landed') && body.blocked.down) {
+        p.setData('landed', true);
+        const dx = p.displayWidth;
+        const dy = p.displayHeight;
+        this.tweens.killTweensOf(p);
+        this.tweens.add({
+          targets: p,
+          displayWidth:  { from: dx * 1.12, to: dx },
+          displayHeight: { from: dy * 0.78, to: dy },
+          duration: 180,
+          ease: 'Quad.easeOut',
+        });
+      }
+
       const dx = tx - p.x;
       const dy = ty - p.y;
       const dist = Math.hypot(dx, dy);
