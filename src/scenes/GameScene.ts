@@ -525,6 +525,7 @@ export class GameScene extends Phaser.Scene {
       if (r.active) r.tick(delta);
     });
     this.cullBullets();
+    this.updatePickupMagnet();
     this.updateParallax(delta);
   }
 
@@ -1106,5 +1107,26 @@ export class GameScene extends Phaser.Scene {
 
     cull(this.playerBullets);
     cull(this.droneBullets);
+  }
+
+  private updatePickupMagnet(): void {
+    const range = 160;
+    const pull  = 520;
+    const tx = this.player.x;
+    const ty = this.player.y - 50; // torso, not feet
+    this.pickups.getChildren().forEach((go) => {
+      const p = go as Phaser.Physics.Arcade.Image;
+      if (!p.active) return;
+      const body = p.body as Phaser.Physics.Arcade.Body | null;
+      if (!body) return;
+      const dx = tx - p.x;
+      const dy = ty - p.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > range) return;
+      // Ramp pull by proximity — faster as it closes so collection feels snappy
+      const speed = pull * (0.55 + 0.45 * (1 - dist / range));
+      body.setAllowGravity(false);
+      body.setVelocity((dx / (dist || 1)) * speed, (dy / (dist || 1)) * speed);
+    });
   }
 }
