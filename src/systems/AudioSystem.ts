@@ -10,7 +10,7 @@ type SoundId =
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
   | 'missile-launch' | 'landing-soft' | 'landing-heavy';
 
-type LoopId = 'jetpack' | 'missile';
+type LoopId = 'jetpack' | 'missile' | 'missile-reload';
 
 interface AudioUpdateState {
   onGround:  boolean;
@@ -197,6 +197,48 @@ export class AudioSystem {
         gainNode.gain.linearRampToValueAtTime(0.28, t + FADE_IN);
       }
 
+      if (id === 'missile-reload') {
+        // Mechanical reload: ticking sub-osc + soft noise whir, pitch rises subtly over time
+        const tick = this.ctx.createOscillator();
+        tick.type = 'square';
+        tick.frequency.setValueAtTime(110, t);
+        const tickGain = this.ctx.createGain();
+        tickGain.gain.setValueAtTime(0.05, t);
+        tick.connect(tickGain);
+        tickGain.connect(gainNode);
+        tick.start(t);
+        sources.push(tick);
+
+        // LFO gates the tick gain for a "clank-clank-clank" loading feel
+        const lfo = this.ctx.createOscillator();
+        lfo.type = 'square';
+        lfo.frequency.setValueAtTime(4.5, t);
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.setValueAtTime(0.06, t);
+        lfo.connect(lfoGain);
+        lfoGain.connect(tickGain.gain);
+        lfo.start(t);
+        sources.push(lfo);
+
+        // Soft hiss from bandpassed noise — chassis servo
+        const noiseSrc = this.ctx.createBufferSource();
+        noiseSrc.buffer = this.noiseBuffer;
+        noiseSrc.loop = true;
+        const bp = this.ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(1200, t);
+        bp.Q.setValueAtTime(2.2, t);
+        const hissGain = this.ctx.createGain();
+        hissGain.gain.setValueAtTime(0.18, t);
+        noiseSrc.connect(bp);
+        bp.connect(hissGain);
+        hissGain.connect(gainNode);
+        noiseSrc.start(t);
+        sources.push(noiseSrc);
+
+        gainNode.gain.linearRampToValueAtTime(0.22, t + FADE_IN);
+      }
+
       this.loops.set(id, { sources, gainNode });
     } catch { /* ignore */ }
   }
@@ -344,6 +386,33 @@ export class AudioSystem {
     } else {
       this.footstepTimer = Math.min(this.footstepTimer, 140);
     }
+  }
+
+  /** Short, crisp two-tone beep — missile cooldown reached zero. */
+  playMissileReady(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+
+      const beep = (at: number, freq: number, dur: number, gain: number): void => {
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0, at);
+        g.gain.linearRampToValueAtTime(gain, at + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        g.connect(this.ctx.destination);
+
+        const osc = this.ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, at);
+        osc.connect(g);
+        osc.start(at);
+        osc.stop(at + dur);
+        osc.onended = () => { try { g.disconnect(); } catch { /* ok */ } };
+      };
+
+      beep(t,        880,  0.08, 0.18);
+      beep(t + 0.09, 1320, 0.12, 0.22);
+    } catch { /* ignore */ }
   }
 
   /** Short percussive chord stab on wave start. */

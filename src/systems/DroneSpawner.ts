@@ -80,7 +80,7 @@ export class DroneSpawner {
   private spawnWave(): void {
     this.spawning = true;
     this.waveIndex++;
-    this.scene.events.emit('waveStart', this.waveIndex);
+    this.scene.events.emit('waveStart', this.waveIndex, this.waveCount);
     this.scene.debugLog?.log('[WAVE] Wave ' + this.waveIndex + ' start');
 
     let bracket = WAVE_BRACKETS[0];

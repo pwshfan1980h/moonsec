@@ -127,6 +127,21 @@ export class UIScene extends Phaser.Scene {
   private radarCaption!: Phaser.GameObjects.Text;
   private radarTicks!: Phaser.GameObjects.Graphics;
 
+  // Wave progress bar
+  private waveProgressFrame!: Phaser.GameObjects.Graphics;
+  private waveProgressFill!: Phaser.GameObjects.Graphics;
+  private waveProgressRect = { x: 0, y: 0, w: 0, h: 6 };
+  private waveTotalCount = 5;
+  private waveMaxDrones = 0;         // peak drones seen this wave (= starting count)
+  private waveRemaining = 0;
+  private bossPhaseActive = false;
+
+  // Missile icon + audio state
+  private missileIcon!: Phaser.GameObjects.Graphics;
+  private missileIconCx = 0;
+  private missileIconCy = 0;
+  private missileReloadActive = false;
+
   constructor() {
     super({ key: 'UI', active: false });
   }
@@ -149,6 +164,10 @@ export class UIScene extends Phaser.Scene {
     this.turretProgress = 1;
     this.lowHpPrompt = null;
     this.lowHpPulseTween = null;
+    this.waveMaxDrones = 0;
+    this.waveRemaining = 0;
+    this.bossPhaseActive = false;
+    this.missileReloadActive = false;
 
     // ── LEFT STAT PANEL (top-left) ────────────────────────────────
     const panelX = PAD_EDGE;
@@ -223,7 +242,11 @@ export class UIScene extends Phaser.Scene {
     this.drawPanel(panelRX, PAD_EDGE, PANEL_W, rightPanelH, 'R-01 · WEAPONS');
 
     // MSL row
-    this.missileLabel = this.add.text(barRX, r0Lbl, 'HOMING MISSILE', {
+    this.missileIcon = this.add.graphics();
+    this.missileIconCx = barRX + 10;
+    this.missileIconCy = r0Lbl + 10;
+    this.drawMissileIcon(this.missileIcon, this.missileIconCx, this.missileIconCy, COL.cyan);
+    this.missileLabel = this.add.text(barRX + 24, r0Lbl, 'HOMING MISSILE', {
       fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
     });
     this.missileState = this.add.text(barRX + BAR_W, r0Lbl, 'READY', {
@@ -288,6 +311,13 @@ export class UIScene extends Phaser.Scene {
 
     // ── Radar frame (drawn once) ──────────────────────────────────
     this.drawRadarFrame();
+
+    // ── Wave progress bar (top-center, thin, wide) ────────────────
+    const wpW = 820;
+    this.waveProgressRect = { x: (W - wpW) / 2, y: 6, w: wpW, h: 6 };
+    this.waveProgressFrame = this.add.graphics().setDepth(20);
+    this.waveProgressFill  = this.add.graphics().setDepth(21);
+    this.drawWaveProgress();
 
     // ── Listen for events from GameScene ──────────────────────────
     this.attachGameEventListeners();
@@ -490,6 +520,78 @@ export class UIScene extends Phaser.Scene {
     this.radarTicks = g2;
   }
 
+  /** Small stylised missile icon drawn to a graphics object. */
+  private drawMissileIcon(g: Phaser.GameObjects.Graphics, cx: number, cy: number, color: number): void {
+    g.clear();
+    // Body — horizontal capsule
+    g.fillStyle(color, 1);
+    g.fillRect(cx - 8, cy - 2, 14, 4);
+    // Nose cone — triangle pointing right
+    g.fillTriangle(cx + 6, cy - 3, cx + 6, cy + 3, cx + 11, cy);
+    // Tail fins
+    g.fillTriangle(cx - 8, cy - 2, cx - 11, cy - 5, cx - 5, cy - 2);
+    g.fillTriangle(cx - 8, cy + 2, cx - 11, cy + 5, cx - 5, cy + 2);
+    // Inner highlight
+    g.fillStyle(0xffffff, 0.55);
+    g.fillRect(cx - 6, cy - 1, 2, 1);
+  }
+
+  /** Render the segmented wave progress bar at the top of the HUD. */
+  private drawWaveProgress(): void {
+    const { x, y, w, h } = this.waveProgressRect;
+    const total = Math.max(1, this.waveTotalCount);
+    const segments = total + 1;           // +1 for boss phase
+    const segW = w / segments;
+
+    const waveIdx = Math.max(0, this.currentWave);
+    const inBoss  = this.bossPhaseActive || waveIdx > total;
+
+    // Rail background
+    const f = this.waveProgressFrame;
+    f.clear();
+    f.fillStyle(COL.railDim, 0.85);
+    f.fillRect(x, y, w, h);
+    f.lineStyle(1, COL.rail, 0.85);
+    f.strokeRect(x - 1, y - 1, w + 2, h + 2);
+
+    // Segment dividers (hairlines)
+    f.lineStyle(1, COL.hair, 0.9);
+    for (let i = 1; i < segments; i++) {
+      f.lineBetween(x + i * segW, y - 2, x + i * segW, y + h + 2);
+    }
+
+    // Fill — completed segments full, active segment partial
+    const fill = this.waveProgressFill;
+    fill.clear();
+    const fillColor = inBoss ? COL.red : COL.cyan;
+    fill.fillStyle(fillColor, inBoss ? 0.9 : 1);
+
+    // Completed waves (always fully filled)
+    const completed = Math.max(0, Math.min(total, waveIdx - 1));
+    if (completed > 0) {
+      fill.fillRect(x + 1, y + 1, completed * segW - 2, h - 2);
+    }
+
+    // Active (current) segment
+    if (!inBoss && waveIdx >= 1 && waveIdx <= total) {
+      const prog = this.waveMaxDrones > 0
+        ? 1 - Math.max(0, this.waveRemaining) / this.waveMaxDrones
+        : 0;
+      const segX = x + (waveIdx - 1) * segW + 1;
+      fill.fillRect(segX, y + 1, Math.max(0, segW * prog - 2), h - 2);
+    }
+
+    // Boss phase — entire bar filled red with a final segment highlight
+    if (inBoss) {
+      fill.fillRect(x + 1, y + 1, w - 2, h - 2);
+      // brighter pulse tip on the boss segment
+      fill.fillStyle(COL.amber, 0.7);
+      fill.fillRect(x + total * segW + 1, y + 1, segW - 2, h - 2);
+    }
+
+    // Tick labels — only drawn once via text on first build; we keep geometry stable.
+  }
+
   // ── Event listener attach (pulled out for readability) ────────────────────
   private attachGameEventListeners(): void {
     const game = this.scene.get('Game');
@@ -517,15 +619,34 @@ export class UIScene extends Phaser.Scene {
     });
 
     on('missileCooldown', (progress: number) => {
+      const prev = this.missileProgress;
       this.missileProgress = progress;
+
+      // Fire transition: was ready (prev >= 1), now charging — start reload loop
+      if (prev >= 1 && progress < 1 && !this.missileReloadActive) {
+        this.missileReloadActive = true;
+        const gs = this.scene.get('Game') as GameScene;
+        gs?.audio?.startLoop('missile-reload');
+      }
+
+      // Ready transition: was charging, now at 1 — stop loop, play ready beep
+      if (prev < 1 && progress >= 1 && this.missileReloadActive) {
+        this.missileReloadActive = false;
+        const gs = this.scene.get('Game') as GameScene;
+        gs?.audio?.stopLoop('missile-reload');
+        gs?.audio?.playMissileReady();
+      }
+
       if (progress >= 1) {
         this.paintBar(this.missileFill, this.missileRect, 1, COL.cyan, 4);
         this.missileLabel.setColor(COL.cyanHex);
         this.missileState.setText('READY').setColor(COL.cyanHex);
+        this.drawMissileIcon(this.missileIcon, this.missileIconCx, this.missileIconCy, COL.cyan);
       } else {
         this.paintBar(this.missileFill, this.missileRect, progress, 0xffb347, 4);
         this.missileLabel.setColor(COL.amberHex);
         this.missileState.setText(`CHG ${Math.floor(progress * 100).toString().padStart(2, '0')}%`).setColor('#8a7040');
+        this.drawMissileIcon(this.missileIcon, this.missileIconCx, this.missileIconCy, COL.amber);
       }
     });
 
@@ -571,8 +692,14 @@ export class UIScene extends Phaser.Scene {
       this.scoreText.setText(String(score).padStart(7, '0'));
     });
 
-    on('waveStart', (wave: number) => {
+    on('waveStart', (wave: number, totalWaves?: number) => {
       this.currentWave = wave;
+      if (typeof totalWaves === 'number' && totalWaves > 0) this.waveTotalCount = totalWaves;
+      this.bossPhaseActive = wave > this.waveTotalCount;
+      // Reset per-wave drone tracking
+      this.waveMaxDrones = 0;
+      this.waveRemaining = 0;
+      this.drawWaveProgress();
       this.waveCounter.setText(`WAVE  ${String(wave).padStart(2, '0')}`);
 
       const W = GAME_W, H = GAME_H;
@@ -607,6 +734,9 @@ export class UIScene extends Phaser.Scene {
       } else {
         this.dronesRemainingText.setAlpha(0);
       }
+      this.waveRemaining = count;
+      if (count > this.waveMaxDrones) this.waveMaxDrones = count;
+      this.drawWaveProgress();
     });
 
     on('killStreak', (count: number, bonus: number) => {
