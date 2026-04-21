@@ -182,13 +182,17 @@ export const TMPL_SURFACE_OPS: LevelTemplate = {
   fixedPlatforms: [
     { col: 40,  row: 22, width: 8 },
     { col: 80,  row: 18, width: 8 },
+    // Jetpack gate — horizontal barrier at row 20 (~320px above ground)
+    // with a 3-tile (96px) gap at cols 108-110. Mech body is ~75px — fits snug.
+    { col: 100, row: 20, width: 8 },
+    { col: 111, row: 20, width: 8 },
     { col: 130, row: 24, width: 6 },
     { col: 160, row: 19, width: 7 },
   ],
   fixedWalls: [],
   variation: {
     pitCount:       [2, 4], pitWidth:       [4, 8],
-    extraPlatforms: [2, 5], platformRows:   [20, 23, 26],
+    extraPlatforms: [2, 5], platformRows:   [23, 26],
     platformWidth:  [4, 8],
   },
 };

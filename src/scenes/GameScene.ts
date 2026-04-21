@@ -194,9 +194,9 @@ export class GameScene extends Phaser.Scene {
     this.tanks = this.physics.add.group({ runChildUpdate: true });
 
     this.pickups = this.physics.add.group({
-      maxSize: 20,
+      maxSize: 24,
       runChildUpdate: false,
-      allowGravity: false,
+      allowGravity: true,
     });
 
     this.bossProjectiles = this.physics.add.group({
@@ -237,6 +237,10 @@ export class GameScene extends Phaser.Scene {
     // Tanks land on ground
     this.physics.add.collider(this.tanks, this.ground);
     if (this.groundLayer) this.physics.add.collider(this.tanks, this.groundLayer);
+
+    // Pickups land on ground
+    this.physics.add.collider(this.pickups, this.ground);
+    if (this.groundLayer) this.physics.add.collider(this.pickups, this.groundLayer);
 
     // --- Geometry collision for projectiles & enemies ---
 
@@ -328,6 +332,10 @@ export class GameScene extends Phaser.Scene {
           this.player.heal(1);
         } else if (pickupType === 'ammo') {
           this.player.refillRapidAmmo(RAPID_AMMO_PER_PICKUP);
+        } else if (pickupType === 'score') {
+          const pts = (pk.getData('points') as number | undefined) ?? 100;
+          this.score += pts;
+          this.events.emit('scoreChange', this.score);
         } else {
           this.player.restoreJetpackFuel(1000);
         }
@@ -444,10 +452,10 @@ export class GameScene extends Phaser.Scene {
     const STREAK_BONUSES    = [50, 100, 150, 200];
 
     this.events.on('droneKilled', (x: number, y: number) => {
-      this.score += 100;
-      this.events.emit('scoreChange', this.score);
+      // Base 100pts now drops as a pickup — must be collected.
+      this.spawnPickup(x, y, 'score');
 
-      // Kill streak milestone check
+      // Kill streak milestone check (bonuses stay auto-awarded)
       this.killStreak++;
       const milestoneIdx = STREAK_MILESTONES.indexOf(this.killStreak);
       if (milestoneIdx !== -1) {
@@ -458,13 +466,13 @@ export class GameScene extends Phaser.Scene {
         this.audio.playStreakChime(this.killStreak);
       }
 
-      // Random pickup drop (15% health, 15% fuel, 20% ammo)
+      // Random supply drop — ammo most common, then health/fuel
       const roll = Math.random();
-      if (roll < 0.15) {
+      if (roll < 0.18) {
         this.spawnPickup(x, y, 'health');
-      } else if (roll < 0.30) {
+      } else if (roll < 0.36) {
         this.spawnPickup(x, y, 'fuel');
-      } else if (roll < 0.50) {
+      } else if (roll < 0.71) {
         this.spawnPickup(x, y, 'ammo');
       }
     });
@@ -559,29 +567,42 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 600, onComplete: () => t.destroy() });
   }
 
-  private spawnPickup(x: number, y: number, type: 'health' | 'fuel' | 'ammo'): void {
-    let key = 'collectables';
+  private spawnPickup(x: number, y: number, type: 'health' | 'fuel' | 'ammo' | 'score'): void {
+    const key = 'collectables';
     let frame = 36;
     let tint: number | null = null;
     if (type === 'health') {
       frame = Math.random() < 0.5 ? 36 : 44;
     } else if (type === 'fuel') {
       frame = Math.random() < 0.5 ? 32 : 40;
-    } else {
+    } else if (type === 'ammo') {
       // ammo — cyan tint over a neutral shape to read as rapid-ammo cell
       frame = Math.random() < 0.5 ? 9 : 17;
       tint = 0x00ffff;
+    } else {
+      // score — credit chip, gold-tinted
+      frame = Math.random() < 0.5 ? 4 : 12;
+      tint = 0xffcc33;
     }
     const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
+    const size = 63; // 42 * 1.5
     p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
-      .setDisplaySize(42, 42);
+      .setDisplaySize(size, size);
     if (tint !== null) p.setTint(tint); else p.clearTint();
     p.setData('type', type);
+    if (type === 'score') p.setData('points', 100);
     if (p.body) {
       const pb = p.body as Phaser.Physics.Arcade.Body;
       pb.enable = true;
-      pb.setVelocity(0, 0);
+      pb.setSize(size * 0.7, size * 0.7, true);
+      pb.setAllowGravity(true);
+      pb.setVelocity(
+        Phaser.Math.Between(-140, 140),
+        Phaser.Math.Between(-320, -200),
+      );
+      pb.setDrag(60, 0);
+      pb.setBounce(0.25, 0.2);
     }
 
     // Start pulse warning 3s before despawn (at t=7s)

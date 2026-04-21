@@ -58,4 +58,4 @@ export const MECH_STATS: Record<string, {
   },
 };
 
-export const RAPID_AMMO_PER_PICKUP = 18;
+export const RAPID_AMMO_PER_PICKUP = 25;
