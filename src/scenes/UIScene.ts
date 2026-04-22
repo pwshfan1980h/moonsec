@@ -403,7 +403,7 @@ export class UIScene extends Phaser.Scene {
     // Segment dividers — vertical hairlines dividing the bar
     if (segments > 1) {
       const step = r.w / segments;
-      g.lineStyle(1, 0x000000, 0.85);
+      g.lineStyle(1, COL.hair, 0.95);
       for (let i = 1; i < segments; i++) {
         const xx = Math.round(r.x + step * i) + 0.5;
         g.lineBetween(xx, r.y + 2, xx, r.y + r.h - 2);
@@ -730,7 +730,7 @@ export class UIScene extends Phaser.Scene {
 
     on('dronesRemaining', (count: number) => {
       if (count > 0) {
-        this.dronesRemainingText.setText(`▼ ${String(count).padStart(2, '0')} HOSTILES REMAIN`).setAlpha(1);
+        this.dronesRemainingText.setText(`-- ${String(count).padStart(2, '0')} HOSTILES REMAIN --`).setAlpha(1);
       } else {
         this.dronesRemainingText.setAlpha(0);
       }
@@ -741,7 +741,7 @@ export class UIScene extends Phaser.Scene {
 
     on('killStreak', (count: number, bonus: number) => {
       const W = GAME_W, H = GAME_H;
-      const t = this.add.text(W / 2, H / 2, `◈  ${count} KILL STREAK  ◈\n+${bonus}`, {
+      const t = this.add.text(W / 2, H / 2, `>>  ${count} KILL STREAK  <<\n+${bonus}`, {
         fontFamily: FONT_MONO, fontSize: '36px', color: COL.amberHex,
         align: 'center', stroke: '#1a1000', strokeThickness: 3,
       }).setOrigin(0.5, 0.5).setDepth(30);
@@ -784,7 +784,7 @@ export class UIScene extends Phaser.Scene {
       g.lineBetween(bx, by + bh - cb, bx, by + bh); g.lineBetween(bx, by + bh, bx + cb, by + bh);
       g.lineBetween(bx + bw - cb, by + bh, bx + bw, by + bh); g.lineBetween(bx + bw, by + bh - cb, bx + bw, by + bh);
 
-      this.telegraphLabel = this.add.text(cx, H / 2 - 18, '⚠  INCOMING  ⚠', {
+      this.telegraphLabel = this.add.text(cx, H / 2 - 18, '[!]  INCOMING  [!]', {
         fontFamily: FONT_MONO, fontSize: '34px', color: COL.redHex,
         stroke: '#1a0005', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(56).setScrollFactor(0);
@@ -924,7 +924,7 @@ export class UIScene extends Phaser.Scene {
     if (shouldShow && !this.lowHpPrompt) {
       this.lowHpPrompt = this.add.text(
         GAME_W / 2, GAME_H - 150,
-        '⟨⟨  PRESS Q — NANITE PROTOCOL  ⟩⟩',
+        '<<  PRESS Q -- NANITE PROTOCOL  >>',
         {
           fontFamily: FONT_MONO, fontSize: '28px', color: COL.greenHex,
           stroke: '#001a12', strokeThickness: 3,

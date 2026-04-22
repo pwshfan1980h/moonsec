@@ -9,8 +9,8 @@ export const GROUND_HEIGHT = 120;
 
 // Radar minimap — upgraded to a readable tactical scope
 export const RADAR_WORLD_RADIUS = 460;   // world units visible around player (widened with bigger radar)
-export const RADAR_SCREEN_RADIUS = 115;  // px radius of drawn circle (right edge = 1790+115=1905, 15px from 1920px canvas)
-export const RADAR_X = 1790;             // screen-space center X
+export const RADAR_SCREEN_RADIUS = 115;  // px radius of drawn circle
+export const RADAR_X = 1770;             // screen-space center X — leaves room for the +28 cardinal "E" glyph at x=1913
 export const RADAR_Y = 830;              // screen-space center Y
 
 export const MISSILE_SEEK_RANGE = 650;
