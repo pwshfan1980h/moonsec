@@ -53,16 +53,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Surge dash state — double-tap A/D or Left/Right to lunge horizontally
   private readonly SURGE_TAP_WINDOW = 260; // ms
-  private readonly SURGE_DURATION   = 290; // ms
-  private readonly SURGE_SPEED      = 1080; // px/s
+  private readonly SURGE_DURATION   = 400; // ms
+  private readonly SURGE_SPEED      = 1200; // px/s — total traversal ≈ 480 px
   private readonly SURGE_COOLDOWN   = 700; // ms
   private readonly SURGE_DAMAGE     = 2;
   private readonly SURGE_RADIUS     = 95;  // px
+  private readonly SURGE_GHOST_INTERVAL = 32; // ms between ghost-echo silhouettes
   private lastTapLeft     = -1e9;
   private lastTapRight    = -1e9;
   private surgeUntil      = 0;
   private surgeCooldownAt = 0;
   private surgeDir: -1 | 1 = 1;
+  private surgeNextGhostAt = 0;
 
   private animPrefix: string = '';
   readonly bodyConfig: { w: number; h: number; offX: number; offY: number };
@@ -275,6 +277,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (surging) {
       body.setVelocityX(this.SURGE_SPEED * this.surgeDir);
       this.setFlipX(this.surgeDir < 0);
+      // Ghost-echo silhouettes — strobed snapshots of the current frame, fading behind the dash
+      if (time >= this.surgeNextGhostAt) {
+        this.surgeNextGhostAt = time + this.SURGE_GHOST_INTERVAL;
+        this.scene.spawnSurgeGhost(this);
+      }
     } else if (left) {
       body.setVelocityX(-this.walkSpeed);
       this.setFlipX(true);
@@ -372,9 +379,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.surgeDir      = dir;
     this.surgeUntil    = time + this.SURGE_DURATION;
     this.surgeCooldownAt = time + this.SURGE_DURATION + this.SURGE_COOLDOWN;
+    this.surgeNextGhostAt = time; // first ghost on the very next update
     this.setFlipX(dir < 0);
     this.scene.audio.play('surge');
     this.scene.spawnSurgeShockwave(this.x, this.y - 30, dir, this.SURGE_RADIUS, this.SURGE_DAMAGE);
+    this.scene.spawnSurgeTrail(this, dir, this.SURGE_DURATION);
   }
 
   private updateAnim(body: Phaser.Physics.Arcade.Body): void {

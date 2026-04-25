@@ -601,6 +601,52 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: y - rise, alpha: 0, duration, onComplete: () => t.destroy() });
   }
 
+  /**
+   * Single tinted snapshot of the player's current frame, fading out behind the dash path.
+   * Cheap echo — same texture/frame, no physics, time-tweened destruction.
+   */
+  spawnSurgeGhost(player: Player): void {
+    const ghost = this.add.sprite(player.x, player.y, player.texture.key, player.frame.name);
+    ghost.setOrigin(player.originX, player.originY);
+    ghost.setScale(player.scaleX, player.scaleY);
+    ghost.setFlipX(player.flipX);
+    ghost.setDepth(player.depth - 1);
+    ghost.setTint(0x6de3ff);
+    ghost.setAlpha(0.55);
+    ghost.setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({
+      targets:  ghost,
+      alpha:    0,
+      duration: 260,
+      ease:     'Cubic.Out',
+      onComplete: () => ghost.destroy(),
+    });
+  }
+
+  /**
+   * Particle trail that follows the player for the duration of the surge — dissipating
+   * cyan/white "thrust material" sprayed opposite the dash direction.
+   */
+  spawnSurgeTrail(player: Player, dir: 1 | -1, durationMs: number): void {
+    const back = dir > 0 ? 180 : 0; // emit backward relative to dash
+    const emitter = this.add.particles(player.x, player.y - 28, 'flare', {
+      speed:    { min: 90,  max: 230 },
+      angle:    { min: back - 28, max: back + 28 },
+      scale:    { start: 1.1, end: 0 },
+      alpha:    { start: 0.85, end: 0 },
+      tint:     [0x6de3ff, 0xaaffff, 0xffffff, 0x2288ff],
+      lifespan: { min: 220, max: 420 },
+      frequency: 14, // emit one every ~14ms while active
+      blendMode: 'ADD',
+    }).setDepth(player.depth - 1);
+    emitter.startFollow(player, 0, -28);
+
+    // Stop emitting when the dash ends; keep the emitter alive long enough for in-flight
+    // particles to finish their lifespan, then destroy.
+    this.time.delayedCall(durationMs, () => emitter.stop());
+    this.time.delayedCall(durationMs + 500, () => emitter.destroy());
+  }
+
   /** Forward-biased blue shockwave: expanding ring + particle cone + AoE damage sweep. */
   spawnSurgeShockwave(x: number, y: number, dir: 1 | -1, radius: number, damage: number): void {
     const hit = new Set<Phaser.GameObjects.GameObject>();
@@ -634,7 +680,7 @@ export class GameScene extends Phaser.Scene {
       targets:  state,
       r:        endR,
       a:        0,
-      duration: 240,
+      duration: 320,
       ease:     'Cubic.Out',
       onUpdate: () => {
         ring.clear();

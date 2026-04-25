@@ -55,6 +55,7 @@ export class AudioSystem {
   private soundManager: Phaser.Sound.BaseSoundManager;
   private ctx: AudioContext;                              // used only for loops
   private noiseBuffer!: AudioBuffer;
+  private surgeBuffer: AudioBuffer | null = null;
   private lastPlay: Partial<Record<SoundId, number>> = {};
   private readonly minInterval: Partial<Record<SoundId, number>> = {
     rapid: 55, // ms — prevents audio spam on rapid fire
@@ -640,41 +641,64 @@ export class AudioSystem {
     } catch { /* ignore */ }
   }
 
-  /** Dash whoosh — short bandpass noise sweep + sub-thump. */
+  /**
+   * Dash whoosh — Mecha FLYBY sample played fast with a custom gain envelope so the tail
+   * fades out as the dash animation completes. Sub-thump layered for body.
+   * Duration is tuned to match Player.SURGE_DURATION (~400 ms) plus a short release tail.
+   */
   private playSurgeBurst(): void {
     try {
       if (this.ctx.state === 'suspended') this.ctx.resume();
       const t = this.ctx.currentTime;
-      const DUR = 0.22;
 
-      // Bandpass noise sweep 1.6 kHz → 400 Hz
-      const whooshG = this.ctx.createGain();
-      whooshG.gain.setValueAtTime(0.55, t);
-      whooshG.gain.exponentialRampToValueAtTime(0.0001, t + DUR);
-      const bp = this.ctx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.Q.setValueAtTime(1.6, t);
-      bp.frequency.setValueAtTime(1600, t);
-      bp.frequency.exponentialRampToValueAtTime(400, t + DUR);
-      const ns = this.ctx.createBufferSource();
-      ns.buffer = this.noiseBuffer;
-      ns.connect(bp); bp.connect(whooshG); whooshG.connect(this.ctx.destination);
-      ns.start(t);
-      ns.stop(t + DUR);
-      ns.onended = () => { try { whooshG.disconnect(); bp.disconnect(); } catch { /* ok */ } };
+      // Lazy-fetch decoded buffer from Phaser's cache
+      if (!this.surgeBuffer) {
+        const game = (this.soundManager as Phaser.Sound.WebAudioSoundManager).game;
+        const cached = game.cache.audio.get('surge');
+        if (cached instanceof AudioBuffer) this.surgeBuffer = cached;
+      }
 
-      // Sub thump 70 → 40 Hz to give the burst body
+      const DASH = 0.40;     // matches Player.SURGE_DURATION
+      const RELEASE = 0.14;  // short tail after dash ends
+      const TOTAL = DASH + RELEASE;
+      const RATE = 2.5;      // speed-up — pulls the punchy section into the dash window
+      const PEAK = VOLUMES.surge;
+
+      if (this.surgeBuffer) {
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.surgeBuffer;
+        src.playbackRate.setValueAtTime(RATE, t);
+
+        const g = this.ctx.createGain();
+        // Snappy attack → hold at peak through the dash → smooth release
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(PEAK,    t + 0.025);
+        g.gain.setValueAtTime(PEAK,             t + DASH);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + TOTAL);
+
+        // Highpass to thin out any low-end mud now that the source plays faster
+        const hp = this.ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(140, t);
+
+        src.connect(hp); hp.connect(g); g.connect(this.ctx.destination);
+        src.start(t);
+        src.stop(t + TOTAL);
+        src.onended = () => { try { g.disconnect(); hp.disconnect(); } catch { /* ok */ } };
+      }
+
+      // Sub thump 70 → 40 Hz — body weight under the launch, independent of the asset
       const subG = this.ctx.createGain();
       subG.gain.setValueAtTime(0.45, t);
-      subG.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      subG.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
       subG.connect(this.ctx.destination);
       const sub = this.ctx.createOscillator();
       sub.type = 'sine';
       sub.frequency.setValueAtTime(70, t);
-      sub.frequency.exponentialRampToValueAtTime(40, t + 0.16);
+      sub.frequency.exponentialRampToValueAtTime(40, t + 0.18);
       sub.connect(subG);
       sub.start(t);
-      sub.stop(t + 0.16);
+      sub.stop(t + 0.18);
       sub.onended = () => { try { subG.disconnect(); } catch { /* ok */ } };
     } catch { /* ignore */ }
   }
