@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 
 const FIRE_INTERVAL = 60; // ms between shots
-const SPEED = 900;
+const SPEED = 580; // suppression — slow enough that the player has to lead targets
 const SPREAD = 0.06; // radians
 
 export class RapidGun {

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 
-const SPEED = 700;
+const SPEED = 1800; // railgun-fast — primary precision weapon
 const SPREAD_DEG = 2.2;   // per-shot angular jitter to avoid laser-beam look
 const HITSTOP_MS = 24;    // brief physics freeze for impact weight
 

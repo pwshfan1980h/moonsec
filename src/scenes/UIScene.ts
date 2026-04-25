@@ -48,24 +48,18 @@ const PANEL_W   = PAD_IN + BAR_W + PAD_IN;  // 288
 const BR = 12;
 
 export class UIScene extends Phaser.Scene {
-  private healthFill!: Phaser.GameObjects.Graphics;
   private missileFill!: Phaser.GameObjects.Graphics;
-  private jetpackFill!: Phaser.GameObjects.Graphics;
   private turretFill!: Phaser.GameObjects.Graphics;
   private naniteFill!: Phaser.GameObjects.Graphics;
   private ammoFill!: Phaser.GameObjects.Graphics;
 
   // bar geometry captured for redraws
-  private healthRect = { x: 0, y: 0, w: BAR_W, h: BAR_H_PRI };
   private missileRect = { x: 0, y: 0, w: BAR_W, h: BAR_H_PRI };
-  private jetpackRect = { x: 0, y: 0, w: BAR_W, h: BAR_H_SEC };
   private turretRect = { x: 0, y: 0, w: BAR_W, h: BAR_H_SEC };
   private naniteRect = { x: 0, y: 0, w: BAR_W, h: BAR_H_SEC };
   private ammoRect = { x: 0, y: 0, w: BAR_W, h: BAR_H_SEC };
 
   // labels
-  private healthLabel!: Phaser.GameObjects.Text;
-  private healthValue!: Phaser.GameObjects.Text;
   private missileLabel!: Phaser.GameObjects.Text;
   private missileState!: Phaser.GameObjects.Text;
   private turretLabel!: Phaser.GameObjects.Text;
@@ -74,8 +68,6 @@ export class UIScene extends Phaser.Scene {
   private naniteState!: Phaser.GameObjects.Text;
   private ammoLabel!: Phaser.GameObjects.Text;
   private ammoValue!: Phaser.GameObjects.Text;
-  private jetpackLabel!: Phaser.GameObjects.Text;
-  private jetpackValue!: Phaser.GameObjects.Text;
 
   // score / wave / radar header
   private scoreText!: Phaser.GameObjects.Text;
@@ -96,8 +88,6 @@ export class UIScene extends Phaser.Scene {
   private turretProgress = 1;
   private curHp = 0;
   private curMaxHp = 1;
-  private curJet = 0;
-  private curJetMax = 1;
   private curAmmo = 0;
   private curAmmoMax = 1;
 
@@ -170,101 +160,80 @@ export class UIScene extends Phaser.Scene {
     this.missileReloadActive = false;
 
     // ── LEFT STAT PANEL (top-left) ────────────────────────────────
+    // HP and Thruster Fuel are now drawn diegetically above the mech (PlayerHud);
+    // this panel only carries Nanoheal + Rapid Ammo.
     const panelX = PAD_EDGE;
     const barX   = panelX + PAD_IN;
 
-    const r0Lbl = PAD_EDGE + PAD_IN + 4;
-    const r0Bar = r0Lbl + LABEL_H;
-    const r1Lbl = r0Bar + BAR_H_PRI + ROW_GAP;
-    const r1Bar = r1Lbl + LABEL_H;
-    const r2Lbl = r1Bar + BAR_H_SEC + ROW_GAP;
-    const r2Bar = r2Lbl + LABEL_H;
-    const r3Lbl = r2Bar + BAR_H_SEC + ROW_GAP;
-    const r3Bar = r3Lbl + LABEL_H;
+    const leftR0Lbl = PAD_EDGE + PAD_IN + 4;
+    const leftR0Bar = leftR0Lbl + LABEL_H;
+    const leftR1Lbl = leftR0Bar + BAR_H_SEC + ROW_GAP;
+    const leftR1Bar = leftR1Lbl + LABEL_H;
 
-    const panelH = (r3Bar + BAR_H_SEC + PAD_IN) - PAD_EDGE;
+    const panelH = (leftR1Bar + BAR_H_SEC + PAD_IN) - PAD_EDGE;
 
     this.drawPanel(panelX, PAD_EDGE, PANEL_W, panelH, 'L-01 · MECH STATUS');
 
-    // HP row
-    this.healthLabel = this.add.text(barX, r0Lbl, 'INTEGRITY', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
-    });
-    this.healthValue = this.add.text(barX + BAR_W, r0Lbl, '', {
-      fontFamily: FONT_READOUT, fontSize: '16px', color: COL.inkDim,
-    }).setOrigin(1, 0);
-    this.healthRect = { x: barX, y: r0Bar, w: BAR_W, h: BAR_H_PRI };
-    this.healthFill = this.add.graphics();
-    this.drawBarFrame(this.healthRect, 8);
-    this.paintBar(this.healthFill, this.healthRect, 1, COL.red, 8);
-
-    // JP row
-    this.jetpackLabel = this.add.text(barX, r1Lbl, 'THRUSTER FUEL', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
-    });
-    this.jetpackValue = this.add.text(barX + BAR_W, r1Lbl, '', {
-      fontFamily: FONT_READOUT, fontSize: '16px', color: COL.inkDim,
-    }).setOrigin(1, 0);
-    this.jetpackRect = { x: barX, y: r1Bar, w: BAR_W, h: BAR_H_SEC };
-    this.jetpackFill = this.add.graphics();
-    this.drawBarFrame(this.jetpackRect, 6);
-    this.paintBar(this.jetpackFill, this.jetpackRect, 1, 0x3aa6ff, 6);
-
     // Nanoheal row
-    this.naniteLabel = this.add.text(barX, r2Lbl, 'NANOHEAL', {
+    this.naniteLabel = this.add.text(barX, leftR0Lbl, 'NANOHEAL', {
       fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
     });
-    this.naniteState = this.add.text(barX + BAR_W, r2Lbl, 'READY', {
+    this.naniteState = this.add.text(barX + BAR_W, leftR0Lbl, 'READY', {
       fontFamily: FONT_READOUT, fontSize: '16px', color: COL.greenHex,
     }).setOrigin(1, 0);
-    this.naniteRect = { x: barX, y: r2Bar, w: BAR_W, h: BAR_H_SEC };
+    this.naniteRect = { x: barX, y: leftR0Bar, w: BAR_W, h: BAR_H_SEC };
     this.naniteFill = this.add.graphics();
     this.drawBarFrame(this.naniteRect, 4);
     this.paintBar(this.naniteFill, this.naniteRect, 1, COL.green, 4);
 
     // Rapid ammo row
-    this.ammoLabel = this.add.text(barX, r3Lbl, 'RAPID AMMO', {
+    this.ammoLabel = this.add.text(barX, leftR1Lbl, 'RAPID AMMO', {
       fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
     });
-    this.ammoValue = this.add.text(barX + BAR_W, r3Lbl, '', {
+    this.ammoValue = this.add.text(barX + BAR_W, leftR1Lbl, '', {
       fontFamily: FONT_READOUT, fontSize: '16px', color: COL.cyanHex,
     }).setOrigin(1, 0);
-    this.ammoRect = { x: barX, y: r3Bar, w: BAR_W, h: BAR_H_SEC };
+    this.ammoRect = { x: barX, y: leftR1Bar, w: BAR_W, h: BAR_H_SEC };
     this.ammoFill = this.add.graphics();
     this.drawBarFrame(this.ammoRect, 5);
     this.paintBar(this.ammoFill, this.ammoRect, 1, COL.cyan, 5);
 
     // ── RIGHT STAT PANEL (top-right) ──────────────────────────────
-    const panelRX     = W - PAD_EDGE - PANEL_W;
-    const barRX       = panelRX + PAD_IN;
-    const rightPanelH = (r1Bar + BAR_H_SEC + PAD_IN) - PAD_EDGE;
+    const panelRX  = W - PAD_EDGE - PANEL_W;
+    const barRX    = panelRX + PAD_IN;
+    // Right panel keeps its original 2-row layout (MSL=PRI, TRT=SEC) so weapon rows aren't shifted by the left panel changes
+    const rightR0Lbl = PAD_EDGE + PAD_IN + 4;
+    const rightR0Bar = rightR0Lbl + LABEL_H;
+    const rightR1Lbl = rightR0Bar + BAR_H_PRI + ROW_GAP;
+    const rightR1Bar = rightR1Lbl + LABEL_H;
+    const rightPanelH = (rightR1Bar + BAR_H_SEC + PAD_IN) - PAD_EDGE;
 
     this.drawPanel(panelRX, PAD_EDGE, PANEL_W, rightPanelH, 'R-01 · WEAPONS');
 
     // MSL row
     this.missileIcon = this.add.graphics();
     this.missileIconCx = barRX + 10;
-    this.missileIconCy = r0Lbl + 10;
+    this.missileIconCy = rightR0Lbl + 10;
     this.drawMissileIcon(this.missileIcon, this.missileIconCx, this.missileIconCy, COL.cyan);
-    this.missileLabel = this.add.text(barRX + 24, r0Lbl, 'HOMING MISSILE', {
+    this.missileLabel = this.add.text(barRX + 24, rightR0Lbl, 'HOMING MISSILE', {
       fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
     });
-    this.missileState = this.add.text(barRX + BAR_W, r0Lbl, 'READY', {
+    this.missileState = this.add.text(barRX + BAR_W, rightR0Lbl, 'READY', {
       fontFamily: FONT_READOUT, fontSize: '16px', color: COL.cyanHex,
     }).setOrigin(1, 0);
-    this.missileRect = { x: barRX, y: r0Bar, w: BAR_W, h: BAR_H_PRI };
+    this.missileRect = { x: barRX, y: rightR0Bar, w: BAR_W, h: BAR_H_PRI };
     this.missileFill = this.add.graphics();
     this.drawBarFrame(this.missileRect, 4);
     this.paintBar(this.missileFill, this.missileRect, 1, COL.cyan, 4);
 
     // TRT row
-    this.turretLabel = this.add.text(barRX, r1Lbl, 'TURRET', {
+    this.turretLabel = this.add.text(barRX, rightR1Lbl, 'TURRET', {
       fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
     });
-    this.turretState = this.add.text(barRX + BAR_W, r1Lbl, 'READY', {
+    this.turretState = this.add.text(barRX + BAR_W, rightR1Lbl, 'READY', {
       fontFamily: FONT_READOUT, fontSize: '16px', color: COL.cyanHex,
     }).setOrigin(1, 0);
-    this.turretRect = { x: barRX, y: r1Bar, w: BAR_W, h: BAR_H_SEC };
+    this.turretRect = { x: barRX, y: rightR1Bar, w: BAR_W, h: BAR_H_SEC };
     this.turretFill = this.add.graphics();
     this.drawBarFrame(this.turretRect, 4);
     this.paintBar(this.turretFill, this.turretRect, 1, COL.cyan, 4);
@@ -567,14 +536,7 @@ export class UIScene extends Phaser.Scene {
     on('healthChange', (hp: number, maxHp: number) => {
       this.curHp = hp;
       this.curMaxHp = maxHp;
-      const t = maxHp > 0 ? hp / maxHp : 0;
-      if (!this.naniteActive) {
-        const color = t > 0.5 ? 0xff3a4a : t > 0.25 ? 0xffb347 : 0xff2030;
-        this.paintBar(this.healthFill, this.healthRect, t, color, 8);
-        const textCol = t > 0.5 ? COL.redHex : t > 0.25 ? COL.amberHex : '#ff6272';
-        this.healthLabel.setColor(textCol);
-      }
-      this.healthValue.setText(`${String(hp).padStart(2, '0')} / ${String(maxHp).padStart(2, '0')}`);
+      // HP bar itself is rendered diegetically by PlayerHud — UI only handles ambient feedback
       if (hp < this.lastHp) this.cameras.main.flash(200, 220, 30, 30, false);
       this.lastHp = hp;
       this.updateLowHpPrompt();
@@ -625,13 +587,7 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    on('jetpackFuel', (fuel: number, max: number) => {
-      this.curJet = fuel; this.curJetMax = max;
-      const t = max > 0 ? fuel / max : 0;
-      const color = t > 0.3 ? 0x3aa6ff : 0xffb347;
-      this.paintBar(this.jetpackFill, this.jetpackRect, t, color, 6);
-      this.jetpackValue.setText(`${Math.round(t * 100).toString().padStart(3, '0')}%`);
-    });
+    // Thruster fuel bar is rendered diegetically by PlayerHud — UI no longer subscribes to jetpackFuel
 
     on('naniteChange', (state: string, progress: number) => {
       this.naniteProgress = progress;
@@ -793,7 +749,7 @@ export class UIScene extends Phaser.Scene {
     this.clearTelegraph();
     const gs = this.scene.get('Game');
     if (gs) {
-      for (const ev of ['healthChange', 'missileCooldown', 'turretCooldown', 'jetpackFuel',
+      for (const ev of ['healthChange', 'missileCooldown', 'turretCooldown',
                         'naniteChange', 'rapidAmmoChange', 'scoreChange', 'waveStart', 'dronesRemaining',
                         'killStreak', 'gameOver', 'bossKilled', 'levelComplete',
                         'bossTelegraph', 'bossTelegraphCancel', 'bossBlastFired']) {
@@ -844,8 +800,7 @@ export class UIScene extends Phaser.Scene {
   private onNaniteChange(state: string, progress: number): void {
     if (state === 'active') {
       this.naniteActive = true;
-      // Health bar glows green during active
-      this.paintBar(this.healthFill, this.healthRect, 1, COL.green, 8);
+      // Mech-mounted HP bar glows green via PlayerHud's nanite hook
       this.paintBar(this.naniteFill, this.naniteRect, 1, COL.green, 4);
       this.naniteLabel.setColor(COL.greenHex);
       this.naniteState.setText('ACTIVE').setColor(COL.greenHex);
@@ -858,10 +813,6 @@ export class UIScene extends Phaser.Scene {
       }
     } else if (state === 'cooldown') {
       this.naniteActive = false;
-      // Revert HP bar color
-      const t = this.curMaxHp > 0 ? this.curHp / this.curMaxHp : 0;
-      const color = t > 0.5 ? 0xff3a4a : t > 0.25 ? 0xffb347 : 0xff2030;
-      this.paintBar(this.healthFill, this.healthRect, t, color, 8);
       if (this.nanitePulseTween) { this.nanitePulseTween.stop(); this.nanitePulseTween = null; }
       this.naniteFill.setAlpha(1);
       this.paintBar(this.naniteFill, this.naniteRect, progress, 0x2a6b88, 4);
