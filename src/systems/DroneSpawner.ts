@@ -80,7 +80,6 @@ export class DroneSpawner {
   private spawnWave(): void {
     this.spawning = true;
     this.waveIndex++;
-    this.scene.events.emit('waveStart', this.waveIndex, this.waveCount);
     this.scene.debugLog?.log('[WAVE] Wave ' + this.waveIndex + ' start');
 
     let bracket = WAVE_BRACKETS[0];
@@ -88,6 +87,7 @@ export class DroneSpawner {
 
     // Final wave — trigger boss phase
     if (this.waveIndex >= this.waveCount) {
+      this.scene.events.emit('waveStart', this.waveIndex, this.waveCount, 1);
       this.spawning   = false;
       this.bossActive = true;
       this.spawnBoss();
@@ -157,6 +157,31 @@ export class DroneSpawner {
     const count  = 25 + (this.waveIndex - 1) * 10;
     const MARGIN = 150;
     let spawned  = 0;
+
+    // Pre-roll all per-wave additions so the total drone count is known up front
+    // (the UI's wave progress bar uses this as a stable denominator).
+    const groundY              = this.scene.getApproxGroundY();
+    const hasGround            = groundY < GAME_H;
+    const canHaveGroundUnits   = this.enemyMix !== 'aerial';
+    const wantsBomber          = this.enemyMix !== 'aerial';
+    const plannedMineCount     = (canHaveGroundUnits && this.waveIndex >= 2 && hasGround)
+      ? (Math.random() < 0.5 ? 1 : 2)
+      : 0;
+    const wantsCarrier         = this.waveIndex >= 3 && Math.random() < 0.6;
+    const wantsPpc             = this.waveIndex >= 4 && Math.random() < 0.75;
+    const tankMixesAllowed: EnemyMix[] = ['balanced', 'ground-heavy', 'elite', 'boss-rush'];
+    const plannedTankCount     = (tankMixesAllowed.includes(this.enemyMix) && hasGround)
+      ? Math.min(3, 1 + Math.floor((this.waveIndex - 1) / 2))
+      : 0;
+
+    const totalDrones = count
+      + (wantsBomber ? 1 : 0)
+      + plannedMineCount
+      + (wantsCarrier ? 1 : 0)
+      + (wantsPpc ? 1 : 0)
+      + plannedTankCount;
+
+    this.scene.events.emit('waveStart', this.waveIndex, this.waveCount, totalDrones);
 
     const spawnNext = () => {
       if (spawned >= count) {
@@ -289,7 +314,7 @@ export class DroneSpawner {
     spawnNext();
 
     // Bomber — skip for aerial-only levels (no bomb zone)
-    if (this.enemyMix !== 'aerial') {
+    if (wantsBomber) {
       const cam  = this.scene.cameras.main;
       const dir  = Math.random() < 0.5 ? 1 : -1;
       const bx   = dir > 0
@@ -329,12 +354,8 @@ export class DroneSpawner {
     }
 
     // Mines — skip for aerial and void-floor levels (config controls this via groundY)
-    const canHaveGroundUnits = this.enemyMix !== 'aerial';
-    if (canHaveGroundUnits && this.waveIndex >= 2) {
-      const mineCount = Math.random() < 0.5 ? 1 : 2;
-      const groundY   = this.scene.getApproxGroundY();
-      if (groundY < GAME_H) {  // only if there is a real ground
-        for (let m = 0; m < mineCount; m++) {
+    if (plannedMineCount > 0) {
+      for (let m = 0; m < plannedMineCount; m++) {
           const cam   = this.scene.cameras.main;
           const mineX = Phaser.Math.Between(cam.scrollX + 200, cam.scrollX + GAME_W - 200);
           const mine  = new Mine(this.scene, mineX, groundY);
@@ -363,12 +384,11 @@ export class DroneSpawner {
               this.scene.spawnExplosion(ms.x, ms.y);
               (_m as unknown as Mine).takeDamage(1);
             });
-        }
       }
     }
 
     // Carrier — wave 3+, mothership that deploys swarmlings periodically
-    if (this.waveIndex >= 3 && Math.random() < 0.6) {
+    if (wantsCarrier) {
       const cam = this.scene.cameras.main;
       const cx  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.65, 300, WORLD_WIDTH - 300);
       const cy  = Phaser.Math.Clamp(GROUND_Y - 260, 160, GROUND_Y - 180);
@@ -406,7 +426,7 @@ export class DroneSpawner {
     }
 
     // PPC Platform — wave 4+, single floating turret at mid-air altitude
-    if (this.waveIndex >= 4 && Math.random() < 0.75) {
+    if (wantsPpc) {
       const cam = this.scene.cameras.main;
       const px  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.7, 200, WORLD_WIDTH - 200);
       const py  = Phaser.Math.Clamp(GROUND_Y - 340, 120, GROUND_Y - 200);
@@ -444,13 +464,9 @@ export class DroneSpawner {
     }
 
     // Tanks — ground only
-    const tankMixes: EnemyMix[] = ['balanced', 'ground-heavy', 'elite', 'boss-rush'];
-    if (tankMixes.includes(this.enemyMix)) {
-      const tankCount = Math.min(3, 1 + Math.floor((this.waveIndex - 1) / 2));
-      const tankCam   = this.scene.cameras.main;
-      const groundY   = this.scene.getApproxGroundY();
-      if (groundY < GAME_H) {
-        for (let c = 0; c < tankCount; c++) {
+    if (plannedTankCount > 0) {
+      const tankCam = this.scene.cameras.main;
+      for (let c = 0; c < plannedTankCount; c++) {
           const side   = Math.random() < 0.5 ? -1 : 1;
           const spawnX = side < 0
             ? Phaser.Math.Clamp(tankCam.scrollX - MARGIN, 0, WORLD_WIDTH)
@@ -486,7 +502,6 @@ export class DroneSpawner {
               this.scene.cameras.main.shake(150, 0.01);
               this.scene.audio.play('explosion');
             });
-        }
       }
     }
   }

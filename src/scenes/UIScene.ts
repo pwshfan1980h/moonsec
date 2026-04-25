@@ -132,8 +132,9 @@ export class UIScene extends Phaser.Scene {
   private waveProgressFill!: Phaser.GameObjects.Graphics;
   private waveProgressRect = { x: 0, y: 0, w: 0, h: 6 };
   private waveTotalCount = 5;
-  private waveMaxDrones = 0;         // peak drones seen this wave (= starting count)
-  private waveRemaining = 0;
+  private waveTotalDrones = 0;       // expected drones this wave (from spawner)
+  private waveKilled = 0;            // kills counted this wave
+  private waveLastRemaining = 0;     // last dronesRemaining seen — used to detect kills
   private bossPhaseActive = false;
 
   // Missile icon + audio state
@@ -164,8 +165,9 @@ export class UIScene extends Phaser.Scene {
     this.turretProgress = 1;
     this.lowHpPrompt = null;
     this.lowHpPulseTween = null;
-    this.waveMaxDrones = 0;
-    this.waveRemaining = 0;
+    this.waveTotalDrones = 0;
+    this.waveKilled = 0;
+    this.waveLastRemaining = 0;
     this.bossPhaseActive = false;
     this.missileReloadActive = false;
 
@@ -572,10 +574,10 @@ export class UIScene extends Phaser.Scene {
       fill.fillRect(x + 1, y + 1, completed * segW - 2, h - 2);
     }
 
-    // Active (current) segment
+    // Active (current) segment — kill-based progress against the wave's total drone count
     if (!inBoss && waveIdx >= 1 && waveIdx <= total) {
-      const prog = this.waveMaxDrones > 0
-        ? 1 - Math.max(0, this.waveRemaining) / this.waveMaxDrones
+      const prog = this.waveTotalDrones > 0
+        ? Phaser.Math.Clamp(this.waveKilled / this.waveTotalDrones, 0, 1)
         : 0;
       const segX = x + (waveIdx - 1) * segW + 1;
       fill.fillRect(segX, y + 1, Math.max(0, segW * prog - 2), h - 2);
@@ -692,13 +694,14 @@ export class UIScene extends Phaser.Scene {
       this.scoreText.setText(String(score).padStart(7, '0'));
     });
 
-    on('waveStart', (wave: number, totalWaves?: number) => {
+    on('waveStart', (wave: number, totalWaves?: number, totalDrones?: number) => {
       this.currentWave = wave;
       if (typeof totalWaves === 'number' && totalWaves > 0) this.waveTotalCount = totalWaves;
       this.bossPhaseActive = wave > this.waveTotalCount;
       // Reset per-wave drone tracking
-      this.waveMaxDrones = 0;
-      this.waveRemaining = 0;
+      this.waveTotalDrones = typeof totalDrones === 'number' && totalDrones > 0 ? totalDrones : 0;
+      this.waveKilled = 0;
+      this.waveLastRemaining = 0;
       this.drawWaveProgress();
       this.waveCounter.setText(`WAVE  ${String(wave).padStart(2, '0')}`);
 
@@ -734,8 +737,12 @@ export class UIScene extends Phaser.Scene {
       } else {
         this.dronesRemainingText.setAlpha(0);
       }
-      this.waveRemaining = count;
-      if (count > this.waveMaxDrones) this.waveMaxDrones = count;
+      // Treat any decrease in remaining drones as a kill (spawner emits this on
+      // both spawns and kills). Kill-based progress is monotonic within a wave.
+      if (count < this.waveLastRemaining) {
+        this.waveKilled += this.waveLastRemaining - count;
+      }
+      this.waveLastRemaining = count;
       this.drawWaveProgress();
     });
 
