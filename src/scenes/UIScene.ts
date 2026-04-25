@@ -102,7 +102,6 @@ export class UIScene extends Phaser.Scene {
   private curAmmoMax = 1;
 
   private levelCompleteActive = false;
-  private titleActive = false;
 
   // Boss telegraph
   private telegraphLabel: Phaser.GameObjects.Text | null = null;
@@ -151,7 +150,6 @@ export class UIScene extends Phaser.Scene {
     const W = GAME_W, H = GAME_H;
     this.gameOverActive = false;
     this.levelCompleteActive = false;
-    this.titleActive = false;
     this.paused = false;
     this.naniteActive = false;
     this.currentWave = 0;
@@ -288,9 +286,6 @@ export class UIScene extends Phaser.Scene {
       fontFamily: FONT_MONO, fontSize: '18px', color: COL.redHex,
     }).setOrigin(0.5, 0).setAlpha(0);
 
-    // ── Controls hint (bottom-left) ───────────────────────────────
-    this.drawBottomHint();
-
     // ── Wave announcement (big, fades out) ────────────────────────
     this.waveText = this.add.text(W / 2, H / 2 - 48, '', {
       fontFamily: FONT_MONO, fontSize: '72px', color: COL.cyanHex,
@@ -344,10 +339,11 @@ export class UIScene extends Phaser.Scene {
     // ── Controls overlay (toggleable with H) ──────────────────────
     this.input.keyboard!.on('keydown-H', () => this.toggleControls());
 
-    // ── Title banner (first boot only, auto-dismisses) ────────────
+    // ── First-boot onboarding: open the controls overlay. User must press
+    //    SPACE / ENTER / H / ESC to dismiss it. The overlay pauses the game.
     if (this.registry.get('firstBoot') === true) {
       this.registry.set('firstBoot', false);
-      this.showTitleBanner();
+      this.openControlsOverlay();
     }
   }
 
@@ -435,42 +431,6 @@ export class UIScene extends Phaser.Scene {
     // Hot highlight row
     gfx.fillStyle(0xffffff, 0.28);
     gfx.fillRect(r.x + 1, r.y + 1, filled - 1, 1);
-  }
-
-  /** Bottom-left control hint — tactical key glyphs. */
-  private drawBottomHint(): void {
-    const H = GAME_H;
-    const y = H - 28;
-    const bindings = [
-      ['A D',   'MOVE'],
-      ['SPACE', 'THRUST'],
-      ['LMB',   'TURRET'],
-      ['RMB',   'RAPID'],
-      ['E',     'MISSILE'],
-      ['Q',     'NANOHEAL'],
-      ['H',     'HELP'],
-      ['ESC',   'PAUSE'],
-    ];
-    let x = PAD_EDGE;
-    const g = this.add.graphics();
-    for (const [key, label] of bindings) {
-      const keyTxt = this.add.text(x, y, key, {
-        fontFamily: FONT_MONO, fontSize: '18px', color: COL.cyanHex,
-      }).setOrigin(0, 0.5);
-      // key chip background
-      const padX = 4, padY = 4;
-      g.fillStyle(0x0a2232, 0.85);
-      g.fillRect(x - padX, y - 11, keyTxt.width + padX * 2, 22);
-      g.lineStyle(1, COL.rail, 0.9);
-      g.strokeRect(x - padX + 0.5, y - 10.5, keyTxt.width + padX * 2 - 1, 21);
-      keyTxt.setDepth(1);
-      const w = keyTxt.width + padX * 2;
-      const labelTxt = this.add.text(x + w, y, ' ' + label, {
-        fontFamily: FONT_MONO, fontSize: '18px', color: COL.inkDim,
-      }).setOrigin(0, 0.5);
-      x += w + labelTxt.width + 14;
-    }
-    g.setDepth(0);
   }
 
   /** Draw the permanent radar bezel + ticks + caption. */
@@ -926,7 +886,7 @@ export class UIScene extends Phaser.Scene {
       && this.naniteReady
       && !this.gameOverActive
       && !this.levelCompleteActive
-      && !this.titleActive;
+      && !this.controlsOpen;
 
     if (shouldShow && !this.lowHpPrompt) {
       this.lowHpPrompt = this.add.text(
@@ -950,44 +910,10 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  private showTitleBanner(): void {
-    if (this.titleActive) return;
-    this.titleActive = true;
-
-    const W = GAME_W;
-    const bannerObjs: Phaser.GameObjects.GameObject[] = [];
-
-    const logo = this.add.image(W / 2, 120, 'logo').setDepth(50).setScrollFactor(0).setAlpha(0).setScale(0.65);
-    bannerObjs.push(logo);
-
-    const hint = this.add.text(W / 2, 186, 'PRESS H ANY TIME FOR CONTROLS', {
-      fontFamily: FONT_MONO, fontSize: '20px', color: COL.cyanDimHex,
-    }).setOrigin(0.5).setDepth(50).setScrollFactor(0).setAlpha(0);
-    bannerObjs.push(hint);
-
-    const ver = this.add.text(W - 20, GAME_H - 20, `ALPHA  v${__APP_VERSION__}`, {
-      fontFamily: FONT_MONO, fontSize: '16px', color: COL.inkFaint,
-    }).setOrigin(1, 1).setDepth(50).setScrollFactor(0).setAlpha(0);
-    bannerObjs.push(ver);
-
-    this.tweens.add({
-      targets: bannerObjs, alpha: 1, duration: 400, ease: 'Power2',
-      onComplete: () => {
-        this.time.delayedCall(1800, () => {
-          this.tweens.add({
-            targets: bannerObjs, alpha: 0, duration: 700, ease: 'Power2',
-            onComplete: () => {
-              bannerObjs.forEach(o => o.destroy());
-              this.titleActive = false;
-            },
-          });
-        });
-      },
-    });
-  }
-
   private controlsOpen = false;
   private controlsObjs: Phaser.GameObjects.GameObject[] = [];
+  private controlsDismissKeys: string[] = [];
+  private controlsDismissFn: (() => void) | null = null;
 
   private toggleControls(): void {
     if (this.gameOverActive || this.levelCompleteActive || this.paused) return;
@@ -1036,14 +962,15 @@ export class UIScene extends Phaser.Scene {
     const rowH    = 58;
 
     const bindings: [string, string, boolean?][] = [
-      ['A / D',  'LOCOMOTION'],
-      ['SPACE',  'VERTICAL THRUST'],
-      ['LMB',    'TURRET FIRE'],
-      ['RMB',    'RAPID SUPPRESSION'],
-      ['E',      'HOMING MISSILE',  true],
-      ['Q',      'NANITE REPAIR',   true],
-      ['H',      'TOGGLE HELP'],
-      ['ESC',    'PAUSE / MENU'],
+      ['A / D',     'LOCOMOTION'],
+      ['A·A / D·D', 'SURGE DASH',      true],
+      ['SPACE',     'VERTICAL THRUST'],
+      ['LMB',       'TURRET FIRE'],
+      ['RMB',       'RAPID SUPPRESSION'],
+      ['E',         'HOMING MISSILE',  true],
+      ['Q',         'NANITE REPAIR',   true],
+      ['H',         'TOGGLE HELP'],
+      ['ESC',       'PAUSE / MENU'],
     ];
 
     bindings.forEach(([key, action, highlight], i) => {
@@ -1056,10 +983,20 @@ export class UIScene extends Phaser.Scene {
       push(this.add.text(actX,  y, action,   { fontFamily: FONT_MONO, fontSize: '24px', color: actCol      }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
     });
 
-    const dismissPrompt = push(this.add.text(W / 2, H * 0.92, '< PRESS H OR ESC TO RESUME >', {
+    const dismissPrompt = push(this.add.text(W / 2, H * 0.92, '< PRESS SPACE / ENTER / H / ESC TO RESUME >', {
       fontFamily: FONT_MONO, fontSize: '20px', color: COL.cyanDimHex,
     }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
     this.tweens.add({ targets: dismissPrompt, alpha: 0.25, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    push(this.add.text(W - 20, H - 20, `ALPHA  v${__APP_VERSION__}`, {
+      fontFamily: FONT_MONO, fontSize: '16px', color: COL.inkFaint,
+    }).setOrigin(1, 1).setDepth(61).setScrollFactor(0));
+
+    // Extra dismiss keys — ESC and H are already bound at scene level
+    const dismiss = (): void => this.closeControlsOverlay();
+    this.controlsDismissKeys = ['keydown-SPACE', 'keydown-ENTER'];
+    for (const ev of this.controlsDismissKeys) this.input.keyboard!.on(ev, dismiss);
+    this.controlsDismissFn = dismiss;
 
     this.controlsObjs = objs;
   }
@@ -1072,6 +1009,11 @@ export class UIScene extends Phaser.Scene {
       o.destroy();
     }
     this.controlsObjs = [];
+    if (this.controlsDismissFn) {
+      for (const ev of this.controlsDismissKeys) this.input.keyboard!.off(ev, this.controlsDismissFn);
+      this.controlsDismissFn = null;
+      this.controlsDismissKeys = [];
+    }
     this.scene.resume('Game');
   }
 
