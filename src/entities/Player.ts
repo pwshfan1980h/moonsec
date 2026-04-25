@@ -53,8 +53,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Surge dash state — double-tap A/D or Left/Right to lunge horizontally
   private readonly SURGE_TAP_WINDOW = 260; // ms
-  private readonly SURGE_DURATION   = 220; // ms
-  private readonly SURGE_SPEED      = 720; // px/s
+  private readonly SURGE_DURATION   = 290; // ms
+  private readonly SURGE_SPEED      = 1080; // px/s
   private readonly SURGE_COOLDOWN   = 700; // ms
   private readonly SURGE_DAMAGE     = 2;
   private readonly SURGE_RADIUS     = 95;  // px
