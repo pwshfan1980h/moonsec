@@ -51,6 +51,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private wasAirborne = false;
   private prevVelocityY = 0;
 
+  // Surge dash state — double-tap A/D or Left/Right to lunge horizontally
+  private readonly SURGE_TAP_WINDOW = 260; // ms
+  private readonly SURGE_DURATION   = 220; // ms
+  private readonly SURGE_SPEED      = 720; // px/s
+  private readonly SURGE_COOLDOWN   = 700; // ms
+  private readonly SURGE_DAMAGE     = 2;
+  private readonly SURGE_RADIUS     = 95;  // px
+  private lastTapLeft     = -1e9;
+  private lastTapRight    = -1e9;
+  private surgeUntil      = 0;
+  private surgeCooldownAt = 0;
+  private surgeDir: -1 | 1 = 1;
+
   private animPrefix: string = '';
   readonly bodyConfig: { w: number; h: number; offX: number; offY: number };
 
@@ -234,8 +247,35 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const right = this.cursors.right.isDown || this.keyD.isDown;
     const space = this.keySpace.isDown;
 
+    // --- Surge: double-tap detection ---
+    const tappedLeft  = Phaser.Input.Keyboard.JustDown(this.cursors.left)
+                     || Phaser.Input.Keyboard.JustDown(this.keyA);
+    const tappedRight = Phaser.Input.Keyboard.JustDown(this.cursors.right)
+                     || Phaser.Input.Keyboard.JustDown(this.keyD);
+    if (tappedLeft) {
+      if (time - this.lastTapLeft < this.SURGE_TAP_WINDOW) {
+        this.tryStartSurge(-1, time);
+        this.lastTapLeft = -1e9; // consume so a 3rd tap doesn't immediately re-fire
+      } else {
+        this.lastTapLeft = time;
+      }
+    }
+    if (tappedRight) {
+      if (time - this.lastTapRight < this.SURGE_TAP_WINDOW) {
+        this.tryStartSurge(1, time);
+        this.lastTapRight = -1e9;
+      } else {
+        this.lastTapRight = time;
+      }
+    }
+
+    const surging = time < this.surgeUntil;
+
     // --- Horizontal movement ---
-    if (left) {
+    if (surging) {
+      body.setVelocityX(this.SURGE_SPEED * this.surgeDir);
+      this.setFlipX(this.surgeDir < 0);
+    } else if (left) {
       body.setVelocityX(-this.walkSpeed);
       this.setFlipX(true);
     } else if (right) {
@@ -324,6 +364,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  private tryStartSurge(dir: -1 | 1, time: number): void {
+    if (this.dead || this.empStunned) return;
+    if (this.hurtLock > 0) return;
+    if (time < this.surgeCooldownAt) return;
+
+    this.surgeDir      = dir;
+    this.surgeUntil    = time + this.SURGE_DURATION;
+    this.surgeCooldownAt = time + this.SURGE_DURATION + this.SURGE_COOLDOWN;
+    this.setFlipX(dir < 0);
+    this.scene.audio.play('surge');
+    this.scene.spawnSurgeShockwave(this.x, this.y - 30, dir, this.SURGE_RADIUS, this.SURGE_DAMAGE);
+  }
+
   private updateAnim(body: Phaser.Physics.Arcade.Body): void {
     if (!this.onGround) {
       this.playAnim('jump_loop');
@@ -395,7 +448,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   takeDamage(amount: number): void {
-    if (this.dead || this.hurtLock > 0) {
+    const surging = this.scene.time.now < this.surgeUntil;
+    if (this.dead || this.hurtLock > 0 || surging) {
       this.scene.audio.stopLoop('jetpack'); // stop loop even on early return
       return;
     }

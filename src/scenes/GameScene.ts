@@ -330,22 +330,35 @@ export class GameScene extends Phaser.Scene {
         const pickupType = pk.getData('type') as string;
         // Distinct pitch per type makes the feedback readable without a new sample.
         let rate = 1;
+        let label = '+ITEM';
+        let color = '#ffffff';
         if (pickupType === 'health') {
           this.player.heal(1);
           rate = 1.25;
+          label = '+1 HP';
+          color = '#5cff8a';
         } else if (pickupType === 'ammo') {
           this.player.refillRapidAmmo(RAPID_AMMO_PER_PICKUP);
           rate = 0.85;
+          label = `+${RAPID_AMMO_PER_PICKUP} AMMO`;
+          color = '#6de3ff';
         } else if (pickupType === 'score') {
           const pts = (pk.getData('points') as number | undefined) ?? 100;
           this.score += pts;
           this.events.emit('scoreChange', this.score);
           rate = 1.5;
+          label = `+${pts}`;
+          color = '#ffd744';
         } else {
           this.player.restoreJetpackFuel(1000);
           rate = 0.95;
+          label = '+FUEL';
+          color = '#ffb347';
         }
         this.audio.playAt('pickup', { rate });
+        this.spawnFloatingText(pk.x, pk.y - 8, label, color, {
+          fontSize: '16px', rise: 44, duration: 750, stroke: '#000814',
+        });
       },
     );
 
@@ -570,10 +583,90 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  spawnFloatingText(x: number, y: number, text: string, color = '#ffffff'): void {
-    const t = this.add.text(x, y, text, { fontFamily: 'monospace', fontSize: '14px', color })
-      .setDepth(25).setOrigin(0.5, 1);
-    this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 600, onComplete: () => t.destroy() });
+  spawnFloatingText(
+    x: number,
+    y: number,
+    text: string,
+    color = '#ffffff',
+    opts?: { fontSize?: string; rise?: number; duration?: number; stroke?: string },
+  ): void {
+    const fontSize = opts?.fontSize ?? '14px';
+    const rise     = opts?.rise     ?? 30;
+    const duration = opts?.duration ?? 600;
+    const style: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontFamily: 'monospace', fontSize, color,
+    };
+    if (opts?.stroke) { style.stroke = opts.stroke; style.strokeThickness = 3; }
+    const t = this.add.text(x, y, text, style).setDepth(25).setOrigin(0.5, 1);
+    this.tweens.add({ targets: t, y: y - rise, alpha: 0, duration, onComplete: () => t.destroy() });
+  }
+
+  /** Forward-biased blue shockwave: expanding ring + particle cone + AoE damage sweep. */
+  spawnSurgeShockwave(x: number, y: number, dir: 1 | -1, radius: number, damage: number): void {
+    const hit = new Set<Phaser.GameObjects.GameObject>();
+    const damageOne = (obj: Phaser.GameObjects.GameObject): void => {
+      if (hit.has(obj)) return;
+      const s = obj as Phaser.GameObjects.Sprite & { takeDamage?: (n: number) => void; active?: boolean };
+      if (!s.active) return;
+      const dx = (s as unknown as { x: number }).x - x;
+      const dy = (s as unknown as { y: number }).y - y;
+      if (dx * dx + dy * dy > radius * radius) return;
+      // Forward cone: require the target be in front of the mech (or very close horizontally)
+      if (Math.abs(dx) > 12 && Math.sign(dx) !== dir) return;
+      if (typeof s.takeDamage !== 'function') return;
+      hit.add(obj);
+      s.takeDamage(damage);
+      const sx = (s as unknown as { x: number }).x;
+      const sy = (s as unknown as { y: number }).y;
+      this.spawnFloatingText(sx, sy - 20, `-${damage}`, '#6de3ff');
+    };
+    this.drones.getChildren().forEach(damageOne);
+    this.tanks.getChildren().forEach(damageOne);
+
+    // Expanding ring — half-disc oriented in dir
+    const ring = this.add.graphics().setDepth(22);
+    const startR = 18;
+    const endR   = radius;
+    const state  = { r: startR, a: 1 };
+    const startAngle = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
+    const endAngle   = dir > 0 ?  Math.PI / 2 : (3 * Math.PI) / 2;
+    this.tweens.add({
+      targets:  state,
+      r:        endR,
+      a:        0,
+      duration: 240,
+      ease:     'Cubic.Out',
+      onUpdate: () => {
+        ring.clear();
+        ring.lineStyle(3, 0x6de3ff, state.a);
+        ring.beginPath();
+        ring.arc(x, y, state.r, startAngle, endAngle, false);
+        ring.strokePath();
+        // Inner glow rim
+        ring.lineStyle(1, 0xffffff, state.a * 0.6);
+        ring.beginPath();
+        ring.arc(x, y, state.r - 3, startAngle, endAngle, false);
+        ring.strokePath();
+      },
+      onComplete: () => ring.destroy(),
+    });
+
+    // Forward particle cone
+    const baseAngle = dir > 0 ? 0 : 180;
+    const emitter = this.add.particles(x, y, 'flare', {
+      speed:    { min: 180, max: 360 },
+      angle:    { min: baseAngle - 30, max: baseAngle + 30 },
+      scale:    { start: 1.6, end: 0 },
+      alpha:    { start: 1, end: 0 },
+      tint:     [0x6de3ff, 0xaaffff, 0xffffff, 0x2288ff],
+      lifespan: { min: 180, max: 320 },
+      emitting: false,
+      blendMode: 'ADD',
+    }).setDepth(21);
+    emitter.explode(10);
+    this.time.delayedCall(400, () => emitter.destroy());
+
+    this.cameras.main.shake(80, 0.004);
   }
 
   private spawnPickup(x: number, y: number, type: 'health' | 'fuel' | 'ammo' | 'score'): void {

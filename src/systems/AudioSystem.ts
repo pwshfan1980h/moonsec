@@ -8,7 +8,8 @@ type SoundId =
   | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
   | 'nanite-heal' | 'nanite-tick' | 'pickup' | 'eject'
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
-  | 'missile-launch' | 'landing-soft' | 'landing-heavy' | 'landing-slam';
+  | 'missile-launch' | 'landing-soft' | 'landing-heavy' | 'landing-slam'
+  | 'surge';
 
 type LoopId = 'jetpack' | 'missile' | 'missile-reload';
 
@@ -47,6 +48,7 @@ const VOLUMES: Record<SoundId, number> = {
   'landing-soft':   0.30,
   'landing-heavy':  0.50,
   'landing-slam':   0.85,
+  surge:            0.55,
 };
 
 export class AudioSystem {
@@ -103,6 +105,7 @@ export class AudioSystem {
     if (id === 'landing-soft')  { this.playProceduralOneShot(70, 0.08, 0.30); return; }
     if (id === 'landing-heavy') { this.playProceduralOneShot(55, 0.12, 0.50, { filterHz: 200 }); return; }
     if (id === 'landing-slam')  { this.playLandingSlam(); return; }
+    if (id === 'surge')         { this.playSurgeBurst(); return; }
 
     // Layered procedural additions
     if (id === 'explosion') this.playExplosionThump();
@@ -634,6 +637,45 @@ export class AudioSystem {
       rumbleNs.start(t);
       rumbleNs.stop(t + rumbleDur);
       rumbleNs.onended = () => { try { rumbleG.disconnect(); rumbleLp.disconnect(); } catch { /* ok */ } };
+    } catch { /* ignore */ }
+  }
+
+  /** Dash whoosh — short bandpass noise sweep + sub-thump. */
+  private playSurgeBurst(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+      const DUR = 0.22;
+
+      // Bandpass noise sweep 1.6 kHz → 400 Hz
+      const whooshG = this.ctx.createGain();
+      whooshG.gain.setValueAtTime(0.55, t);
+      whooshG.gain.exponentialRampToValueAtTime(0.0001, t + DUR);
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.setValueAtTime(1.6, t);
+      bp.frequency.setValueAtTime(1600, t);
+      bp.frequency.exponentialRampToValueAtTime(400, t + DUR);
+      const ns = this.ctx.createBufferSource();
+      ns.buffer = this.noiseBuffer;
+      ns.connect(bp); bp.connect(whooshG); whooshG.connect(this.ctx.destination);
+      ns.start(t);
+      ns.stop(t + DUR);
+      ns.onended = () => { try { whooshG.disconnect(); bp.disconnect(); } catch { /* ok */ } };
+
+      // Sub thump 70 → 40 Hz to give the burst body
+      const subG = this.ctx.createGain();
+      subG.gain.setValueAtTime(0.45, t);
+      subG.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      subG.connect(this.ctx.destination);
+      const sub = this.ctx.createOscillator();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(70, t);
+      sub.frequency.exponentialRampToValueAtTime(40, t + 0.16);
+      sub.connect(subG);
+      sub.start(t);
+      sub.stop(t + 0.16);
+      sub.onended = () => { try { subG.disconnect(); } catch { /* ok */ } };
     } catch { /* ignore */ }
   }
 
