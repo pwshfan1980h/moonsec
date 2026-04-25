@@ -139,9 +139,8 @@ export class DroneSpawner {
         m.setData('hitTarget', true);
         m.setActive(false).setVisible(false);
         if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.scene.spawnExplosion(m.x, m.y);
         (b as unknown as NexusBoss).takeDamage(3);
-        this.scene.cameras.main.shake(150, 0.01);
+        this.scene.spawnMissileBlast(m.x, m.y, { primary: b as Phaser.GameObjects.GameObject });
         this.scene.audio.play('explosion');
         this.scene.spawnFloatingText((b as Phaser.GameObjects.Sprite).x, (b as Phaser.GameObjects.Sprite).y - 30, '-3', '#ffff00');
       },
@@ -252,9 +251,8 @@ export class DroneSpawner {
             m.setData('hitTarget', true);
             m.setActive(false).setVisible(false);
             if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-            this.scene.spawnExplosion(m.x, m.y);
             (_d as unknown as StunDart).takeDamage(3);
-            this.scene.cameras.main.shake(150, 0.01);
+            this.scene.spawnMissileBlast(m.x, m.y, { primary: _d as Phaser.GameObjects.GameObject });
             this.scene.audio.play('explosion');
           });
 
@@ -300,9 +298,8 @@ export class DroneSpawner {
           m.setData('hitTarget', true);
           m.setActive(false).setVisible(false);
           if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-          this.scene.spawnExplosion(m.x, m.y);
           (d as unknown as Drone).takeDamage(3);
-          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.spawnMissileBlast(m.x, m.y, { primary: d as Phaser.GameObjects.GameObject });
           this.scene.audio.play('explosion');
           this.scene.spawnFloatingText((d as unknown as Drone).x, (d as unknown as Drone).y - 20, '-3', '#ffff00');
         });
@@ -346,9 +343,8 @@ export class DroneSpawner {
           m.setData('hitTarget', true);
           m.setActive(false).setVisible(false);
           if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-          this.scene.spawnExplosion(m.x, m.y);
           (_b as unknown as BomberDrone).takeDamage(3);
-          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.spawnMissileBlast(m.x, m.y, { primary: _b as Phaser.GameObjects.GameObject });
           this.scene.audio.play('explosion');
         });
     }
@@ -381,8 +377,8 @@ export class DroneSpawner {
               ms.setData('hitTarget', true);
               ms.setActive(false).setVisible(false);
               if (ms.body) (ms.body as Phaser.Physics.Arcade.Body).enable = false;
-              this.scene.spawnExplosion(ms.x, ms.y);
               (_m as unknown as Mine).takeDamage(1);
+              this.scene.spawnMissileBlast(ms.x, ms.y, { primary: _m as Phaser.GameObjects.GameObject });
             });
       }
     }
@@ -418,9 +414,8 @@ export class DroneSpawner {
           m.setData('hitTarget', true);
           m.setActive(false).setVisible(false);
           if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-          this.scene.spawnExplosion(m.x, m.y);
           (_c as unknown as Carrier).takeDamage(3);
-          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.spawnMissileBlast(m.x, m.y, { primary: _c as Phaser.GameObjects.GameObject });
           this.scene.audio.play('explosion');
         });
     }
@@ -456,9 +451,8 @@ export class DroneSpawner {
           m.setData('hitTarget', true);
           m.setActive(false).setVisible(false);
           if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-          this.scene.spawnExplosion(m.x, m.y);
           (_p as unknown as PPCPlatform).takeDamage(3);
-          this.scene.cameras.main.shake(150, 0.01);
+          this.scene.spawnMissileBlast(m.x, m.y, { primary: _p as Phaser.GameObjects.GameObject });
           this.scene.audio.play('explosion');
         });
     }
@@ -497,9 +491,8 @@ export class DroneSpawner {
               m.setData('hitTarget', true);
               m.setActive(false).setVisible(false);
               if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-              this.scene.spawnExplosion(m.x, m.y);
               (_t as unknown as ShieldedTank).takeDamage(3);
-              this.scene.cameras.main.shake(150, 0.01);
+              this.scene.spawnMissileBlast(m.x, m.y, { primary: _t as Phaser.GameObjects.GameObject });
               this.scene.audio.play('explosion');
             });
       }

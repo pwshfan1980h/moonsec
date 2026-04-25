@@ -260,7 +260,7 @@ export class GameScene extends Phaser.Scene {
       missile.setData('hitTarget', true);
       missile.setActive(false).setVisible(false);
       if (missile.body) (missile.body as Phaser.Physics.Arcade.Body).enable = false;
-      this.spawnExplosion(missile.x, missile.y);
+      this.spawnMissileBlast(missile.x, missile.y);
       this.audio.play('explosion');
     };
 
@@ -428,7 +428,7 @@ export class GameScene extends Phaser.Scene {
         const p = projObj as Phaser.Physics.Arcade.Image;
         p.setActive(false).setVisible(false);
         if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.spawnExplosion(m.x, m.y);
+        this.spawnMissileBlast(m.x, m.y);
         this.audio.play('explosion');
       },
     );
@@ -809,6 +809,78 @@ export class GameScene extends Phaser.Scene {
         if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
       }
     });
+  }
+
+  /**
+   * Missile detonation: existing fireball + a white-hot core flash + an expanding
+   * shockwave ring with a WebGL glow shader, plus AoE splash damage to nearby enemies.
+   * Pass `primary` so the directly-impacted enemy (already taking full damage from the
+   * collision handler) isn't double-damaged.
+   */
+  spawnMissileBlast(
+    x: number,
+    y: number,
+    opts?: { primary?: Phaser.GameObjects.GameObject; splashRadius?: number; splashDamage?: number },
+  ): void {
+    const radius = opts?.splashRadius ?? 110;
+    const splashDamage = opts?.splashDamage ?? 1;
+    const primary = opts?.primary ?? null;
+
+    // Existing particle fireball — preserves the orange/yellow shrapnel look
+    this.spawnExplosion(x, y);
+
+    // White-hot core flash — short, additive, fades fast
+    const core = this.add.graphics().setDepth(21).setBlendMode(Phaser.BlendModes.ADD);
+    const cs = { r: 4, a: 1 };
+    this.tweens.add({
+      targets: cs, r: radius * 0.42, a: 0,
+      duration: 200,
+      ease: 'Quad.Out',
+      onUpdate: () => {
+        core.clear();
+        core.fillStyle(0xffffcc, cs.a);
+        core.fillCircle(x, y, cs.r);
+      },
+      onComplete: () => core.destroy(),
+    });
+
+    // Expanding shockwave ring — Graphics with a WebGL glow post-FX
+    const ring = this.add.graphics().setDepth(22);
+    // postFX requires WebGL; guard so a Canvas fallback still renders the ring cleanly
+    try { ring.postFX?.addGlow(0xff8833, 6, 0, false, 0.1, 16); } catch { /* canvas — no glow */ }
+    const rs = { r: 8, a: 1 };
+    this.tweens.add({
+      targets: rs, r: radius, a: 0,
+      duration: 380,
+      ease: 'Cubic.Out',
+      onUpdate: () => {
+        ring.clear();
+        ring.lineStyle(4, 0xffaa44, rs.a);
+        ring.strokeCircle(x, y, rs.r);
+        ring.lineStyle(2, 0xffffff, rs.a * 0.7);
+        ring.strokeCircle(x, y, rs.r - 3);
+      },
+      onComplete: () => ring.destroy(),
+    });
+
+    this.cameras.main.shake(180, 0.012);
+
+    // AoE splash damage to drones + tanks within radius (skip the primary impact target)
+    const r2 = radius * radius;
+    const splashGroup = (group: Phaser.Physics.Arcade.Group): void => {
+      group.getChildren().forEach((go) => {
+        if (go === primary) return;
+        const obj = go as Phaser.GameObjects.Sprite & { takeDamage?: (n: number) => void };
+        if (!obj.active || typeof obj.takeDamage !== 'function') return;
+        const dx = obj.x - x;
+        const dy = obj.y - y;
+        if (dx * dx + dy * dy > r2) return;
+        obj.takeDamage(splashDamage);
+        this.spawnFloatingText(obj.x, obj.y - 16, `-${splashDamage}`, '#ffaa44');
+      });
+    };
+    splashGroup(this.drones);
+    splashGroup(this.tanks);
   }
 
   spawnExplosion(x: number, y: number): void {
