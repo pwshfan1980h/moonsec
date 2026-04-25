@@ -33,7 +33,7 @@ export class BootScene extends Phaser.Scene {
     // One-shot sound effects (loops handled procedurally in AudioSystem)
     const sounds = [
       'rapid','turret','hit','hurt','jump','death',
-      'drone-shoot','explosion','footstep','missile-impact',
+      'drone-shoot','explosion','missile-impact',
       'nanite-heal','nanite-tick','pickup',
       'ui-nav','ui-confirm','level-complete',
       'eject', // bullet-on-geometry ricochet

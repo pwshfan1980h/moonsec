@@ -8,7 +8,7 @@ type SoundId =
   | 'drone-shoot' | 'explosion' | 'footstep' | 'missile-impact'
   | 'nanite-heal' | 'nanite-tick' | 'pickup' | 'eject'
   | 'ui-nav' | 'ui-confirm' | 'level-complete'
-  | 'missile-launch' | 'landing-soft' | 'landing-heavy';
+  | 'missile-launch' | 'landing-soft' | 'landing-heavy' | 'landing-slam';
 
 type LoopId = 'jetpack' | 'missile' | 'missile-reload';
 
@@ -46,6 +46,7 @@ const VOLUMES: Record<SoundId, number> = {
   'missile-launch': 0.45,
   'landing-soft':   0.30,
   'landing-heavy':  0.50,
+  'landing-slam':   0.85,
 };
 
 export class AudioSystem {
@@ -98,8 +99,10 @@ export class AudioSystem {
 
     // Procedural sounds — bypass Phaser sound manager
     if (id === 'missile-launch') { this.playMissileLaunch(); return; }
+    if (id === 'footstep')      { this.playMechFootstep(); return; }
     if (id === 'landing-soft')  { this.playProceduralOneShot(70, 0.08, 0.30); return; }
     if (id === 'landing-heavy') { this.playProceduralOneShot(55, 0.12, 0.50, { filterHz: 200 }); return; }
+    if (id === 'landing-slam')  { this.playLandingSlam(); return; }
 
     // Layered procedural additions
     if (id === 'explosion') this.playExplosionThump();
@@ -379,12 +382,12 @@ export class AudioSystem {
     if (onGround && moving) {
       this.footstepTimer -= delta;
       if (this.footstepTimer <= 0) {
-        // Shorter interval when running (|vx| > ~250 px/s)
-        this.footstepTimer = Math.abs(velocityX) > 250 ? 140 : 280;
+        // Heavy mech cadence — lumbering, with a slightly tighter beat at full pace
+        this.footstepTimer = Math.abs(velocityX) > 250 ? 320 : 440;
         this.play('footstep');
       }
     } else {
-      this.footstepTimer = Math.min(this.footstepTimer, 140);
+      this.footstepTimer = Math.min(this.footstepTimer, 200);
     }
   }
 
@@ -489,6 +492,148 @@ export class AudioSystem {
       }
 
       osc.onended = () => { try { g.disconnect(); } catch { /* ok */ } };
+    } catch { /* ignore */ }
+  }
+
+  /** ED-209-style heavy mech footstep — hydraulic thud + metallic clank + servo whine. */
+  private playMechFootstep(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+
+      // 1. Sub-bass hydraulic thud — sine sweep 90→38 Hz
+      const thumpDur = 0.18;
+      const thumpG = this.ctx.createGain();
+      thumpG.gain.setValueAtTime(0.55, t);
+      thumpG.gain.exponentialRampToValueAtTime(0.0001, t + thumpDur);
+      thumpG.connect(this.ctx.destination);
+      const thump = this.ctx.createOscillator();
+      thump.type = 'sine';
+      thump.frequency.setValueAtTime(90, t);
+      thump.frequency.exponentialRampToValueAtTime(38, t + thumpDur);
+      thump.connect(thumpG);
+      thump.start(t);
+      thump.stop(t + thumpDur);
+      thump.onended = () => { try { thumpG.disconnect(); } catch { /* ok */ } };
+
+      // 2. Metallic clank — bandpassed noise burst around 2.4 kHz
+      const clankDur = 0.06;
+      const clankG = this.ctx.createGain();
+      clankG.gain.setValueAtTime(0.22, t);
+      clankG.gain.exponentialRampToValueAtTime(0.0001, t + clankDur);
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(2400, t);
+      bp.Q.setValueAtTime(4.5, t);
+      const clankNs = this.ctx.createBufferSource();
+      clankNs.buffer = this.noiseBuffer;
+      clankNs.connect(bp); bp.connect(clankG); clankG.connect(this.ctx.destination);
+      clankNs.start(t);
+      clankNs.stop(t + clankDur);
+      clankNs.onended = () => { try { clankG.disconnect(); bp.disconnect(); } catch { /* ok */ } };
+
+      // 3. Servo whine — short downsweep triangle 620→180 Hz, lags slightly behind the thump
+      const servoStart = t + 0.012;
+      const servoDur = 0.09;
+      const servoG = this.ctx.createGain();
+      servoG.gain.setValueAtTime(0, servoStart);
+      servoG.gain.linearRampToValueAtTime(0.10, servoStart + 0.008);
+      servoG.gain.exponentialRampToValueAtTime(0.0001, servoStart + servoDur);
+      servoG.connect(this.ctx.destination);
+      const servo = this.ctx.createOscillator();
+      servo.type = 'triangle';
+      servo.frequency.setValueAtTime(620, servoStart);
+      servo.frequency.exponentialRampToValueAtTime(180, servoStart + servoDur);
+      servo.connect(servoG);
+      servo.start(servoStart);
+      servo.stop(servoStart + servoDur);
+      servo.onended = () => { try { servoG.disconnect(); } catch { /* ok */ } };
+
+      // 4. Floor rumble tail — lowpassed noise after the impact
+      const rumbleStart = t + 0.01;
+      const rumbleDur = 0.14;
+      const rumbleG = this.ctx.createGain();
+      rumbleG.gain.setValueAtTime(0.16, rumbleStart);
+      rumbleG.gain.exponentialRampToValueAtTime(0.0001, rumbleStart + rumbleDur);
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(160, rumbleStart);
+      const rumbleNs = this.ctx.createBufferSource();
+      rumbleNs.buffer = this.noiseBuffer;
+      rumbleNs.connect(lp); lp.connect(rumbleG); rumbleG.connect(this.ctx.destination);
+      rumbleNs.start(rumbleStart);
+      rumbleNs.stop(rumbleStart + rumbleDur);
+      rumbleNs.onended = () => { try { rumbleG.disconnect(); lp.disconnect(); } catch { /* ok */ } };
+    } catch { /* ignore */ }
+  }
+
+  /** Heavy slam from height — sub-bass crash + metal debris rattle + long rumble tail. */
+  private playLandingSlam(): void {
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      const t = this.ctx.currentTime;
+
+      // Sub-bass impact — sine sweep 110→22 Hz
+      const subDur = 0.42;
+      const subG = this.ctx.createGain();
+      subG.gain.setValueAtTime(0.95, t);
+      subG.gain.exponentialRampToValueAtTime(0.0001, t + subDur);
+      subG.connect(this.ctx.destination);
+      const sub = this.ctx.createOscillator();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(110, t);
+      sub.frequency.exponentialRampToValueAtTime(22, t + subDur);
+      sub.connect(subG);
+      sub.start(t);
+      sub.stop(t + subDur);
+      sub.onended = () => { try { subG.disconnect(); } catch { /* ok */ } };
+
+      // Metal crash — broad bandpass noise burst, ~1.5 kHz
+      const crashDur = 0.18;
+      const crashG = this.ctx.createGain();
+      crashG.gain.setValueAtTime(0.45, t);
+      crashG.gain.exponentialRampToValueAtTime(0.0001, t + crashDur);
+      const crashBp = this.ctx.createBiquadFilter();
+      crashBp.type = 'bandpass';
+      crashBp.frequency.setValueAtTime(1500, t);
+      crashBp.Q.setValueAtTime(1.4, t);
+      const crashNs = this.ctx.createBufferSource();
+      crashNs.buffer = this.noiseBuffer;
+      crashNs.connect(crashBp); crashBp.connect(crashG); crashG.connect(this.ctx.destination);
+      crashNs.start(t);
+      crashNs.stop(t + crashDur);
+      crashNs.onended = () => { try { crashG.disconnect(); crashBp.disconnect(); } catch { /* ok */ } };
+
+      // Debris rattle — high-shelf noise gated by an LFO for 0.3s
+      const ratStart = t + 0.05;
+      const ratDur = 0.30;
+      const ratG = this.ctx.createGain();
+      ratG.gain.setValueAtTime(0.12, ratStart);
+      ratG.gain.exponentialRampToValueAtTime(0.0001, ratStart + ratDur);
+      const ratHp = this.ctx.createBiquadFilter();
+      ratHp.type = 'highpass';
+      ratHp.frequency.setValueAtTime(3500, ratStart);
+      const ratNs = this.ctx.createBufferSource();
+      ratNs.buffer = this.noiseBuffer;
+      ratNs.connect(ratHp); ratHp.connect(ratG); ratG.connect(this.ctx.destination);
+      ratNs.start(ratStart);
+      ratNs.stop(ratStart + ratDur);
+      ratNs.onended = () => { try { ratG.disconnect(); ratHp.disconnect(); } catch { /* ok */ } };
+
+      // Rumble tail — lowpassed noise, 0.5s
+      const rumbleDur = 0.50;
+      const rumbleG = this.ctx.createGain();
+      rumbleG.gain.setValueAtTime(0.28, t);
+      rumbleG.gain.exponentialRampToValueAtTime(0.0001, t + rumbleDur);
+      const rumbleLp = this.ctx.createBiquadFilter();
+      rumbleLp.type = 'lowpass';
+      rumbleLp.frequency.setValueAtTime(180, t);
+      const rumbleNs = this.ctx.createBufferSource();
+      rumbleNs.buffer = this.noiseBuffer;
+      rumbleNs.connect(rumbleLp); rumbleLp.connect(rumbleG); rumbleG.connect(this.ctx.destination);
+      rumbleNs.start(t);
+      rumbleNs.stop(t + rumbleDur);
+      rumbleNs.onended = () => { try { rumbleG.disconnect(); rumbleLp.disconnect(); } catch { /* ok */ } };
     } catch { /* ignore */ }
   }
 

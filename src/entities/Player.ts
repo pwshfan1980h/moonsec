@@ -213,8 +213,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (this.wasAirborne && !airborne) {
       // Landing frame: velocity.y is 0 now, use prev frame's value
-      const sound = this.prevVelocityY > 300 ? 'landing-heavy' : 'landing-soft';
-      this.scene.audio.play(sound);
+      const vy = this.prevVelocityY;
+      if (vy > 600) {
+        this.scene.audio.play('landing-slam');
+        this.scene.cameras.main.shake(160, 0.014);
+      } else if (vy > 300) {
+        this.scene.audio.play('landing-heavy');
+        this.scene.cameras.main.shake(60, 0.005);
+      } else {
+        this.scene.audio.play('landing-soft');
+      }
     }
 
     this.wasAirborne = airborne;
