@@ -79,11 +79,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image('industrial-tileset-violet', 'assets/industrial-tileset-violet.png');
 
     // Collectables spritesheet (16x16 tiles, 8×6 grid)
-    this.load.spritesheet('collectables', 'assets/collectables.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('collectables', `assets/collectables.png?v=${__APP_VERSION__}`, { frameWidth: 16, frameHeight: 16 });
 
     // Load new SVG assets for visual upgrades
-    this.load.svg('logo', 'assets/logo.svg', { width: 600, height: 150 });
-    this.load.svg('flare', 'assets/flare.svg', { width: 32, height: 32 });
+    this.load.svg('logo', `assets/logo.svg?v=${__APP_VERSION__}`, { width: 600, height: 150 });
+    this.load.svg('flare', `assets/flare.svg?v=${__APP_VERSION__}`, { width: 32, height: 32 });
   }
 
   create(): void {

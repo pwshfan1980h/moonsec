@@ -11,7 +11,7 @@ import { PPCPlatform } from '../entities/PPCPlatform';
 import { Carrier } from '../entities/Carrier';
 import type { DroneVariant, DroneType } from '../entities/Drone';
 import type { EnemyMix } from '../data/levelConfigs';
-import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, GAME_W, GAME_H, PATROL_LANES } from '../constants';
+import { WORLD_WIDTH, WAVE_BRACKETS, GAME_W, GAME_H, PATROL_LANES } from '../constants';
 import { WaveHostileCounter } from './WaveHostileCounter';
 
 export interface DroneScaling {
@@ -36,6 +36,9 @@ export class DroneSpawner {
   private readonly bossType:  BossType;
   private readonly enemyMix:  EnemyMix;
   private bossActive = false;
+  private readonly onHostileSpawned: (count?: number) => void;
+  private readonly onDroneKilled: () => void;
+  private readonly onBossKilled: () => void;
 
   constructor(
     scene:     GameScene,
@@ -48,29 +51,41 @@ export class DroneSpawner {
     this.bossType  = bossType;
     this.enemyMix  = enemyMix;
 
-    scene.events.on('hostileSpawned', (count = 1) => {
+    this.onHostileSpawned = (count = 1) => {
       scene.events.emit('dronesRemaining', this.hostileCounter.add(count));
-    });
+    };
 
-    scene.events.on('droneKilled', () => {
+    this.onDroneKilled = () => {
       const remaining = this.hostileCounter.remove();
+      scene.events.emit('hostileKilled');
       scene.events.emit('dronesRemaining', remaining);
       if (remaining === 0 && !this.spawning && this.waveIndex > 0) {
         scene.events.emit('waveCleared', this.waveIndex);
       }
-    });
+    };
 
-    scene.events.on('bossKilled', () => {
+    this.onBossKilled = () => {
       const remaining = this.hostileCounter.remove();
+      scene.events.emit('hostileKilled');
       scene.events.emit('dronesRemaining', remaining);
       this.isBossDead = true;
       if (remaining === 0) {
         scene.events.emit('levelComplete');
       }
-    });
+    };
+
+    scene.events.on('hostileSpawned', this.onHostileSpawned);
+    scene.events.on('droneKilled', this.onDroneKilled);
+    scene.events.on('bossKilled', this.onBossKilled);
   }
 
-  isBossWave(): boolean { return this.waveIndex >= this.waveCount; }
+  isBossWave(): boolean { return this.waveIndex > this.waveCount; }
+
+  destroy(): void {
+    this.scene.events.off('hostileSpawned', this.onHostileSpawned);
+    this.scene.events.off('droneKilled', this.onDroneKilled);
+    this.scene.events.off('bossKilled', this.onBossKilled);
+  }
 
   update(time: number, _delta: number): void {
     if (this.spawning || this.isBossDead) return;
@@ -90,8 +105,8 @@ export class DroneSpawner {
     let bracket = WAVE_BRACKETS[0];
     for (const b of WAVE_BRACKETS) if (this.waveIndex >= b.minWave) bracket = b;
 
-    // Final wave — trigger boss phase
-    if (this.waveIndex >= this.waveCount) {
+    // After the configured normal waves, trigger the boss phase.
+    if (this.waveIndex > this.waveCount) {
       this.scene.events.emit('waveStart', this.waveIndex, this.waveCount, 1);
       this.spawning   = false;
       this.bossActive = true;
@@ -215,7 +230,7 @@ export class DroneSpawner {
         spawnX = Phaser.Math.Clamp(Phaser.Math.Between(vx, vx + GAME_W), 0, WORLD_WIDTH);
         spawnY = vy - MARGIN;
       }
-      spawnY = Phaser.Math.Clamp(spawnY, -200, GROUND_Y - 50);
+      spawnY = Phaser.Math.Clamp(spawnY, -200, this.scene.getApproxGroundY() - 50);
 
       // Enemy mix: aerial suppresses sentinels/stundarts in favour of more drones
       const mix = this.enemyMix;
@@ -226,7 +241,7 @@ export class DroneSpawner {
       const type: DroneType = isSentinel ? 'sentinel'
         : (i % 2 === 0 ? 'drone-red' : 'drone-green');
 
-      const patrolY      = Math.min(lane, GROUND_Y - 40);
+      const patrolY      = Math.min(lane, this.scene.getApproxGroundY() - 40);
       const finalSpawnY  = side === 2 ? spawnY : patrolY;
 
       if (isStunDart) {
@@ -387,7 +402,8 @@ export class DroneSpawner {
     if (wantsCarrier) {
       const cam = this.scene.cameras.main;
       const cx  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.65, 300, WORLD_WIDTH - 300);
-      const cy  = Phaser.Math.Clamp(GROUND_Y - 260, 160, GROUND_Y - 180);
+      const groundY = this.scene.getApproxGroundY();
+      const cy  = Phaser.Math.Clamp(groundY - 260, 160, groundY - 180);
       const carrier = new Carrier(this.scene, cx, cy);
       this.scene.add.existing(carrier);
       this.scene.physics.add.existing(carrier);
@@ -423,7 +439,8 @@ export class DroneSpawner {
     if (wantsPpc) {
       const cam = this.scene.cameras.main;
       const px  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.7, 200, WORLD_WIDTH - 200);
-      const py  = Phaser.Math.Clamp(GROUND_Y - 340, 120, GROUND_Y - 200);
+      const groundY = this.scene.getApproxGroundY();
+      const py  = Phaser.Math.Clamp(groundY - 340, 120, groundY - 200);
       const platform = new PPCPlatform(this.scene, px, py);
       this.scene.add.existing(platform);
       this.scene.physics.add.existing(platform);

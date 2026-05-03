@@ -92,6 +92,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private naniteAmbient!: Phaser.GameObjects.Particles.ParticleEmitter;
   private naniteSpark!:   Phaser.GameObjects.Particles.ParticleEmitter;
   private naniteSparkEvent: Phaser.Time.TimerEvent | null = null;
+  private readonly onPointerDown: (ptr: Phaser.Input.Pointer) => void;
+  private readonly onContextMenu: (event: MouseEvent) => void;
 
   constructor(scene: GameScene, x: number, y: number, mechType: MechType = 'mech') {
     const cfg = MECH_CONFIG[mechType] ?? MECH_CONFIG['mech'];
@@ -131,16 +133,18 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.missile  = new HomingMissile(scene);
 
     // Left-click: turret fire
-    scene.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
+    this.onPointerDown = (ptr: Phaser.Input.Pointer) => {
       if (this.dead) return;
       if (ptr.leftButtonDown()) {
         const wp = scene.cameras.main.getWorldPoint(ptr.x, ptr.y);
         this.turret.fire(this.x, this.y, wp.x, wp.y, scene.time.now);
       }
-    });
+    };
+    scene.input.on('pointerdown', this.onPointerDown);
 
     // Prevent context menu on right-click
-    scene.game.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.onContextMenu = (event: MouseEvent) => event.preventDefault();
+    scene.game.canvas.addEventListener('contextmenu', this.onContextMenu);
 
     this.play(this.animPrefix + 'idle');
 
@@ -521,9 +525,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
+    this.scene.input.off('pointerdown', this.onPointerDown);
+    this.scene.game.canvas.removeEventListener('contextmenu', this.onContextMenu);
     this.stopNaniteParticles();
     this.jetpackInner.destroy();
     this.jetpackOuter.destroy();
+    this.jetpackSmoke.destroy();
     this.naniteAmbient.destroy();
     this.naniteSpark.destroy();
     super.destroy(fromScene);

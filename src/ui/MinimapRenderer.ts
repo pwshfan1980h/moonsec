@@ -7,7 +7,6 @@ import {
   RADAR_X,
   RADAR_Y,
   MISSILE_SEEK_RANGE,
-  GROUND_Y,
 } from '../constants';
 
 interface Ping {
@@ -68,7 +67,7 @@ export class MinimapRenderer {
     gfx.strokeCircle(RADAR_X, RADAR_Y, R);
 
     // ── 2. Ground line (clipped to circle) ────────────────────────
-    const groundProj = proj(px, GROUND_Y);
+    const groundProj = proj(px, game.getApproxGroundY());
     const ghw = chordHW(groundProj.y);
     if (ghw > 0) {
       gfx.lineStyle(2, 0x3a7a96, 0.65);
@@ -163,10 +162,10 @@ export class MinimapRenderer {
         gfx.lineStyle(1.5, 0x6de3ff, 1);
         gfx.strokePoints(
           [
-            { x: dp.x,     y: dp.y - s },
-            { x: dp.x + s, y: dp.y     },
-            { x: dp.x,     y: dp.y + s },
-            { x: dp.x - s, y: dp.y     },
+            new Phaser.Math.Vector2(dp.x,     dp.y - s),
+            new Phaser.Math.Vector2(dp.x + s, dp.y),
+            new Phaser.Math.Vector2(dp.x,     dp.y + s),
+            new Phaser.Math.Vector2(dp.x - s, dp.y),
           ],
           true, // closeShape — draws back to first point
         );

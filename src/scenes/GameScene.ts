@@ -1,18 +1,20 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import type { MechType } from '../entities/Player';
-import { StunDart } from '../entities/StunDart';
-import { PPCRound } from '../entities/PPCRound';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
 import { PlayerHud } from '../ui/PlayerHud';
 import { MovingPlatform } from '../entities/MovingPlatform';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, RAPID_AMMO_PER_PICKUP, PICKUP_LIFETIME_MS } from '../constants';
+import { PPCRound } from '../entities/PPCRound';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT } from '../constants';
 import { buildMap } from '../data/levelData';
 import { LEVEL_CONFIGS, NODE_GRAPH } from '../data/levelConfigs';
 import type { LevelConfig } from '../data/levelConfigs';
 import { DebugLog } from '../systems/DebugLog';
+import { PickupSystem } from '../systems/PickupSystem';
+import type { PickupType } from '../systems/PickupSystem';
+import { CollisionRegistry } from '../collisions/CollisionRegistry';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -35,9 +37,11 @@ export class GameScene extends Phaser.Scene {
   private killStreak = 0;
   private prevHp = 0;
 
-  private ground!: Phaser.Physics.Arcade.StaticGroup;
-  private groundLayer?: Phaser.Tilemaps.TilemapLayer;
-  private spawner!: DroneSpawner;
+  ground!: Phaser.Physics.Arcade.StaticGroup;
+  groundLayer?: Phaser.Tilemaps.TilemapLayer | Phaser.Tilemaps.TilemapGPULayer;
+  private spawner?: DroneSpawner;
+  private pickupSystem?: PickupSystem;
+  private gameEventUnsubs: Array<() => void> = [];
   private bgStars?: Phaser.GameObjects.TileSprite;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
   private bgHaze?: Phaser.GameObjects.TileSprite;
@@ -83,6 +87,7 @@ export class GameScene extends Phaser.Scene {
     this.isGameOver   = false;
     this.killStreak   = 0;
     this.prevHp       = 0;
+    this.gameEventUnsubs = [];
     this.isBossDead      = false;
     this.bgHaze          = undefined;
     this.bgStars         = undefined;
@@ -202,6 +207,7 @@ export class GameScene extends Phaser.Scene {
       runChildUpdate: false,
       allowGravity: true,
     });
+    this.pickupSystem = new PickupSystem(this);
 
     this.bossProjectiles = this.physics.add.group({
       defaultKey: 'boss-projectile',
@@ -235,208 +241,8 @@ export class GameScene extends Phaser.Scene {
     pb.setCollideWorldBounds(true);
     pb.setMaxVelocityX(400);
 
-    // Player lands on ground
-    this.physics.add.collider(this.player, this.ground);
-    if (this.groundLayer) this.physics.add.collider(this.player, this.groundLayer);
-
-    // Tanks land on ground
-    this.physics.add.collider(this.tanks, this.ground);
-    if (this.groundLayer) this.physics.add.collider(this.tanks, this.groundLayer);
-
-    // Pickups land on ground
-    this.physics.add.collider(this.pickups, this.ground);
-    if (this.groundLayer) this.physics.add.collider(this.pickups, this.groundLayer);
-
-    // --- Geometry collision for projectiles & enemies ---
-
-    const killBullet = (b: unknown) => {
-      const bullet = b as Phaser.Physics.Arcade.Image;
-      if (!bullet.active) return;
-      const ix = bullet.x, iy = bullet.y;
-      bullet.setActive(false).setVisible(false);
-      if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
-      this.spawnBulletImpact(ix, iy, 'geometry');
-      this.audio.play('eject');
-    };
-
-    const killMissile = (m: unknown) => {
-      const missile = m as Phaser.Physics.Arcade.Image;
-      if (!missile.active) return;
-      missile.setData('hitTarget', true);
-      missile.setActive(false).setVisible(false);
-      if (missile.body) (missile.body as Phaser.Physics.Arcade.Body).enable = false;
-      this.spawnMissileBlast(missile.x, missile.y);
-      this.audio.play('explosion');
-    };
-
-    const killBulletOnTile = (b: unknown, tile: unknown) => {
-      if (!(tile as Phaser.Tilemaps.Tile).collides) return;
-      killBullet(b);
-    };
-
-    // Player bullets destroyed by geometry
-    this.physics.add.overlap(this.playerBullets, this.ground, killBullet);
-    if (this.groundLayer) this.physics.add.overlap(this.playerBullets, this.groundLayer, killBulletOnTile);
-
-    // Drone bullets destroyed by geometry
-    this.physics.add.overlap(this.droneBullets, this.ground, killBullet);
-    if (this.groundLayer) this.physics.add.overlap(this.droneBullets, this.groundLayer, killBulletOnTile);
-
-    // Boss projectiles destroyed by geometry
-    this.physics.add.overlap(this.bossProjectiles, this.ground, killBullet);
-    if (this.groundLayer) this.physics.add.overlap(this.bossProjectiles, this.groundLayer, killBulletOnTile);
-
-    // Missiles explode on geometry
-    this.physics.add.overlap(this.missiles, this.ground, (m) => killMissile(m));
-    if (this.groundLayer) this.physics.add.overlap(this.missiles, this.groundLayer, (m, tile) => {
-      if (!(tile as Phaser.Tilemaps.Tile).collides) return;
-      killMissile(m);
-    });
-
-    // Enemies blocked by geometry
-    this.physics.add.collider(this.drones, this.ground);
-    if (this.groundLayer) this.physics.add.collider(this.drones, this.groundLayer);
-
-    // Drone bullets hit player
-    this.physics.add.overlap(
-      this.droneBullets,
-      this.player,
-      (playerObj, b) => {
-        const bullet = b as Phaser.Physics.Arcade.Image;
-        bullet.setActive(false).setVisible(false);
-        if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
-        const dmg = (bullet.getData('damage') as number | undefined) ?? 1;
-        (playerObj as Player).takeDamage(dmg);
-        this.cameras.main.shake(80, 0.006);
-      },
-    );
-
-    // StunDart rams player — EMP stun
-    this.physics.add.overlap(
-      this.drones,
-      this.player,
-      (playerObj, dartObj) => {
-        if (!(dartObj instanceof StunDart)) return;
-        (dartObj as StunDart).onHitPlayer(playerObj as Player);
-      },
-    );
-
-    // Pickups collected by mech
-    this.physics.add.overlap(
-      this.pickups,
-      this.player,
-      (_p, pickup) => {
-        const pk = pickup as Phaser.Physics.Arcade.Image;
-        if (!pk.active) return;
-        this.tweens.killTweensOf(pk);
-        pk.setAlpha(1);
-        pk.setActive(false).setVisible(false);
-        if (pk.body) (pk.body as Phaser.Physics.Arcade.Body).enable = false;
-        const pickupType = pk.getData('type') as string;
-        // Distinct pitch per type makes the feedback readable without a new sample.
-        let rate = 1;
-        let label = '+ITEM';
-        let color = '#ffffff';
-        if (pickupType === 'health') {
-          this.player.heal(1);
-          rate = 1.25;
-          label = '+1 HP';
-          color = '#5cff8a';
-        } else if (pickupType === 'ammo') {
-          this.player.refillRapidAmmo(RAPID_AMMO_PER_PICKUP);
-          rate = 0.85;
-          label = `+${RAPID_AMMO_PER_PICKUP} AMMO`;
-          color = '#6de3ff';
-        } else if (pickupType === 'score') {
-          const pts = (pk.getData('points') as number | undefined) ?? 100;
-          this.score += pts;
-          this.events.emit('scoreChange', this.score);
-          rate = 1.5;
-          label = `+${pts}`;
-          color = '#ffd744';
-        } else {
-          this.player.restoreJetpackFuel(1000);
-          rate = 0.95;
-          label = '+FUEL';
-          color = '#ffb347';
-        }
-        this.audio.playAt('pickup', { rate });
-        this.spawnFloatingText(pk.x, pk.y - 8, label, color, {
-          fontSize: '16px', rise: 44, duration: 750, stroke: '#000814',
-        });
-      },
-    );
-
-    // Player bullets destroy boss projectiles
-    this.physics.add.overlap(
-      this.playerBullets,
-      this.bossProjectiles,
-      (_proj, bullet) => {
-        const b = bullet as Phaser.Physics.Arcade.Image;
-        const ix = b.x, iy = b.y;
-        b.setActive(false).setVisible(false);
-        if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
-        const p = _proj as Phaser.Physics.Arcade.Image;
-        p.setActive(false).setVisible(false);
-        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.spawnBulletImpact(ix, iy, 'enemy');
-        this.audio.play('hit');
-      },
-    );
-
-    // Boss projectiles hit player
-    this.physics.add.overlap(
-      this.bossProjectiles,
-      this.player,
-      (projObj, playerObj) => {
-        const p = projObj as Phaser.Physics.Arcade.Image;
-        if (!p.active) return;
-        p.setActive(false).setVisible(false);
-        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
-        (playerObj as Player).takeDamage(1);
-        this.cameras.main.shake(100, 0.008);
-      },
-    );
-
-    // PPC rounds hit player — high damage, big shake, detonate
-    this.physics.add.overlap(
-      this.ppcRounds,
-      this.player,
-      (roundObj, playerObj) => {
-        const r = roundObj as PPCRound;
-        if (!r.active) return;
-        (playerObj as Player).takeDamage(3);
-        r.detonate(true);
-      },
-    );
-
-    // PPC rounds detonate on geometry
-    this.physics.add.overlap(this.ppcRounds, this.ground, (r) => {
-      const round = r as PPCRound;
-      if (round.active) round.detonate(false);
-    });
-    if (this.groundLayer) this.physics.add.overlap(this.ppcRounds, this.groundLayer, (r, tile) => {
-      if (!(tile as Phaser.Tilemaps.Tile).collides) return;
-      const round = r as PPCRound;
-      if (round.active) round.detonate(false);
-    });
-
-    // Missiles are intercepted by boss projectiles
-    this.physics.add.overlap(
-      this.missiles,
-      this.bossProjectiles,
-      (projObj, missile) => {
-        const m = missile as Phaser.Physics.Arcade.Image;
-        m.setData('hitTarget', true);
-        m.setActive(false).setVisible(false);
-        if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-        const p = projObj as Phaser.Physics.Arcade.Image;
-        p.setActive(false).setVisible(false);
-        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.spawnMissileBlast(m.x, m.y);
-        this.audio.play('explosion');
-      },
-    );
+    new CollisionRegistry(this).registerCore();
+    this.pickupSystem.registerCollectionOverlap();
 
     // --- Camera ---
     this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAME_H - 120));
@@ -447,17 +253,7 @@ export class GameScene extends Phaser.Scene {
     this.movingPlatforms = this.physics.add.group({ runChildUpdate: true });
     if (this.activeConfig.movingPlatforms) {
       this.spawnMovingPlatforms();
-      this.physics.add.collider(this.player, this.movingPlatforms);
-    }
-
-    // --- Void death zone (all levels — pits and void bottoms both kill) ---
-    {
-      const deathY = WORLD_HEIGHT + 80;
-      const voidSensor = this.add.rectangle(WORLD_WIDTH / 2, deathY, WORLD_WIDTH, 40, 0xff0000, 0);
-      this.physics.add.existing(voidSensor, true); // static
-      this.physics.add.overlap(this.player, voidSensor, () => {
-        if (!this.isGameOver) this.triggerGameOver();
-      });
+      new CollisionRegistry(this).registerMovingPlatforms();
     }
 
     // --- Spawner ---
@@ -466,16 +262,18 @@ export class GameScene extends Phaser.Scene {
     this.music?.start(0.35);
 
     // --- Wave audio ---
-    this.events.on('waveStart', (wave: number) => {
+    const onWaveStart = (wave: number) => {
       this.audio.playWaveStinger();
-      if (wave >= cfg.waveCount) this.music?.setBossMode();
-    });
+      if (wave > cfg.waveCount) this.music?.setBossMode();
+    };
+    this.events.on('waveStart', onWaveStart);
+    this.gameEventUnsubs.push(() => this.events.off('waveStart', onWaveStart));
 
     // --- Score tracking + kill streak + pickups ---
     const STREAK_MILESTONES = [3, 5, 10, 20];
     const STREAK_BONUSES    = [50, 100, 150, 200];
 
-    this.events.on('droneKilled', (x: number, y: number) => {
+    const onDroneKilled = (x: number, y: number) => {
       // Base 100pts now drops as a pickup — must be collected.
       this.spawnPickup(x, y, 'score');
 
@@ -501,28 +299,39 @@ export class GameScene extends Phaser.Scene {
       } else if (roll < 0.58) {
         this.spawnPickup(x, y, 'ammo');
       }
-    });
+    };
+    this.events.on('droneKilled', onDroneKilled);
+    this.gameEventUnsubs.push(() => this.events.off('droneKilled', onDroneKilled));
 
     // Reset kill streak on damage
-    this.events.on('healthChange', (hp: number) => {
+    const onHealthChange = (hp: number) => {
       if (hp < this.prevHp) {
         this.killStreak = 0;
       }
       this.prevHp = hp;
-    });
+    };
+    this.events.on('healthChange', onHealthChange);
+    this.gameEventUnsubs.push(() => this.events.off('healthChange', onHealthChange));
 
-    this.events.on('gameOver', () => {
+    const onGameOver = () => {
       this.isGameOver = true;
-    });
+    };
+    this.events.on('gameOver', onGameOver);
+    this.gameEventUnsubs.push(() => this.events.off('gameOver', onGameOver));
 
-    this.events.on('bossKilled', () => {
+    const onBossKilled = () => {
       this.score += 1000;
       this.events.emit('scoreChange', this.score);
-    });
+    };
+    this.events.on('bossKilled', onBossKilled);
+    this.gameEventUnsubs.push(() => this.events.off('bossKilled', onBossKilled));
+
     // levelComplete fires after final boss dies (emitted by DroneSpawner)
-    this.events.on('levelComplete', () => {
+    const onLevelComplete = () => {
       this.isBossDead = true;
-    });
+    };
+    this.events.on('levelComplete', onLevelComplete);
+    this.gameEventUnsubs.push(() => this.events.off('levelComplete', onLevelComplete));
 
     // --- Emit initial HUD state ---
     this.events.emit('healthChange', this.player.hp, this.player.maxHp);
@@ -545,25 +354,21 @@ export class GameScene extends Phaser.Scene {
       velocityX: pb.velocity.x,
       delta,
     });
-    this.spawner.update(time, delta);
+    this.spawner?.update(time, delta);
     // Moving platforms: runChildUpdate is true on the group, so they self-update
     this.ppcRounds.getChildren().forEach((go) => {
       const r = go as PPCRound;
       if (r.active) r.tick(delta);
     });
     this.cullBullets();
-    this.updatePickupMagnet();
+    this.pickupSystem?.updateMagnet();
     this.updateParallax(delta);
   }
 
   shutdown(): void {
-    this.events.removeAllListeners('waveStart');
-    this.events.removeAllListeners('droneKilled');
-    this.events.removeAllListeners('hostileSpawned');
-    this.events.removeAllListeners('healthChange');
-    this.events.removeAllListeners('gameOver');
-    this.events.removeAllListeners('bossKilled');
-    this.events.removeAllListeners('levelComplete');
+    for (const unsub of this.gameEventUnsubs.splice(0)) unsub();
+    this.spawner?.destroy();
+    this.spawner = undefined;
     this.music?.destroy();
     this.music = null;
     this.audio?.destroy();
@@ -577,6 +382,10 @@ export class GameScene extends Phaser.Scene {
     if (this.isGameOver) return;
     this.isGameOver = true;
     this.events.emit('gameOver');
+  }
+
+  public isGameOverActive(): boolean {
+    return this.isGameOver;
   }
 
   public getPlayerPos(): { x: number; y: number } {
@@ -733,101 +542,10 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(80, 0.004);
   }
 
-  private spawnPickup(x: number, y: number, type: 'health' | 'fuel' | 'ammo' | 'score'): void {
-    const key = 'collectables';
-    let frame = 36;
-    let tint: number | null = null;
-    if (type === 'health') {
-      frame = Math.random() < 0.5 ? 36 : 44;
-    } else if (type === 'fuel') {
-      frame = Math.random() < 0.5 ? 32 : 40;
-    } else if (type === 'ammo') {
-      // ammo — cyan tint over a neutral shape to read as rapid-ammo cell
-      frame = Math.random() < 0.5 ? 9 : 17;
-      tint = 0x00ffff;
-    } else {
-      // score — credit chip, gold-tinted
-      frame = Math.random() < 0.5 ? 4 : 12;
-      tint = 0xffcc33;
-    }
-    const p = this.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
-    if (!p) return;
-    const size = 44;
-    // Crop out the transparent padding baked into each 16x16 frame so the
-    // sprite hugs its artwork and sits flush on the ground.
-    const CONTENT = 12; // source-pixel content area inside the 16x16 frame
-    const PAD = (16 - CONTENT) / 2;
-    p.setCrop(PAD, PAD, CONTENT, CONTENT);
-    p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
-      .setScale(1, 1).setDisplaySize(size, size);
-    if (tint !== null) p.setTint(tint); else p.clearTint();
-    p.setData('type', type);
-    p.setData('landed', false);
-    p.setData('hopped', false);
-    if (type === 'score') p.setData('points', 100);
-    if (p.body) {
-      const pb = p.body as Phaser.Physics.Arcade.Body;
-      pb.enable = true;
-      // Body matches the cropped content so it lands flush with the ground.
-      const bodySize = size * (CONTENT / 16);
-      pb.setSize(bodySize, bodySize, true);
-      pb.setAllowGravity(true);
-      pb.setVelocity(
-        Phaser.Math.Between(-140, 140),
-        Phaser.Math.Between(-320, -200),
-      );
-      pb.setDrag(60, 0);
-      pb.setBounce(0.25, 0.2);
-    }
-
-    // Spawn-pop: brief scale-up + white flash so drops read at the moment of birth.
-    const popDx = p.displayWidth;
-    const popDy = p.displayHeight;
-    p.setDisplaySize(popDx * 0.6, popDy * 0.6);
-    this.tweens.add({
-      targets: p,
-      displayWidth:  popDx,
-      displayHeight: popDy,
-      duration: 180,
-      ease: 'Back.easeOut',
-    });
-    p.setTintFill(0xffffff);
-    this.time.delayedCall(80, () => {
-      if (!p.active) return;
-      if (tint !== null) p.setTint(tint); else p.clearTint();
-    });
-
-    // Start pulse warning 3s before despawn (at t=7s)
-    this.time.delayedCall(7000, () => {
-      if (!p.active) return;
-      this.tweens.add({
-        targets: p,
-        alpha: { from: 1, to: 0.25 },
-        duration: 350,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    });
-
-    // Attention-grab hop at t=8s (2s before despawn) — small jump if still grounded.
-    this.time.delayedCall(8000, () => {
-      if (!p.active || p.getData('hopped')) return;
-      p.setData('hopped', true);
-      const pb = p.body as Phaser.Physics.Arcade.Body | null;
-      if (pb && pb.blocked.down) pb.setVelocityY(-240);
-    });
-
-    // Despawn after 10s
-    this.time.delayedCall(PICKUP_LIFETIME_MS, () => {
-      if (p.active) {
-        this.tweens.killTweensOf(p);
-        p.setAlpha(1);
-        p.setActive(false).setVisible(false);
-        if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
-      }
-    });
+  private spawnPickup(x: number, y: number, type: PickupType): void {
+    this.pickupSystem?.spawn(x, y, type);
   }
+
 
   /**
    * Missile detonation: existing fireball + a white-hot core flash + an expanding
@@ -864,8 +582,9 @@ export class GameScene extends Phaser.Scene {
 
     // Expanding shockwave ring — Graphics with a WebGL glow post-FX
     const ring = this.add.graphics().setDepth(22);
-    // postFX requires WebGL; guard so a Canvas fallback still renders the ring cleanly
-    try { ring.postFX?.addGlow(0xff8833, 6, 0, false, 0.1, 16); } catch { /* canvas — no glow */ }
+    // postFX requires WebGL; guard so a Canvas fallback still renders the ring cleanly.
+    // Phaser 4 moved/retuned some post-FX typings, so keep this optional at runtime.
+    try { (ring as Phaser.GameObjects.Graphics & { postFX?: { addGlow?: (...args: unknown[]) => unknown } }).postFX?.addGlow?.(0xff8833, 6, 0, false, 0.1, 16); } catch { /* canvas — no glow */ }
     const rs = { r: 8, a: 1 };
     this.tweens.add({
       targets: rs, r: radius, a: 0,
@@ -1067,9 +786,9 @@ export class GameScene extends Phaser.Scene {
     ];
     earth.fillStyle(0x2e6b3a, 1);
     for (const flat of continents) {
-      const pts: Phaser.Geom.Point[] = [];
+      const pts: Phaser.Math.Vector2[] = [];
       for (let i = 0; i < flat.length; i += 2) {
-        pts.push(new Phaser.Geom.Point(flat[i], flat[i + 1]));
+        pts.push(new Phaser.Math.Vector2(flat[i], flat[i + 1]));
       }
       earth.fillPoints(pts, true);
     }
@@ -1380,40 +1099,5 @@ export class GameScene extends Phaser.Scene {
     cull(this.droneBullets);
   }
 
-  private updatePickupMagnet(): void {
-    const range = 160;
-    const pull  = 520;
-    const tx = this.player.x;
-    const ty = this.player.y - 50; // torso, not feet
-    this.pickups.getChildren().forEach((go) => {
-      const p = go as Phaser.Physics.Arcade.Image;
-      if (!p.active) return;
-      const body = p.body as Phaser.Physics.Arcade.Body | null;
-      if (!body) return;
 
-      // First ground contact → squash tween for weight
-      if (!p.getData('landed') && body.blocked.down) {
-        p.setData('landed', true);
-        const dx = p.displayWidth;
-        const dy = p.displayHeight;
-        this.tweens.killTweensOf(p);
-        this.tweens.add({
-          targets: p,
-          displayWidth:  { from: dx * 1.12, to: dx },
-          displayHeight: { from: dy * 0.78, to: dy },
-          duration: 180,
-          ease: 'Quad.easeOut',
-        });
-      }
-
-      const dx = tx - p.x;
-      const dy = ty - p.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > range) return;
-      // Ramp pull by proximity — faster as it closes so collection feels snappy
-      const speed = pull * (0.55 + 0.45 * (1 - dist / range));
-      body.setAllowGravity(false);
-      body.setVelocity((dx / (dist || 1)) * speed, (dy / (dist || 1)) * speed);
-    });
-  }
 }

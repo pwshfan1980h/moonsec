@@ -42,6 +42,7 @@ export class OverworldScene extends Phaser.Scene {
   private cursorGfx!: Phaser.GameObjects.Graphics;
   private cursorPulseTween: Phaser.Tweens.Tween | null = null;
   private nodeSubtitles: Phaser.GameObjects.Text[] = [];
+  private keyboardEventUnsubs: Array<() => void> = [];
 
   constructor() { super('Overworld'); }
 
@@ -58,6 +59,8 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
+    this.keyboardEventUnsubs = [];
     this.cameras.main.setBackgroundColor('#010110');
 
     this.selectableNodes = this.getSelectableNodes();
@@ -467,13 +470,28 @@ export class OverworldScene extends Phaser.Scene {
   private setupInput(): void {
     const kb = this.input.keyboard!;
 
-    kb.on('keydown-ENTER', () => this.launchLevel());
-    kb.on('keydown-SPACE', () => this.launchLevel());
+    const onEnter = () => this.launchLevel();
+    const onSpace = () => this.launchLevel();
+    const onLeft  = () => this.shiftCursor(-1);
+    const onRight = () => this.shiftCursor(1);
+    const onA     = () => this.shiftCursor(-1);
+    const onD     = () => this.shiftCursor(1);
 
-    kb.on('keydown-LEFT',  () => this.shiftCursor(-1));
-    kb.on('keydown-RIGHT', () => this.shiftCursor(1));
-    kb.on('keydown-A',     () => this.shiftCursor(-1));
-    kb.on('keydown-D',     () => this.shiftCursor(1));
+    kb.on('keydown-ENTER', onEnter);
+    kb.on('keydown-SPACE', onSpace);
+    kb.on('keydown-LEFT',  onLeft);
+    kb.on('keydown-RIGHT', onRight);
+    kb.on('keydown-A',     onA);
+    kb.on('keydown-D',     onD);
+
+    this.keyboardEventUnsubs.push(
+      () => kb.off('keydown-ENTER', onEnter),
+      () => kb.off('keydown-SPACE', onSpace),
+      () => kb.off('keydown-LEFT',  onLeft),
+      () => kb.off('keydown-RIGHT', onRight),
+      () => kb.off('keydown-A',     onA),
+      () => kb.off('keydown-D',     onD),
+    );
 
     // Click zones on each selectable node
     for (const nodeIdx of this.selectableNodes) {
@@ -517,5 +535,11 @@ export class OverworldScene extends Phaser.Scene {
       });
       this.scene.launch('UI');
     });
+  }
+
+  shutdown(): void {
+    for (const unsub of this.keyboardEventUnsubs.splice(0)) unsub();
+    this.cursorPulseTween?.stop();
+    this.cursorPulseTween = null;
   }
 }

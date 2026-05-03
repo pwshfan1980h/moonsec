@@ -634,13 +634,13 @@ export class UIScene extends Phaser.Scene {
       this.waveKilled = 0;
       this.waveLastRemaining = 0;
       this.drawWaveProgress();
-      this.waveCounter.setText(`WAVE  ${String(wave).padStart(2, '0')}`);
+      this.waveCounter.setText(this.bossPhaseActive ? 'BOSS  PHASE' : `WAVE  ${String(wave).padStart(2, '0')}`);
 
       const W = GAME_W, H = GAME_H;
 
       // Big announcement
-      this.waveText.setText(`// WAVE ${String(wave).padStart(2, '0')} //`).setAlpha(1);
-      this.waveSubText.setText('ENGAGE HOSTILES').setAlpha(1);
+      this.waveText.setText(this.bossPhaseActive ? '// BOSS PHASE //' : `// WAVE ${String(wave).padStart(2, '0')} //`).setAlpha(1);
+      this.waveSubText.setText(this.bossPhaseActive ? 'NEXUS SIGNATURE DETECTED' : 'ENGAGE HOSTILES').setAlpha(1);
       this.tweens.add({
         targets: [this.waveText, this.waveSubText],
         alpha: 0, duration: 2000, delay: 1600, ease: 'Power2',
@@ -668,12 +668,11 @@ export class UIScene extends Phaser.Scene {
       } else {
         this.dronesRemainingText.setAlpha(0);
       }
-      // Treat any decrease in remaining drones as a kill (spawner emits this on
-      // both spawns and kills). Kill-based progress is monotonic within a wave.
-      if (count < this.waveLastRemaining) {
-        this.waveKilled += this.waveLastRemaining - count;
-      }
       this.waveLastRemaining = count;
+    });
+
+    on('hostileKilled', () => {
+      this.waveKilled += 1;
       this.drawWaveProgress();
     });
 
