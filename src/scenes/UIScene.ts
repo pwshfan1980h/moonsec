@@ -132,11 +132,18 @@ export class UIScene extends Phaser.Scene {
   private missileIconCy = 0;
   private missileReloadActive = false;
 
+  private gameEventUnsubs: Array<() => void> = [];
+  private keyboardEventUnsubs: Array<() => void> = [];
+
   constructor() {
     super({ key: 'UI', active: false });
   }
 
   create(): void {
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
+    this.gameEventUnsubs = [];
+    this.keyboardEventUnsubs = [];
+
     const W = GAME_W, H = GAME_H;
     this.gameOverActive = false;
     this.levelCompleteActive = false;
@@ -289,24 +296,30 @@ export class UIScene extends Phaser.Scene {
     this.attachGameEventListeners();
 
     // ── Keyboard handlers ─────────────────────────────────────────
-    this.input.keyboard!.on('keydown-ESC', () => {
+    const onEsc = () => {
       if (this.gameOverActive) return;
       if (this.controlsOpen) { this.closeControlsOverlay(); return; }
       this.togglePause();
-    });
+    };
+    this.input.keyboard!.on('keydown-ESC', onEsc);
+    this.keyboardEventUnsubs.push(() => this.input.keyboard?.off('keydown-ESC', onEsc));
 
-    this.input.keyboard!.on('keydown-R', () => {
+    const onRestart = () => {
       if (!this.gameOverActive) return;
       const gameScene = this.scene.get('Game');
       gameScene.scene.restart();
       this.scene.restart();
-    });
+    };
+    this.input.keyboard!.on('keydown-R', onRestart);
+    this.keyboardEventUnsubs.push(() => this.input.keyboard?.off('keydown-R', onRestart));
 
     // ── Radar minimap ─────────────────────────────────────────────
     this.minimap = new MinimapRenderer(this);
 
     // ── Controls overlay (toggleable with H) ──────────────────────
-    this.input.keyboard!.on('keydown-H', () => this.toggleControls());
+    const onControls = () => this.toggleControls();
+    this.input.keyboard!.on('keydown-H', onControls);
+    this.keyboardEventUnsubs.push(() => this.input.keyboard?.off('keydown-H', onControls));
 
     // ── First-boot onboarding: open the controls overlay. User must press
     //    SPACE / ENTER / H / ESC to dismiss it. The overlay pauses the game.
@@ -527,10 +540,12 @@ export class UIScene extends Phaser.Scene {
   private attachGameEventListeners(): void {
     const game = this.scene.get('Game');
     const on = <T extends unknown[]>(ev: string, fn: (...a: T) => void): void => {
-      game.events.on(ev, (...a: T) => {
+      const handler = (...a: T) => {
         if (!this.sys.isActive()) return;
         fn(...a);
-      });
+      };
+      game.events.on(ev, handler);
+      this.gameEventUnsubs.push(() => game.events.off(ev, handler));
     };
 
     on('healthChange', (hp: number, maxHp: number) => {
@@ -747,14 +762,13 @@ export class UIScene extends Phaser.Scene {
 
   shutdown(): void {
     this.clearTelegraph();
-    const gs = this.scene.get('Game');
-    if (gs) {
-      for (const ev of ['healthChange', 'missileCooldown', 'turretCooldown',
-                        'naniteChange', 'rapidAmmoChange', 'scoreChange', 'waveStart', 'dronesRemaining',
-                        'killStreak', 'gameOver', 'bossKilled', 'levelComplete',
-                        'bossTelegraph', 'bossTelegraphCancel', 'bossBlastFired']) {
-        gs.events.removeAllListeners(ev);
-      }
+    for (const unsub of this.gameEventUnsubs.splice(0)) unsub();
+    for (const unsub of this.keyboardEventUnsubs.splice(0)) unsub();
+    this.closeControlsOverlay(false);
+    if (this.missileReloadActive) {
+      const gs = this.scene.get('Game') as GameScene;
+      gs?.audio?.stopLoop('missile-reload');
+      this.missileReloadActive = false;
     }
     if (this.nanitePulseTween) { this.nanitePulseTween.stop(); this.nanitePulseTween = null; }
     if (this.lowHpPulseTween)  { this.lowHpPulseTween.stop();  this.lowHpPulseTween  = null; }
@@ -952,7 +966,7 @@ export class UIScene extends Phaser.Scene {
     this.controlsObjs = objs;
   }
 
-  private closeControlsOverlay(): void {
+  private closeControlsOverlay(resumeGame = true): void {
     if (!this.controlsOpen) return;
     this.controlsOpen = false;
     for (const o of this.controlsObjs) {
@@ -965,7 +979,7 @@ export class UIScene extends Phaser.Scene {
       this.controlsDismissFn = null;
       this.controlsDismissKeys = [];
     }
-    this.scene.resume('Game');
+    if (resumeGame) this.scene.resume('Game');
   }
 
   private showLevelComplete(): void {

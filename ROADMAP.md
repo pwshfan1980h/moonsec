@@ -1,30 +1,34 @@
 # Moonsec — Roadmap
 
-## v0.6 (current)
-- Two levels: Surface Ops (L1) and Dark Side (L2)
-- NexusBoss with escort drones, spread fire, and orbital blast
-- Five enemy types: Drone (red/green/sentinel/sniper), BomberDrone, Crawler, StunDart
-- Three weapons: RapidGun, Turret, HomingMissile
-- Per-run upgrade cards (11 cards across 3 categories)
-- Persistent upgrade tree
+## v0.7.x — Stabilization
 
-## v0.7 (this release)
-- **Bug fixes:** missile boss priority, pickup 10s lifetime + pulse, bomber telegraph Y snap
-- **ShieldedTank:** replaces Crawler — two-phase unit with energy shield + artillery
-- **Mine:** static proximity-trigger ground hazard, shootable
-- **Version display:** `ALPHA vX.X.X` on title screen
+- Keep CI honest: run `npm test` before production build/deploy.
+- Fix scene lifecycle cleanup so restarts and mission transitions do not leak handlers/audio.
+- Harden dynamic hostile accounting for carrier/swarmling waves.
+- Keep constants tested from production exports.
+- Prune stale upgrade/title assets and stale generated files from `main`.
+- Add README and architecture notes for future work.
 
-## v0.8 (next)
-- **Level 3 — Ice Caverns:** uneven terrain, death pits, ice friction (slippery movement)
-- **Mother Drone:** final boss — bullet-hell + 10-missile kill condition
-- **Enemy resilience:** L3 drones revive up to 2× before permanent death
-- L3 level select option enabled
+## v0.8 — Campaign polish
 
-## v0.9
-- Audio polish for new enemies (ShieldedTank, Mine, Mother Drone)
-- Particle FX improvements for shield-break, mine detonation
-- Balance pass across all three levels
+- Balance all five current mission nodes.
+- Give each boss variant at least one unique attack pattern, not just a palette/theme shift.
+- Add mission modifiers: EMP storm, ammo scarcity, shielded elites, low gravity, or hazardous terrain.
+- Add enemy intel/codex summaries on the overworld.
+- Add regression tests for wave progression, dynamic spawns, and scene restart cleanup.
 
-## v1.0
-- Full release — all three levels, final boss, complete progression tree
-- Any remaining polish and fixes
+## v0.9 — Refactor without behavior changes
+
+- Extract `PickupSystem` from `GameScene`.
+- Extract `MissionVfx` from `GameScene`.
+- Extract map/background generation from `GameScene`.
+- Extract HUD panels, wave banner, and overlays from `UIScene`.
+- Consolidate repeated enemy damage/collision setup.
+
+## v1.0 — Release candidate
+
+- Full five-node campaign tuned end-to-end.
+- Final audio/visual polish pass.
+- Accessibility/tuning menu: screen shake, volume sliders, difficulty.
+- Complete README with screenshots/GitHub Pages link.
+- No stale assets, stale worktrees, failing tests, or known lifecycle leaks on `main`.

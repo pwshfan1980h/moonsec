@@ -8,7 +8,7 @@ import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem } from '../systems/MusicSystem';
 import { PlayerHud } from '../ui/PlayerHud';
 import { MovingPlatform } from '../entities/MovingPlatform';
-import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, RAPID_AMMO_PER_PICKUP } from '../constants';
+import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT, RAPID_AMMO_PER_PICKUP, PICKUP_LIFETIME_MS } from '../constants';
 import { buildMap } from '../data/levelData';
 import { LEVEL_CONFIGS, NODE_GRAPH } from '../data/levelConfigs';
 import type { LevelConfig } from '../data/levelConfigs';
@@ -69,6 +69,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
+
     // Fade out title music if it carried through the transition
     for (const m of this.sound.getAll('music-title') as Phaser.Sound.WebAudioSound[]) {
       if (m.isPlaying) {
@@ -555,10 +557,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   shutdown(): void {
+    this.events.removeAllListeners('waveStart');
+    this.events.removeAllListeners('droneKilled');
+    this.events.removeAllListeners('hostileSpawned');
+    this.events.removeAllListeners('healthChange');
+    this.events.removeAllListeners('gameOver');
+    this.events.removeAllListeners('bossKilled');
+    this.events.removeAllListeners('levelComplete');
     this.music?.destroy();
     this.music = null;
+    this.audio?.destroy();
     this.playerHud?.destroy();
     this.playerHud = undefined;
+    this.debugLog?.destroy();
+    this.debugLog = undefined;
   }
 
   public triggerGameOver(): void {
@@ -807,7 +819,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Despawn after 10s
-    this.time.delayedCall(10000, () => {
+    this.time.delayedCall(PICKUP_LIFETIME_MS, () => {
       if (p.active) {
         this.tweens.killTweensOf(p);
         p.setAlpha(1);

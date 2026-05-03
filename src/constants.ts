@@ -14,6 +14,7 @@ export const RADAR_X = 1770;             // screen-space center X — leaves roo
 export const RADAR_Y = 830;              // screen-space center Y
 
 export const MISSILE_SEEK_RANGE = 650;
+export const PICKUP_LIFETIME_MS = 10000;
 
 // Drone difficulty scaling — one bracket per wave tier
 export const WAVE_BRACKETS: {

@@ -1,18 +1,20 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
-import type { Drone } from '../entities/Drone';
 import { NexusBoss } from '../entities/NexusBoss';
+import { ShieldedTank } from '../entities/ShieldedTank';
 import { WORLD_WIDTH, MISSILE_SEEK_RANGE, GROUND_Y } from '../constants';
 
 const COOLDOWN = 5000; // ms
 const SPEED = 480;
 const TURN_RATE = 0.065; // radians per frame
 
+type MissileTarget = Phaser.Physics.Arcade.Sprite & { active: boolean; x: number; y: number };
+
 interface MissileState {
   obj: Phaser.Physics.Arcade.Image;
   angle: number;
-  target: Drone | null;
+  target: MissileTarget | null;
   emitter: Phaser.GameObjects.Particles.ParticleEmitter;
 }
 
@@ -116,22 +118,27 @@ export class HomingMissile {
     }
   }
 
-  private findNearestDrone(x: number, y: number): Drone | null {
-    let nearest: Drone | null = null;
+  private findNearestDrone(x: number, y: number): MissileTarget | null {
+    let nearest: MissileTarget | null = null;
     let bestDist = MISSILE_SEEK_RANGE;
 
-    this.scene.drones.getChildren().forEach((go) => {
-      const drone = go as unknown as Drone;
-      if (!drone.active) return;
+    const consider = (go: Phaser.GameObjects.GameObject) => {
+      const target = go as MissileTarget;
+      if (!target.active) return;
       // Always prefer the boss — escorts are closer but the player wants missiles on the boss
       if (go instanceof NexusBoss) {
-        nearest = drone;
+        nearest = target;
         bestDist = 0; // zero so no escort can displace it
         return;
       }
       if (bestDist === 0) return; // boss already selected
-      const dist = Phaser.Math.Distance.Between(x, y, drone.x, drone.y);
-      if (dist < bestDist) { bestDist = dist; nearest = drone; }
+      const dist = Phaser.Math.Distance.Between(x, y, target.x, target.y);
+      if (dist < bestDist) { bestDist = dist; nearest = target; }
+    };
+
+    this.scene.drones.getChildren().forEach(consider);
+    this.scene.tanks.getChildren().forEach((go) => {
+      if (go instanceof ShieldedTank) consider(go);
     });
 
     return nearest;

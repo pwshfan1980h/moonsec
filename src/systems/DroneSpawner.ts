@@ -12,6 +12,7 @@ import { Carrier } from '../entities/Carrier';
 import type { DroneVariant, DroneType } from '../entities/Drone';
 import type { EnemyMix } from '../data/levelConfigs';
 import { GROUND_Y, WORLD_WIDTH, WAVE_BRACKETS, GAME_W, GAME_H, PATROL_LANES } from '../constants';
+import { WaveHostileCounter } from './WaveHostileCounter';
 
 export interface DroneScaling {
   attackSpeed: number;
@@ -28,7 +29,7 @@ export class DroneSpawner {
   waveIndex    = 0;
   private nextWaveTime = 3000;
   private spawning    = false;
-  private dronesAlive = 0;
+  private readonly hostileCounter = new WaveHostileCounter();
   private isBossDead  = false;
 
   private readonly waveCount: number;
@@ -47,19 +48,23 @@ export class DroneSpawner {
     this.bossType  = bossType;
     this.enemyMix  = enemyMix;
 
+    scene.events.on('hostileSpawned', (count = 1) => {
+      scene.events.emit('dronesRemaining', this.hostileCounter.add(count));
+    });
+
     scene.events.on('droneKilled', () => {
-      this.dronesAlive = Math.max(0, this.dronesAlive - 1);
-      scene.events.emit('dronesRemaining', this.dronesAlive);
-      if (this.dronesAlive === 0 && !this.spawning && this.waveIndex > 0) {
+      const remaining = this.hostileCounter.remove();
+      scene.events.emit('dronesRemaining', remaining);
+      if (remaining === 0 && !this.spawning && this.waveIndex > 0) {
         scene.events.emit('waveCleared', this.waveIndex);
       }
     });
 
     scene.events.on('bossKilled', () => {
-      this.dronesAlive = Math.max(0, this.dronesAlive - 1);
-      scene.events.emit('dronesRemaining', this.dronesAlive);
+      const remaining = this.hostileCounter.remove();
+      scene.events.emit('dronesRemaining', remaining);
       this.isBossDead = true;
-      if (this.dronesAlive === 0) {
+      if (remaining === 0) {
         scene.events.emit('levelComplete');
       }
     });
@@ -146,8 +151,7 @@ export class DroneSpawner {
       },
     );
 
-    this.dronesAlive++;
-    this.scene.events.emit('dronesRemaining', this.dronesAlive);
+    this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
   }
 
   // ── Normal wave ────────────────────────────────────────────────────────────
@@ -185,7 +189,7 @@ export class DroneSpawner {
     const spawnNext = () => {
       if (spawned >= count) {
         this.spawning = false;
-        if (this.dronesAlive === 0 && this.waveIndex > 0) {
+        if (this.hostileCounter.count === 0 && this.waveIndex > 0) {
           this.scene.events.emit('waveCleared', this.waveIndex);
         }
         return;
@@ -231,8 +235,7 @@ export class DroneSpawner {
         this.scene.physics.add.existing(dart);
         this.scene.drones.add(dart);
         (dart.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
-        this.dronesAlive++;
-        this.scene.events.emit('dronesRemaining', this.dronesAlive);
+        this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
 
         this.scene.physics.add.overlap(this.scene.playerBullets, dart,
           (_d, bullet) => {
@@ -266,8 +269,7 @@ export class DroneSpawner {
       this.scene.add.existing(drone);
       this.scene.physics.add.existing(drone);
       this.scene.drones.add(drone);
-      this.dronesAlive++;
-      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+      this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
 
       (drone.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
       drone.startPatrol(i % 2 === 0 ? -1 : 1);
@@ -323,8 +325,7 @@ export class DroneSpawner {
       this.scene.physics.add.existing(bomber);
       this.scene.drones.add(bomber);
       (bomber.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
-      this.dronesAlive++;
-      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+      this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
 
       this.scene.physics.add.overlap(this.scene.playerBullets, bomber,
         (_b, bullet) => {
@@ -359,8 +360,7 @@ export class DroneSpawner {
           this.scene.physics.add.existing(mine);
           this.scene.drones.add(mine);
           mine.initBody();
-          this.dronesAlive++;
-          this.scene.events.emit('dronesRemaining', this.dronesAlive);
+          this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
 
           this.scene.physics.add.overlap(this.scene.playerBullets, mine,
             (_m, bullet) => {
@@ -393,8 +393,7 @@ export class DroneSpawner {
       this.scene.physics.add.existing(carrier);
       this.scene.drones.add(carrier);
       carrier.initBody();
-      this.dronesAlive++;
-      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+      this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
 
       this.scene.physics.add.overlap(this.scene.playerBullets, carrier,
         (_c, bullet) => {
@@ -430,8 +429,7 @@ export class DroneSpawner {
       this.scene.physics.add.existing(platform);
       this.scene.drones.add(platform);
       platform.initBody();
-      this.dronesAlive++;
-      this.scene.events.emit('dronesRemaining', this.dronesAlive);
+      this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
 
       this.scene.physics.add.overlap(this.scene.playerBullets, platform,
         (_p, bullet) => {
@@ -470,8 +468,7 @@ export class DroneSpawner {
           this.scene.physics.add.existing(tank);
           this.scene.tanks.add(tank);
           tank.initBody();
-          this.dronesAlive++;
-          this.scene.events.emit('dronesRemaining', this.dronesAlive);
+          this.scene.events.emit('dronesRemaining', this.hostileCounter.add());
 
           this.scene.physics.add.overlap(this.scene.playerBullets, tank,
             (_t, bullet) => {

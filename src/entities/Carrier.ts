@@ -120,6 +120,7 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite {
     this.scene.physics.add.existing(swarmling);
     this.scene.drones.add(swarmling);
     (swarmling.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    this.scene.events.emit('hostileSpawned', 1);
 
     // Player bullets damage
     this.scene.physics.add.overlap(this.scene.playerBullets, swarmling,

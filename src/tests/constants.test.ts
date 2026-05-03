@@ -4,6 +4,7 @@ import {
   GROUND_Y, WORLD_HEIGHT,
   WAVE_BRACKETS,
   RADAR_X, RADAR_Y,
+  PICKUP_LIFETIME_MS,
 } from '../constants';
 
 describe('constants', () => {
@@ -50,12 +51,13 @@ describe('constants', () => {
   });
 
   it('RADAR_X near right edge of 1920 screen', () => {
-    expect(RADAR_X).toBe(1790);
+    expect(RADAR_X).toBe(1770);
     expect(RADAR_Y).toBe(830);
   });
 
   it('pickup lifetime is 10000ms (not the old 6000)', () => {
     // documentation test — if someone reverts PICKUP_LIFETIME back to 6000, this test fails
-    expect(10000).toBeGreaterThan(6000);
+    expect(PICKUP_LIFETIME_MS).toBe(10000);
+    expect(PICKUP_LIFETIME_MS).toBeGreaterThan(6000);
   });
 });
