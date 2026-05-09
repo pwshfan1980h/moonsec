@@ -103,7 +103,7 @@ export class CollisionRegistry {
     this.scene.physics.add.overlap(
       this.scene.droneBullets,
       this.scene.player,
-      (playerObj, b) => {
+      (b, playerObj) => {
         const bullet = b as Phaser.Physics.Arcade.Image;
         bullet.setActive(false).setVisible(false);
         if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
@@ -117,7 +117,7 @@ export class CollisionRegistry {
     this.scene.physics.add.overlap(
       this.scene.drones,
       this.scene.player,
-      (playerObj, dartObj) => {
+      (dartObj, playerObj) => {
         const dart = dartObj as { onHitPlayer?: (player: Player) => void };
         if (typeof dart.onHitPlayer !== 'function') return;
         dart.onHitPlayer(playerObj as Player);
@@ -156,12 +156,12 @@ export class CollisionRegistry {
     this.scene.physics.add.overlap(
       this.scene.playerBullets,
       this.scene.bossProjectiles,
-      (_proj, bullet) => {
+      (bullet, proj) => {
         const b = bullet as Phaser.Physics.Arcade.Image;
         const ix = b.x, iy = b.y;
         b.setActive(false).setVisible(false);
         if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
-        const p = _proj as Phaser.Physics.Arcade.Image;
+        const p = proj as Phaser.Physics.Arcade.Image;
         p.setActive(false).setVisible(false);
         if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
         this.scene.spawnBulletImpact(ix, iy, 'enemy');
@@ -173,7 +173,7 @@ export class CollisionRegistry {
     this.scene.physics.add.overlap(
       this.scene.missiles,
       this.scene.bossProjectiles,
-      (projObj, missile) => {
+      (missile, projObj) => {
         const m = missile as Phaser.Physics.Arcade.Image;
         m.setData('hitTarget', true);
         m.setActive(false).setVisible(false);

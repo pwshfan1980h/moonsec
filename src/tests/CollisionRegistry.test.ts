@@ -7,7 +7,7 @@ function createSceneMock({ withGroundLayer = false } = {}) {
   const existing = vi.fn();
   const rectangle = vi.fn(() => ({ kind: 'voidSensor' }));
   const scene = {
-    player: { kind: 'player' },
+    player: { kind: 'player', takeDamage: vi.fn() },
     ground: { kind: 'ground' },
     groundLayer: withGroundLayer ? { kind: 'groundLayer' } : undefined,
     tanks: { kind: 'tanks' },
@@ -29,6 +29,19 @@ function createSceneMock({ withGroundLayer = false } = {}) {
     triggerGameOver: vi.fn(),
   };
   return { scene: scene as any, collider, overlap, existing, rectangle };
+}
+
+function projectileMock() {
+  return {
+    active: true,
+    x: 10,
+    y: 20,
+    body: { enable: true },
+    setActive: vi.fn(function (this: unknown) { return this; }),
+    setVisible: vi.fn(function (this: unknown) { return this; }),
+    setData: vi.fn(function (this: unknown) { return this; }),
+    getData: vi.fn(() => 1),
+  };
 }
 
 async function loadCollisionRegistry() {
@@ -84,5 +97,39 @@ describe('CollisionRegistry', () => {
     scene.isGameOverActive.mockReturnValue(true);
     callback();
     expect(scene.triggerGameOver).toHaveBeenCalledTimes(1);
+  });
+
+  it('drone bullet overlap disables the bullet and damages the player', async () => {
+    const { CollisionRegistry } = await loadCollisionRegistry();
+    const { scene, overlap } = createSceneMock();
+
+    new CollisionRegistry(scene).registerCore();
+    const call = overlap.mock.calls.find(([a, b]) => a === scene.droneBullets && b === scene.player);
+    const callback = call?.[2] as (bullet: unknown, player: unknown) => void;
+    const bullet = projectileMock();
+
+    callback(bullet, scene.player);
+
+    expect(bullet.setActive).toHaveBeenCalledWith(false);
+    expect(bullet.setVisible).toHaveBeenCalledWith(false);
+    expect(bullet.body.enable).toBe(false);
+    expect(scene.player.takeDamage).toHaveBeenCalledWith(1);
+  });
+
+  it('projectile interception disables both player shot and boss projectile', async () => {
+    const { CollisionRegistry } = await loadCollisionRegistry();
+    const { scene, overlap } = createSceneMock();
+
+    new CollisionRegistry(scene).registerCore();
+    const call = overlap.mock.calls.find(([a, b]) => a === scene.playerBullets && b === scene.bossProjectiles);
+    const callback = call?.[2] as (bullet: unknown, projectile: unknown) => void;
+    const bullet = projectileMock();
+    const bossProjectile = projectileMock();
+
+    callback(bullet, bossProjectile);
+
+    expect(bullet.setActive).toHaveBeenCalledWith(false);
+    expect(bossProjectile.setActive).toHaveBeenCalledWith(false);
+    expect(scene.spawnBulletImpact).toHaveBeenCalledWith(10, 20, 'enemy');
   });
 });

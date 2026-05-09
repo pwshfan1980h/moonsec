@@ -40,7 +40,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'surface',
     enemyMix:      'balanced',
     voidBottom:    false,
-    movingPlatforms: false,
+    movingPlatforms: true,
   },
   // ── Node 1: Trade Lanes ───────────────────────────────────────────────────
   {
@@ -55,7 +55,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'trade-lanes',
     enemyMix:      'aerial',
     voidBottom:    true,
-    movingPlatforms: false,
+    movingPlatforms: true,
     spawnCol:      8,
     spawnRow:      21,
     trainEffect:   true,
@@ -73,7 +73,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'deep-facility',
     enemyMix:      'ground-heavy',
     voidBottom:    false,
-    movingPlatforms: false,
+    movingPlatforms: true,
   },
   // ── Node 3: Orbital Station ───────────────────────────────────────────────
   {
@@ -88,7 +88,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'orbital',
     enemyMix:      'elite',
     voidBottom:    true,
-    movingPlatforms: false,
+    movingPlatforms: true,
   },
   // ── Node 4: Nexus Core ────────────────────────────────────────────────────
   {

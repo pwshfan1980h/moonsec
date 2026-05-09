@@ -27,7 +27,7 @@ export const WAVE_BRACKETS: {
   { minWave: 3,  attackSpeed: 580, shootInterval: 800,  extraHp: 2, bulletSpeedMult: 1.65 },
 ];
 
-export const PATROL_LANES = [570, 630, 690, 750, 810];
+export const PATROL_LANES = [300, 420, 540, 660, 780, 900];
 
 
 export const MECH_STATS: Record<string, {

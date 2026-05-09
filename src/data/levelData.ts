@@ -181,18 +181,23 @@ export const TMPL_SURFACE_OPS: LevelTemplate = {
   tileK: TILE,
   fixedPlatforms: [
     { col: 40,  row: 22, width: 8 },
+    { col: 52,  row: 18, width: 5 },
+    { col: 62,  row: 14, width: 4 },
     { col: 80,  row: 18, width: 8 },
+    { col: 92,  row: 14, width: 5 },
     // Jetpack gate — horizontal barrier at row 20 (~320px above ground)
     // with a 3-tile (96px) gap at cols 108-110. Mech body is ~75px — fits snug.
     { col: 100, row: 20, width: 8 },
     { col: 111, row: 20, width: 8 },
     { col: 130, row: 24, width: 6 },
+    { col: 142, row: 20, width: 5 },
     { col: 160, row: 19, width: 7 },
+    { col: 172, row: 15, width: 5 },
   ],
   fixedWalls: [],
   variation: {
     pitCount:       [2, 4], pitWidth:       [4, 8],
-    extraPlatforms: [2, 5], platformRows:   [23, 26],
+    extraPlatforms: [5, 9], platformRows:   [14, 18, 22, 26],
     platformWidth:  [4, 8],
   },
 };
@@ -217,9 +222,17 @@ export const TMPL_TRADE_LANES: LevelTemplate = {
     { col: 185, row: 22, width: 10 },
     // Upper deck — row 17, staggered between lower-deck groups
     { col:  20, row: 17, width: 8 },
+    { col:  34, row: 13, width: 5 },
+    { col:  42, row:  9, width: 4 },
     { col:  60, row: 17, width: 8 },
+    { col:  74, row: 13, width: 5 },
+    { col:  82, row:  9, width: 4 },
     { col: 100, row: 17, width: 8 },
+    { col: 114, row: 13, width: 5 },
+    { col: 122, row:  9, width: 4 },
     { col: 140, row: 17, width: 8 },
+    { col: 154, row: 13, width: 5 },
+    { col: 162, row:  9, width: 4 },
     { col: 180, row: 17, width: 8 },
   ],
   fixedWalls: [
@@ -230,7 +243,7 @@ export const TMPL_TRADE_LANES: LevelTemplate = {
   ],
   variation: {
     pitCount:       [0, 0], pitWidth:       [0, 0],
-    extraPlatforms: [6, 10], platformRows:   [17, 20, 25],
+    extraPlatforms: [10, 16], platformRows:   [9, 13, 17, 20, 25],
     platformWidth:  [3, 6],
   },
 };
@@ -243,7 +256,11 @@ export const TMPL_DEEP_FACILITY: LevelTemplate = {
   tileK: TILE_VIOLET,
   fixedPlatforms: [
     { col: 30, row: 17, width: 6 },
+    { col: 42, row: 13, width: 5 },
     { col: 80, row: 15, width: 5 },
+    { col: 92, row: 11, width: 5 },
+    { col: 132, row: 18, width: 6 },
+    { col: 144, row: 14, width: 5 },
   ],
   fixedWalls: [
     { col:  55, rowStart:  9, height: 12 },
@@ -251,7 +268,7 @@ export const TMPL_DEEP_FACILITY: LevelTemplate = {
   ],
   variation: {
     pitCount:       [3, 6], pitWidth:       [6, 10],
-    extraPlatforms: [1, 3], platformRows:   [14, 17, 21],
+    extraPlatforms: [5, 9], platformRows:   [11, 14, 17, 21, 24],
     platformWidth:  [4, 7],
   },
 };
@@ -264,14 +281,19 @@ export const TMPL_ORBITAL: LevelTemplate = {
   tileK: TILE,
   fixedPlatforms: [
     { col:  25, row: 12, width: 8 }, { col:  32, row: 15, width: 5 },
+    { col:  42, row:  8, width: 5 },
     { col:  70, row: 20, width: 8 }, { col:  75, row: 23, width: 5 },
+    { col:  84, row: 16, width: 5 },
     { col: 110, row: 10, width: 8 }, { col: 116, row: 14, width: 5 },
+    { col: 126, row:  7, width: 5 },
     { col: 152, row: 18, width: 8 }, { col: 158, row: 22, width: 5 },
+    { col: 168, row: 14, width: 5 },
+    { col: 184, row:  8, width: 5 },
   ],
   fixedWalls: [],
   variation: {
     pitCount:       [0, 0], pitWidth:       [0, 0],
-    extraPlatforms: [4, 8], platformRows:   [8, 12, 16, 20, 24],
+    extraPlatforms: [8, 14], platformRows:   [6, 8, 12, 16, 20, 24],
     platformWidth:  [4, 8],
   },
 };
@@ -284,8 +306,10 @@ export const TMPL_NEXUS_CORE: LevelTemplate = {
   tileK: TILE,
   fixedPlatforms: [
     { col:  15, row: 19, width: 15 },
+    { col:  35, row: 14, width: 7 },
     { col:  70, row: 15, width: 10 },
     { col:  85, row: 19, width: 10 },
+    { col: 118, row: 13, width: 8 },
     { col: 155, row: 19, width: 12 }, // shifted right of wall@col 150
   ],
   fixedWalls: [
@@ -295,7 +319,7 @@ export const TMPL_NEXUS_CORE: LevelTemplate = {
   ],
   variation: {
     pitCount:       [1, 2], pitWidth:       [4, 6],
-    extraPlatforms: [2, 4], platformRows:   [14, 18, 22],
+    extraPlatforms: [5, 8], platformRows:   [12, 14, 18, 22, 25],
     platformWidth:  [4, 7],
   },
 };

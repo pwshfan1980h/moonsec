@@ -397,7 +397,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnMovingPlatforms(): void {
-    // Stagger platforms along the level: one every ~300px, alternating travel direction
+    // Stagger platforms along the level: one every ~300px, alternating travel direction.
+    // Void/aerial missions also get elevators so the safest route is often vertical,
+    // not just left-to-right across isolated deck segments.
     const spacing   = 300;
     const count     = Math.floor(WORLD_WIDTH / spacing);
     for (let i = 0; i < count; i++) {
@@ -407,6 +409,20 @@ export class GameScene extends Phaser.Scene {
       const mp = new MovingPlatform(this, x, y, 112, 240, 100 + (i % 3) * 20, startRight);
       this.add.existing(mp);
       this.movingPlatforms.add(mp, true);
+    }
+
+    if (this.activeConfig.voidBottom || this.activeConfig.nodeIndex === 2) {
+      const elevatorSpacing = 640;
+      const elevatorCount = Math.floor(WORLD_WIDTH / elevatorSpacing);
+      for (let i = 0; i < elevatorCount; i++) {
+        const x = 420 + i * elevatorSpacing;
+        const y = 820 - (i % 2) * 70;
+        const travel = -300 - (i % 3) * 40;
+        const mp = new MovingPlatform(this, x, y, 96, travel, 85, i % 2 === 0, 'y');
+        this.add.existing(mp);
+        this.movingPlatforms.add(mp, true);
+        this.platformData.push({ x, y: y + travel / 2, w: 96 });
+      }
     }
   }
 
