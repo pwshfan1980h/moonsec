@@ -108,10 +108,10 @@ export class Swarmling extends Phaser.Physics.Arcade.Sprite {
     this.setFlipX(dx < 0);
   }
 
-  onHitPlayer(player: Phaser.Physics.Arcade.Sprite & { takeDamage: (n: number) => void }): void {
+  onHitPlayer(player: Phaser.Physics.Arcade.Sprite & { takeDamage: (n: number, sourceX?: number) => void }): void {
     if (this.hasHit || this.swarmState !== 'HARASS') return;
     this.hasHit = true;
-    player.takeDamage(COLLIDE_DAMAGE);
+    player.takeDamage(COLLIDE_DAMAGE, this.x);
     this.scene.cameras.main.shake(60, 0.004);
     // Swarmling dies on contact (kamikaze) — adds pressure on player to shoot them first
     this.die();

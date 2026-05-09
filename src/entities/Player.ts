@@ -12,6 +12,7 @@ const FRICTION = 0.78;
 const NANITE_HEAL_DURATION = 4000;  // ms
 
 export type MechType = 'mech' | 'mech4';
+export type PlayerUpgradeId = 'armor' | 'ammo' | 'fuel';
 
 const MECH_CONFIG: Record<MechType, {
   textureKey: string; animPrefix: string; scale: number;
@@ -460,7 +461,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.scene.events.emit('rapidAmmoChange', this.rapidAmmo, this.rapidAmmoMax);
   }
 
-  takeDamage(amount: number): void {
+  applyUpgrade(id: PlayerUpgradeId): void {
+    if (this.dead) return;
+    if (id === 'armor') {
+      this.maxHp += 1;
+      this.hp = Math.min(this.maxHp, this.hp + 1);
+      this.scene.events.emit('healthChange', this.hp, this.maxHp);
+      return;
+    }
+    if (id === 'ammo') {
+      this.rapidAmmoMax += 35;
+      this.rapidAmmo = this.rapidAmmoMax;
+      this.scene.events.emit('rapidAmmoChange', this.rapidAmmo, this.rapidAmmoMax);
+      return;
+    }
+
+    this.jetpackMaxFuel += 500;
+    this.jetpackFuel = this.jetpackMaxFuel;
+    this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
+  }
+
+  takeDamage(amount: number, sourceX?: number): void {
     const surging = this.scene.time.now < this.surgeUntil;
     if (this.dead || this.hurtLock > 0 || surging) {
       this.scene.audio.stopLoop('jetpack'); // stop loop even on early return
@@ -475,6 +496,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     this.hp = Math.max(0, this.hp - amount);
     this.scene.events.emit('healthChange', this.hp, this.maxHp);
+    const incomingDir = sourceX === undefined
+      ? (this.flipX ? 1 : -1)
+      : (sourceX < this.x ? -1 : 1);
+    this.scene.events.emit('playerDamaged', {
+      amount,
+      direction: incomingDir,
+      x: this.x,
+      y: this.y - 60,
+    });
 
     if (this.hp <= 0) {
       this.dead = true;
@@ -491,6 +521,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       });
     } else {
       this.hurtLock = 600;
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      body.setVelocityX(-incomingDir * 280);
+      body.setVelocityY(Math.min(body.velocity.y, -160));
       this.play({ key: this.animPrefix + 'hurt', repeat: 0 }, true);
       this.curAnim = 'hurt';
       this.setTint(0xff3333);

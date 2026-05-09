@@ -108,7 +108,7 @@ export class CollisionRegistry {
         bullet.setActive(false).setVisible(false);
         if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
         const dmg = (bullet.getData('damage') as number | undefined) ?? 1;
-        (playerObj as Player).takeDamage(dmg);
+        (playerObj as Player).takeDamage(dmg, bullet.x);
         this.scene.cameras.main.shake(80, 0.006);
       },
     );
@@ -133,7 +133,7 @@ export class CollisionRegistry {
         if (!p.active) return;
         p.setActive(false).setVisible(false);
         if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
-        (playerObj as Player).takeDamage(1);
+        (playerObj as Player).takeDamage(1, p.x);
         this.scene.cameras.main.shake(100, 0.008);
       },
     );
@@ -145,7 +145,7 @@ export class CollisionRegistry {
       (playerObj, roundObj) => {
         const r = roundObj as PPCRound;
         if (!r.active) return;
-        (playerObj as Player).takeDamage(3);
+        (playerObj as Player).takeDamage(3, r.x);
         r.detonate(true);
       },
     );

@@ -96,7 +96,7 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
     // Damage check
     const dist = Phaser.Math.Distance.Between(this.x, this.y, this.scene.player.x, this.scene.player.y);
     if (dist < BLAST_RADIUS) {
-      this.scene.player.takeDamage(2);
+      this.scene.player.takeDamage(2, this.x);
     }
 
     this.mineState = 'DEAD';

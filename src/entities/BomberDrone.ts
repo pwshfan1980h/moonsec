@@ -131,7 +131,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
     // Damage if player is in the blast radius
     const dist = Math.abs(this.scene.player.x - this.targetX);
     if (dist < BOMB_RADIUS) {
-      this.scene.player.takeDamage(2);
+      this.scene.player.takeDamage(2, this.targetX);
     }
   }
 

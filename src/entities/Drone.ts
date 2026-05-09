@@ -57,6 +57,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
   private personality: Personality = 'charger';
   private altitudeOffset = 0;        // preferred Y relative to player (negative = above)
   private personalityTimer = 0;
+  private firingTelegraph = false;
 
   constructor(
     scene: GameScene,
@@ -250,6 +251,35 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     const target = this.scene.getPlayerPos();
     const angle  = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
 
+    if (this.firingTelegraph) return;
+    this.firingTelegraph = true;
+
+    const aimLine = this.scene.add.graphics()
+      .setDepth(13)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    aimLine.lineStyle(this.droneVariant === 'sniper' ? 3 : 2, this.droneVariant === 'sniper' ? 0xffcc44 : 0xff5533, 0.72);
+    aimLine.lineBetween(this.x, this.y, target.x, target.y);
+    aimLine.fillStyle(0xffffff, 0.75);
+    aimLine.fillCircle(this.x, this.y, this.droneVariant === 'sniper' ? 6 : 4);
+
+    this.scene.tweens.add({
+      targets: aimLine,
+      alpha: { from: 0.2, to: 1 },
+      duration: 90,
+      yoyo: true,
+      repeat: 2,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.scene.time.delayedCall(this.droneVariant === 'sniper' ? 360 : 240, () => {
+      this.firingTelegraph = false;
+      aimLine.destroy();
+      if (!this.active || this.droneState === 'DEATH' || this.droneState === 'DOWNED') return;
+      this.fireBullet(angle);
+    });
+  }
+
+  private fireBullet(angle: number): void {
     const b = this.scene.droneBullets.get(this.x, this.y, 'bullet-drone') as Phaser.Physics.Arcade.Image;
     if (!b) return;
 

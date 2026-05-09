@@ -113,7 +113,7 @@ describe('CollisionRegistry', () => {
     expect(bullet.setActive).toHaveBeenCalledWith(false);
     expect(bullet.setVisible).toHaveBeenCalledWith(false);
     expect(bullet.body.enable).toBe(false);
-    expect(scene.player.takeDamage).toHaveBeenCalledWith(1);
+    expect(scene.player.takeDamage).toHaveBeenCalledWith(1, 10);
   });
 
   it('projectile interception disables both player shot and boss projectile', async () => {

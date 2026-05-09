@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
 import type { GameScene } from './GameScene';
+import type { PlayerUpgradeId } from '../entities/Player';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { GAME_W, GAME_H, RADAR_X, RADAR_Y, RADAR_SCREEN_RADIUS } from '../constants';
 
@@ -92,6 +93,9 @@ export class UIScene extends Phaser.Scene {
   private curAmmoMax = 1;
 
   private levelCompleteActive = false;
+  private upgradeOpen = false;
+  private upgradeObjs: Phaser.GameObjects.GameObject[] = [];
+  private upgradeKeyUnsubs: Array<() => void> = [];
 
   // Boss telegraph
   private telegraphLabel: Phaser.GameObjects.Text | null = null;
@@ -147,6 +151,9 @@ export class UIScene extends Phaser.Scene {
     const W = GAME_W, H = GAME_H;
     this.gameOverActive = false;
     this.levelCompleteActive = false;
+    this.upgradeOpen = false;
+    this.upgradeObjs = [];
+    this.upgradeKeyUnsubs = [];
     this.paused = false;
     this.naniteActive = false;
     this.currentWave = 0;
@@ -557,6 +564,10 @@ export class UIScene extends Phaser.Scene {
       this.updateLowHpPrompt();
     });
 
+    on('playerDamaged', ({ amount, direction, x, y }: { amount: number; direction: -1 | 1; x: number; y: number }) => {
+      this.showDamageFeedback(amount, direction, x, y);
+    });
+
     on('missileCooldown', (progress: number) => {
       const prev = this.missileProgress;
       this.missileProgress = progress;
@@ -676,6 +687,11 @@ export class UIScene extends Phaser.Scene {
       this.drawWaveProgress();
     });
 
+    on('waveCleared', (wave: number) => {
+      if (wave >= this.waveTotalCount || this.gameOverActive || this.levelCompleteActive) return;
+      this.showUpgradeOverlay(wave);
+    });
+
     on('killStreak', (count: number, bonus: number) => {
       const W = GAME_W, H = GAME_H;
       const t = this.add.text(W / 2, H / 2, `>>  ${count} KILL STREAK  <<\n+${bonus}`, {
@@ -761,6 +777,7 @@ export class UIScene extends Phaser.Scene {
 
   shutdown(): void {
     this.clearTelegraph();
+    this.closeUpgradeOverlay(false);
     for (const unsub of this.gameEventUnsubs.splice(0)) unsub();
     for (const unsub of this.keyboardEventUnsubs.splice(0)) unsub();
     this.closeControlsOverlay(false);
@@ -850,6 +867,7 @@ export class UIScene extends Phaser.Scene {
       && this.naniteReady
       && !this.gameOverActive
       && !this.levelCompleteActive
+      && !this.upgradeOpen
       && !this.controlsOpen;
 
     if (shouldShow && !this.lowHpPrompt) {
@@ -872,6 +890,138 @@ export class UIScene extends Phaser.Scene {
       this.lowHpPrompt.destroy();
       this.lowHpPrompt = null;
     }
+  }
+
+  private showDamageFeedback(amount: number, direction: -1 | 1, x: number, y: number): void {
+    const edgeX = direction < 0 ? 0 : GAME_W;
+    const edge = this.add.graphics().setDepth(58).setScrollFactor(0);
+    edge.fillStyle(COL.red, 0.22);
+    edge.fillRect(direction < 0 ? 0 : GAME_W - 260, 0, 260, GAME_H);
+    edge.lineStyle(4, COL.red, 0.75);
+    edge.lineBetween(edgeX, 0, edgeX, GAME_H);
+    this.tweens.add({
+      targets: edge,
+      alpha: 0,
+      duration: 260,
+      ease: 'Cubic.Out',
+      onComplete: () => edge.destroy(),
+    });
+
+    const marker = this.add.text(x, y, `-${amount}`, {
+      fontFamily: FONT_READOUT, fontSize: '30px', color: COL.redHex,
+      stroke: '#1a0005', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(59);
+    this.tweens.add({
+      targets: marker,
+      x: marker.x + direction * 38,
+      y: marker.y - 28,
+      alpha: 0,
+      duration: 620,
+      ease: 'Cubic.Out',
+      onComplete: () => marker.destroy(),
+    });
+  }
+
+  private showUpgradeOverlay(wave: number): void {
+    if (this.upgradeOpen || this.controlsOpen || this.paused) return;
+    const game = this.scene.get('Game') as GameScene;
+    if (!game?.player?.active) return;
+
+    this.upgradeOpen = true;
+    this.scene.pause('Game');
+
+    const W = GAME_W, H = GAME_H;
+    const objs: Phaser.GameObjects.GameObject[] = [];
+    const push = <T extends Phaser.GameObjects.GameObject>(o: T): T => { objs.push(o); return o; };
+
+    push(this.add.rectangle(W / 2, H / 2, W, H, 0x000812, 0.72).setDepth(62).setScrollFactor(0));
+
+    const frame = push(this.add.graphics().setDepth(63).setScrollFactor(0)) as Phaser.GameObjects.Graphics;
+    const bw = 1080, bh = 430;
+    const bx = W / 2 - bw / 2, by = H / 2 - bh / 2;
+    frame.fillStyle(0x02111e, 0.92);
+    frame.fillRect(bx, by, bw, bh);
+    frame.lineStyle(2, COL.rail, 0.9);
+    frame.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+    frame.lineStyle(3, COL.cyan, 1);
+    const cb = 24;
+    frame.lineBetween(bx, by + cb, bx, by); frame.lineBetween(bx, by, bx + cb, by);
+    frame.lineBetween(bx + bw - cb, by, bx + bw, by); frame.lineBetween(bx + bw, by, bx + bw, by + cb);
+    frame.lineBetween(bx, by + bh - cb, bx, by + bh); frame.lineBetween(bx, by + bh, bx + cb, by + bh);
+    frame.lineBetween(bx + bw - cb, by + bh, bx + bw, by + bh); frame.lineBetween(bx + bw, by + bh - cb, bx + bw, by + bh);
+
+    push(this.add.text(W / 2, by + 54, `WAVE ${String(wave).padStart(2, '0')} CLEARED`, {
+      fontFamily: FONT_MONO, fontSize: '42px', color: COL.cyanHex,
+      stroke: '#001a2a', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(64).setScrollFactor(0));
+    push(this.add.text(W / 2, by + 96, 'SELECT FIELD UPGRADE', {
+      fontFamily: FONT_MONO, fontSize: '22px', color: COL.inkDim,
+    }).setOrigin(0.5).setDepth(64).setScrollFactor(0));
+
+    const options: Array<{ id: PlayerUpgradeId; key: string; title: string; body: string; color: string }> = [
+      { id: 'armor', key: '1', title: 'ARMOR PLATING', body: '+1 MAX HP\nREPAIR 1 HP', color: COL.greenHex },
+      { id: 'ammo',  key: '2', title: 'AMMO FEED',     body: '+35 RAPID CAP\nREFILL RAPID AMMO', color: COL.cyanHex },
+      { id: 'fuel',  key: '3', title: 'THRUSTER CELLS', body: '+500 JETPACK FUEL\nFULL FUEL REFILL', color: COL.amberHex },
+    ];
+    const startX = W / 2 - 330;
+    options.forEach((opt, i) => {
+      const x = startX + i * 330;
+      const y = by + 190;
+      const panel = push(this.add.graphics().setDepth(64).setScrollFactor(0)) as Phaser.GameObjects.Graphics;
+      panel.fillStyle(0x050f19, 0.95);
+      panel.fillRect(x - 135, y - 55, 270, 160);
+      panel.lineStyle(1, COL.rail, 0.9);
+      panel.strokeRect(x - 134.5, y - 54.5, 269, 159);
+      panel.lineStyle(2, i === 0 ? COL.green : i === 1 ? COL.cyan : COL.amber, 0.9);
+      panel.lineBetween(x - 135, y - 55, x - 105, y - 55);
+      panel.lineBetween(x + 105, y + 105, x + 135, y + 105);
+
+      push(this.add.text(x - 112, y - 34, `[${opt.key}]`, {
+        fontFamily: FONT_READOUT, fontSize: '28px', color: opt.color,
+      }).setOrigin(0, 0.5).setDepth(65).setScrollFactor(0));
+      push(this.add.text(x, y - 2, opt.title, {
+        fontFamily: FONT_MONO, fontSize: '24px', color: opt.color,
+      }).setOrigin(0.5).setDepth(65).setScrollFactor(0));
+      push(this.add.text(x, y + 54, opt.body, {
+        fontFamily: FONT_MONO, fontSize: '19px', color: COL.ink,
+        align: 'center',
+      }).setOrigin(0.5).setDepth(65).setScrollFactor(0));
+    });
+
+    const footer = push(this.add.text(W / 2, by + bh - 46, 'PRESS 1 / 2 / 3 TO DEPLOY UPGRADE', {
+      fontFamily: FONT_MONO, fontSize: '20px', color: COL.cyanDimHex,
+    }).setOrigin(0.5).setDepth(65).setScrollFactor(0));
+    this.tweens.add({ targets: footer, alpha: 0.35, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    const choose = (idx: number): void => {
+      const opt = options[idx];
+      if (!opt) return;
+      game.player.applyUpgrade(opt.id);
+      game.audio.play('ui-confirm');
+      this.closeUpgradeOverlay(true);
+    };
+    const keys: Array<[string, () => void]> = [
+      ['keydown-ONE', () => choose(0)],
+      ['keydown-TWO', () => choose(1)],
+      ['keydown-THREE', () => choose(2)],
+    ];
+    for (const [ev, fn] of keys) {
+      this.input.keyboard!.on(ev, fn);
+      this.upgradeKeyUnsubs.push(() => this.input.keyboard?.off(ev, fn));
+    }
+
+    this.upgradeObjs = objs;
+  }
+
+  private closeUpgradeOverlay(resumeGame: boolean): void {
+    if (!this.upgradeOpen && this.upgradeObjs.length === 0) return;
+    this.upgradeOpen = false;
+    for (const unsub of this.upgradeKeyUnsubs.splice(0)) unsub();
+    for (const obj of this.upgradeObjs.splice(0)) {
+      this.tweens.killTweensOf(obj);
+      obj.destroy();
+    }
+    if (resumeGame) this.scene.resume('Game');
   }
 
   private controlsOpen = false;

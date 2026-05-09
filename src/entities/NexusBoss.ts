@@ -398,7 +398,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
         if (rect) {
           const px = this.scene.getPlayerPos().x;
           if (px >= rect.x && px <= rect.right) {
-            this.scene.player.takeDamage(3);
+            this.scene.player.takeDamage(3, this.x);
           }
         }
 
