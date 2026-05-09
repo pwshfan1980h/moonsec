@@ -105,10 +105,10 @@ describe('CollisionRegistry', () => {
 
     new CollisionRegistry(scene).registerCore();
     const call = overlap.mock.calls.find(([a, b]) => a === scene.droneBullets && b === scene.player);
-    const callback = call?.[2] as (bullet: unknown, player: unknown) => void;
+    const callback = call?.[2] as (player: unknown, bullet: unknown) => void;
     const bullet = projectileMock();
 
-    callback(bullet, scene.player);
+    callback(scene.player, bullet);
 
     expect(bullet.setActive).toHaveBeenCalledWith(false);
     expect(bullet.setVisible).toHaveBeenCalledWith(false);

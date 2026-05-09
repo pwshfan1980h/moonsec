@@ -9,6 +9,7 @@ import {
   getPickupMagnetVelocity,
   getPickupVisual,
   applyFillTintCompat,
+  PickupSystem,
   randomIntBetween,
 } from '../systems/PickupSystem';
 
@@ -40,22 +41,28 @@ describe('PickupSystem pure helpers', () => {
     expect(roll).toHaveBeenCalledTimes(1);
   });
 
-  it('uses Phaser 3 setTintFill when available for spawn flash tint', () => {
-    const target = { setTintFill: vi.fn(), setTint: vi.fn(), setTintMode: vi.fn() };
-    applyFillTintCompat(target, 0xffffff);
-    expect(target.setTintFill).toHaveBeenCalledWith(0xffffff);
-    expect(target.setTint).not.toHaveBeenCalled();
-  });
-
-  it('falls back to Phaser 4 tint mode API when setTintFill is unavailable', () => {
+  it('uses Phaser 4 tint mode API for spawn flash tint', () => {
     const originalPhaser = (globalThis as unknown as { Phaser?: unknown }).Phaser;
     (globalThis as unknown as { Phaser?: unknown }).Phaser = { TintModes: { FILL: 'fill-mode' } };
+    const target = { setTintFill: vi.fn(), setTint: vi.fn(), setTintMode: vi.fn() };
+
+    applyFillTintCompat(target, 0xffffff);
+
+    expect(target.setTintFill).not.toHaveBeenCalled();
+    expect(target.setTint).toHaveBeenCalledWith(0xffffff);
+    expect(target.setTintMode).toHaveBeenCalledWith('fill-mode');
+    (globalThis as unknown as { Phaser?: unknown }).Phaser = originalPhaser;
+  });
+
+  it('still tints when Phaser exposes no fill mode', () => {
+    const originalPhaser = (globalThis as unknown as { Phaser?: unknown }).Phaser;
+    (globalThis as unknown as { Phaser?: unknown }).Phaser = undefined;
     const target = { setTint: vi.fn(), setTintMode: vi.fn() };
 
     applyFillTintCompat(target, 0xffffff);
 
     expect(target.setTint).toHaveBeenCalledWith(0xffffff);
-    expect(target.setTintMode).toHaveBeenCalledWith('fill-mode');
+    expect(target.setTintMode).not.toHaveBeenCalled();
     (globalThis as unknown as { Phaser?: unknown }).Phaser = originalPhaser;
   });
 
@@ -83,5 +90,40 @@ describe('PickupSystem pure helpers', () => {
     expect(Number.isFinite(velocity.vx)).toBe(true);
     expect(Number.isFinite(velocity.vy)).toBe(true);
     expect(velocity).toEqual({ vx: 0, vy: 0 });
+  });
+
+  it('collects the pickup from Phaser group-vs-player overlap order', () => {
+    const overlap = vi.fn();
+    const scene = {
+      physics: { add: { overlap } },
+      pickups: { kind: 'pickups' },
+      player: {
+        kind: 'player',
+        heal: vi.fn(),
+        refillRapidAmmo: vi.fn(),
+        restoreJetpackFuel: vi.fn(),
+      },
+      tweens: { killTweensOf: vi.fn() },
+      audio: { playAt: vi.fn() },
+      spawnFloatingText: vi.fn(),
+    };
+    const pickup = {
+      active: true,
+      x: 12,
+      y: 34,
+      body: { enable: true },
+      getData: vi.fn((key: string) => key === 'type' ? 'health' : undefined),
+      setAlpha: vi.fn(function (this: unknown) { return this; }),
+      setActive: vi.fn(function (this: unknown) { return this; }),
+      setVisible: vi.fn(function (this: unknown) { return this; }),
+    };
+
+    new PickupSystem(scene as any).registerCollectionOverlap();
+    const callback = overlap.mock.calls[0][2] as (player: unknown, pickup: unknown) => void;
+    callback(scene.player, pickup);
+
+    expect(pickup.setActive).toHaveBeenCalledWith(false);
+    expect(scene.player.heal).toHaveBeenCalledWith(1);
+    expect(scene.player.restoreJetpackFuel).not.toHaveBeenCalled();
   });
 });

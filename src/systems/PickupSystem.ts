@@ -29,17 +29,11 @@ export function randomIntBetween(min: number, max: number, roll: () => number = 
 }
 
 type TintablePickup = {
-  setTintFill?: (color: number) => void;
   setTint?: (color: number) => unknown;
   setTintMode?: (mode: any) => unknown;
 };
 
 export function applyFillTintCompat(target: TintablePickup, color: number): void {
-  if (typeof target.setTintFill === 'function') {
-    target.setTintFill(color);
-    return;
-  }
-
   target.setTint?.(color);
   const fillMode = (globalThis as unknown as { Phaser?: { TintModes?: { FILL?: unknown } } }).Phaser?.TintModes?.FILL;
   if (fillMode !== undefined) target.setTintMode?.(fillMode);
@@ -69,7 +63,7 @@ export class PickupSystem {
     this.scene.physics.add.overlap(
       this.scene.pickups,
       this.scene.player,
-      (_p, pickup) => this.collect(pickup as Phaser.Physics.Arcade.Image),
+      (_player, pickup) => this.collect(pickup as Phaser.Physics.Arcade.Image),
     );
   }
 

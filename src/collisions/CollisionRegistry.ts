@@ -103,7 +103,7 @@ export class CollisionRegistry {
     this.scene.physics.add.overlap(
       this.scene.droneBullets,
       this.scene.player,
-      (b, playerObj) => {
+      (playerObj, b) => {
         const bullet = b as Phaser.Physics.Arcade.Image;
         bullet.setActive(false).setVisible(false);
         if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
@@ -128,7 +128,7 @@ export class CollisionRegistry {
     this.scene.physics.add.overlap(
       this.scene.bossProjectiles,
       this.scene.player,
-      (projObj, playerObj) => {
+      (playerObj, projObj) => {
         const p = projObj as Phaser.Physics.Arcade.Image;
         if (!p.active) return;
         p.setActive(false).setVisible(false);
@@ -142,7 +142,7 @@ export class CollisionRegistry {
     this.scene.physics.add.overlap(
       this.scene.ppcRounds,
       this.scene.player,
-      (roundObj, playerObj) => {
+      (playerObj, roundObj) => {
         const r = roundObj as PPCRound;
         if (!r.active) return;
         (playerObj as Player).takeDamage(3);
