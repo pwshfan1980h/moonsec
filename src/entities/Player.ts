@@ -558,14 +558,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
-    this.scene.input.off('pointerdown', this.onPointerDown);
-    this.scene.game.canvas.removeEventListener('contextmenu', this.onContextMenu);
+    // Phaser nulls `this.scene` inside the parent destroy. The scene-shutdown
+    // teardown path can re-enter destroy on the same sprite, so guard against
+    // a missing scene before touching its input/canvas handles.
+    if (this.scene) {
+      this.scene.input.off('pointerdown', this.onPointerDown);
+      this.scene.game.canvas.removeEventListener('contextmenu', this.onContextMenu);
+    }
     this.stopNaniteParticles();
-    this.jetpackInner.destroy();
-    this.jetpackOuter.destroy();
-    this.jetpackSmoke.destroy();
-    this.naniteAmbient.destroy();
-    this.naniteSpark.destroy();
+    this.jetpackInner?.destroy();
+    this.jetpackOuter?.destroy();
+    this.jetpackSmoke?.destroy();
+    this.naniteAmbient?.destroy();
+    this.naniteSpark?.destroy();
     super.destroy(fromScene);
   }
 }

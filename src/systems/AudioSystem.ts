@@ -66,7 +66,14 @@ export class AudioSystem {
   private loops = new Map<LoopId, LoopEntry>();
   private deathAmbientNodes: (OscillatorNode | GainNode)[] = [];
   private footstepTimer = 0;
-  private readonly onBeforeUnload = () => { try { this.ctx.close(); } catch { /* ignore */ } };
+  private readonly onBeforeUnload = () => {
+    try {
+      const closing = this.ctx.close();
+      if (closing && typeof (closing as Promise<void>).then === 'function') {
+        (closing as Promise<void>).catch(() => { /* already closed */ });
+      }
+    } catch { /* ignore */ }
+  };
 
   constructor(soundManager: Phaser.Sound.BaseSoundManager) {
     this.soundManager = soundManager;
@@ -91,7 +98,14 @@ export class AudioSystem {
         entry.gainNode.disconnect();
       } catch { /* ignore */ }
     }
-    try { this.ctx.close(); } catch { /* ignore */ }
+    // ctx.close() returns a Promise that rejects if already closed — sync
+    // try/catch won't catch that, so attach a .catch on the returned promise.
+    try {
+      const closing = this.ctx.close();
+      if (closing && typeof (closing as Promise<void>).then === 'function') {
+        (closing as Promise<void>).catch(() => { /* already closed */ });
+      }
+    } catch { /* ignore */ }
   }
 
   play(id: SoundId): void {
