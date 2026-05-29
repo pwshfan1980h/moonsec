@@ -1,13 +1,20 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { GAME_W } from '../constants';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
-const FLY_SPEED    = 240;  // px/s horizontal
+const FLY_SPEED    = 144;  // px/s horizontal
 const BOMB_RADIUS  = 85;   // px — damage zone radius
-const WARN_MS      = 1800; // ms of red indicator before bomb drops
+const WARN_MS      = 2430; // ms of red indicator before bomb drops
 
-export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
+export class BomberDrone extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 1, fromTurret: 1, fromMissile: 3,
+    chunkTint: 0xccaa55, chunkChance: 0.5, chunkCount: 3,
+    showDamageText: false, impactAudio: true,
+  };
 
   private flyState: 'FLY' | 'DEATH' = 'FLY';
   private direction: number;          // 1 = flying right, -1 = flying left

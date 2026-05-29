@@ -15,6 +15,7 @@ import { DebugLog } from '../systems/DebugLog';
 import { PickupSystem } from '../systems/PickupSystem';
 import type { PickupType } from '../systems/PickupSystem';
 import { CollisionRegistry } from '../collisions/CollisionRegistry';
+import { HostileCombat } from '../collisions/HostileCombat';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -29,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   movingPlatforms!: Phaser.Physics.Arcade.Group;
   debugLog?: DebugLog;
   audio!: AudioSystem;
+  hostileCombat!: HostileCombat;
   private music: MusicSystem | null = null;
   private playerHud?: PlayerHud;
   score = 0;
@@ -242,6 +244,7 @@ export class GameScene extends Phaser.Scene {
     pb.setMaxVelocityX(400);
 
     new CollisionRegistry(this).registerCore();
+    this.hostileCombat = new HostileCombat(this);
     this.pickupSystem.registerCollectionOverlap();
 
     // --- Camera ---

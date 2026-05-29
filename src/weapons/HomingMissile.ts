@@ -6,7 +6,7 @@ import { ShieldedTank } from '../entities/ShieldedTank';
 import { WORLD_WIDTH, MISSILE_SEEK_RANGE } from '../constants';
 
 const COOLDOWN = 5000; // ms
-const SPEED = 480;
+const SPEED = 288;
 const TURN_RATE = 0.065; // radians per frame
 
 type MissileTarget = Phaser.Physics.Arcade.Sprite & { active: boolean; x: number; y: number };

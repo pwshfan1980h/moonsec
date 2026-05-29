@@ -5,6 +5,7 @@ import type { DroneType, DroneVariant } from './Drone';
 import type { DroneScaling } from '../systems/DroneSpawner';
 import { GAME_W } from '../constants';
 import { playJuggernautDeath } from './effects/juggernautDeath';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'TELEGRAPH' | 'BLAST' | 'HURT' | 'DEATH';
 
@@ -49,16 +50,23 @@ export const BOSS_VARIANTS: Record<BossType, BossVariantConfig> = {
 };
 
 const DEFAULT_MAX_LIVES = 3;
-const DRIFT_SPEED    = 55;
-const CHARGE_MS      = 1200;
-const DRIFT_MS       = 1800;
-const BULLET_SPEED   = 340;
+const DRIFT_SPEED    = 33;
+const CHARGE_MS      = 1620;
+const DRIFT_MS       = 2430;
+const BULLET_SPEED   = 204;
 const SPREAD_ANGLES  = [-12, 0, 12] as const;
 const ESCORT_RESPAWN = 20000;
-const TELEGRAPH_MS   = 3000; // ms of warning before orbital blast fires
+const TELEGRAPH_MS   = 4050; // ms of warning before orbital blast fires
 
-export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
+export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  // Rapid fire is heavily nerfed against the boss — missiles are primary, turret chips.
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 0.33, fromTurret: 1, fromMissile: 3,
+    chunkTint: 0xff6633, chunkChance: 0.7, chunkCount: 4,
+    showDamageText: true, impactAudio: true,
+  };
 
   private bossState: BossState = 'DRIFT';
   private lifeHpMax: number;
@@ -155,35 +163,8 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite {
     body.setAllowGravity(false);
     escort.startPatrol(-1);
 
-    const c1 = this.scene.physics.add.overlap(
-      this.scene.playerBullets, escort,
-      (e, bullet) => {
-        const b = bullet as Phaser.Physics.Arcade.Image;
-        const ix = b.x, iy = b.y;
-        b.setActive(false).setVisible(false);
-        if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
-        (e as unknown as Drone).takeDamage(1);
-        this.scene.spawnBulletImpact(ix, iy, 'enemy');
-        this.scene.audio.play('hit');
-        if (Math.random() < 0.4) this.scene.spawnEnemyChunks(ix, iy, 0x993333, 2);
-        this.scene.spawnFloatingText((e as Phaser.GameObjects.Sprite).x, (e as Phaser.GameObjects.Sprite).y - 20, '-1', '#ffffff');
-      },
-    );
-    const c2 = this.scene.physics.add.overlap(
-      this.scene.missiles, escort,
-      (e, missile) => {
-        const m = missile as Phaser.Physics.Arcade.Image;
-        m.setData('hitTarget', true);
-        m.setActive(false).setVisible(false);
-        if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.scene.spawnExplosion(m.x, m.y);
-        (e as unknown as Drone).takeDamage(3);
-        this.scene.cameras.main.shake(150, 0.01);
-        this.scene.audio.play('explosion');
-        this.scene.spawnFloatingText((e as Phaser.GameObjects.Sprite).x, (e as Phaser.GameObjects.Sprite).y - 20, '-3', '#ffff00');
-      },
-    );
-    this.escortSlots[slot].colliders = [c1, c2];
+    // Escort hit resolution is owned by HostileCombat (reads the escort Drone's profile).
+    this.escortSlots[slot].colliders = this.scene.hostileCombat.register(escort);
     this.escortSlots[slot].drone = escort;
 
     const checkRespawn = () => {

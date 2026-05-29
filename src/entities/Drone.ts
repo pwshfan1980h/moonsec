@@ -1,15 +1,16 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { DroneScaling } from '../systems/DroneSpawner';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DOWNED' | 'DEATH';
 export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
 export type DroneVariant = 'normal' | 'sniper';
 type Personality = 'charger' | 'strafer' | 'kiter';
 
-const BASE_HOVER_SPEED      = 110;
+const BASE_HOVER_SPEED      = 66;
 const BASE_ATTACK_RANGE     = 320;
-const BASE_BULLET_SPEED     = 300;
+const BASE_BULLET_SPEED     = 180;
 const HP_MAP                = { 'drone-red': 2, 'drone-green': 3, 'sentinel': 3 };
 
 // Engagement tuning — keep drones mobile instead of parking directly overhead
@@ -23,15 +24,17 @@ const PERSONALITY_REROLL_MS = 2600;  // how often to re-pick a personality mid-f
 
 const SNIPER_HP             = 1;
 const SNIPER_SCALE          = 1.54;
-const SNIPER_HOVER_SPEED    = 40;
-const SNIPER_ATTACK_SPEED   = 80;
+const SNIPER_HOVER_SPEED    = 24;
+const SNIPER_ATTACK_SPEED   = 48;
 const SNIPER_ATTACK_RANGE   = 520;
-const SNIPER_SHOOT_INTERVAL = 4000;
-const SNIPER_BULLET_SPEED   = 480;
+const SNIPER_SHOOT_INTERVAL = 5400;
+const SNIPER_BULLET_SPEED   = 288;
 const SNIPER_FLEE_RANGE     = 200;
 
-export class Drone extends Phaser.Physics.Arcade.Sprite {
+export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  readonly damageProfile: DamageProfile;
 
   private droneState: DroneState = 'HOVER';
   private hp: number;
@@ -73,6 +76,15 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     this.scene = scene;
     this.droneType = type;
     this.droneVariant = variant;
+
+    const chunkTint = type === 'drone-red' ? 0xcc3322
+      : type === 'drone-green' ? 0x33cc66
+      : type === 'sentinel' ? 0xaaaacc : 0x99aabb;
+    this.damageProfile = {
+      fromRapid: 1, fromTurret: 1, fromMissile: 3,
+      chunkTint, chunkChance: 0.4, chunkCount: 2,
+      showDamageText: true, impactAudio: true,
+    };
 
     if (variant === 'sniper') {
       this.hp             = SNIPER_HP;

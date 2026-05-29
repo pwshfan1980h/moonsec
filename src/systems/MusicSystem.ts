@@ -27,44 +27,44 @@ const E2 = 82.41, B2 = note(E2, 7), E3 = note(E2, 12), G3e = note(E2, 15);
 
 const THEMES: Record<MusicTheme, ThemeParams> = {
   'surface': {
-    step:      0.25,  // 120 BPM
+    step:      0.43,  // ~71 BPM
     bass:      [D2, 0, A2, F2, D2, C3, A2, 0],
     lead:      [D4, 0, 0, 0, A4, 0, D4, 0],
     padFreqs:  [D3, F3, A3, C4],
-    padFilter: 550,
-    hiHatEvery: 2, snareStep: 4, kickSteps: [0, 4],
+    padFilter: 385,
+    hiHatEvery: 0, snareStep: -1, kickSteps: [0],
   },
   'trade-lanes': {
-    step:      0.18,  // ~139 BPM — fast and punchy
+    step:      0.31,  // ~98 BPM — mellow and spacious
     bass:      [G2, 0, D2, Bb2, G2, 0, D2, Bb2],
     lead:      [G3, 0, D5, 0, G3, 0, Bb2, 0],
     padFreqs:  [G3, Bb2, D3, F3],
-    padFilter: 900,
-    hiHatEvery: 1, snareStep: 4, kickSteps: [0, 2, 4, 6],
+    padFilter: 630,
+    hiHatEvery: 0, snareStep: -1, kickSteps: [0, 4],
   },
   'deep-facility': {
-    step:      0.33,  // ~91 BPM — slow and ominous
+    step:      0.56,  // ~54 BPM — slow and ominous
     bass:      [Bb1, 0, 0, Eb2, Bb1, 0, F_2, 0],
     lead:      [Bb3, 0, 0, 0, 0, 0, Bb3, 0],
     padFreqs:  [Bb1, Eb2, F_2, Bb3],
-    padFilter: 200,
-    hiHatEvery: 0, snareStep: -1, kickSteps: [0, 4],
+    padFilter: 140,
+    hiHatEvery: 0, snareStep: -1, kickSteps: [0],
   },
   'orbital': {
-    step:      0.27,  // ~111 BPM — floating, minimal
+    step:      0.46,  // ~65 BPM — floating, minimal
     bass:      [E2, 0, B2, 0, E2, 0, G3e, 0],
     lead:      [E3, 0, 0, 0, B2, 0, 0, 0],
     padFreqs:  [E2, B2, E3, G3e],
-    padFilter: 1200,
-    hiHatEvery: 0, snareStep: -1, kickSteps: [0, 4],
+    padFilter: 840,
+    hiHatEvery: 0, snareStep: -1, kickSteps: [0],
   },
   'nexus-core': {
-    step:      0.19,  // ~158 BPM — relentless
+    step:      0.32,  // ~94 BPM — slower but still driving
     bass:      [D2, 0, A2, F2, D2, C3, A2, F2],
     lead:      [D4, A4, 0, D4, A4, 0, D4, 0],
     padFreqs:  [D3, F3, A3, C4],
-    padFilter: 700,
-    hiHatEvery: 1, snareStep: 4, kickSteps: [0, 2, 4, 6],
+    padFilter: 490,
+    hiHatEvery: 2, snareStep: 4, kickSteps: [0, 4],
   },
 };
 
@@ -304,7 +304,7 @@ export class MusicSystem {
 
     this.padLfo = this.ctx.createOscillator();
     this.padLfo.type = 'sine';
-    this.padLfo.frequency.setValueAtTime(0.07, t);
+    this.padLfo.frequency.setValueAtTime(0.05, t);
     const lfoAmt = this.ctx.createGain();
     lfoAmt.gain.setValueAtTime(Math.min(220, this.theme.padFilter * 0.4), t);
     this.padLfo.connect(lfoAmt);
