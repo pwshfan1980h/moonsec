@@ -75,6 +75,9 @@ const THEMES: Record<MusicTheme, ThemeParams> = {
 export class MusicSystem {
   private ctx: AudioContext;
   private master: GainNode;
+  private compressor: DynamicsCompressorNode;
+  private reverb: ConvolverNode;
+  private reverbGain: GainNode;
   private running = false;
 
   // Scheduler state
@@ -102,7 +105,22 @@ export class MusicSystem {
     this.ctx    = new AudioContext();
     this.master = this.ctx.createGain();
     this.master.gain.value = 0;
-    this.master.connect(this.ctx.destination);
+    this.compressor = this.ctx.createDynamicsCompressor();
+    this.compressor.threshold.value = -18;
+    this.compressor.knee.value = 12;
+    this.compressor.ratio.value = 4;
+    this.compressor.attack.value = 0.008;
+    this.compressor.release.value = 0.24;
+
+    this.reverb = this.ctx.createConvolver();
+    this.reverb.buffer = this.makeImpulseResponse(1.65, 2.6);
+    this.reverbGain = this.ctx.createGain();
+    this.reverbGain.gain.value = 0.14;
+
+    this.master.connect(this.compressor);
+    this.reverb.connect(this.reverbGain);
+    this.reverbGain.connect(this.compressor);
+    this.compressor.connect(this.ctx.destination);
     this.initNoiseBuffer();
   }
 
@@ -180,6 +198,15 @@ export class MusicSystem {
       }
     }
 
+    // A restrained three-note radio/chime phrase every fourth loop gives the
+    // procedural score a longer musical sentence instead of an obvious 8-step cycle.
+    if (step === 0 && this.loopCount % 4 === 2) {
+      const root = this.theme.padFreqs[Math.min(1, this.theme.padFreqs.length - 1)];
+      this.playNote(root * 2, 'sine', t + 0.04, this.theme.step * 2.4, 0.035, 3600, -0.45);
+      this.playNote(root * 2.5, 'sine', t + this.theme.step * 1.5, this.theme.step * 2.1, 0.025, 4200, 0.35);
+      this.playNote(root * 3, 'triangle', t + this.theme.step * 3.0, this.theme.step * 2.8, 0.022, 3200, 0.1);
+    }
+
     // Boss percussion layer (overlaid on top of theme percussion)
     if (this.bossMode) {
       if (hiHatEvery === 0 || step % 2 === 1) this.playHiHat(t); // always add hi-hats in boss mode
@@ -195,7 +222,7 @@ export class MusicSystem {
 
   private playNote(
     freq: number, type: OscillatorType, t: number,
-    dur: number, gain: number, lpHz: number,
+    dur: number, gain: number, lpHz: number, pan = 0,
   ): void {
     try {
       const g = this.ctx.createGain();
@@ -212,12 +239,17 @@ export class MusicSystem {
       lp.type = 'lowpass';
       lp.frequency.setValueAtTime(lpHz, t);
 
+      const panner = this.ctx.createStereoPanner();
+      panner.pan.setValueAtTime(pan, t);
+
       osc.connect(lp);
-      lp.connect(g);
+      lp.connect(panner);
+      panner.connect(g);
       g.connect(this.master);
+      g.connect(this.reverb);
       osc.start(t);
       osc.stop(t + dur + 0.01);
-      osc.onended = () => { try { g.disconnect(); lp.disconnect(); } catch { /* ok */ } };
+      osc.onended = () => { try { g.disconnect(); lp.disconnect(); panner.disconnect(); } catch { /* ok */ } };
     } catch { /* ignore scheduling errors */ }
   }
 
@@ -288,6 +320,19 @@ export class MusicSystem {
     for (let i = 0; i < sr; i++) data[i] = Math.random() * 2 - 1;
   }
 
+  private makeImpulseResponse(seconds: number, decay: number): AudioBuffer {
+    const length = Math.floor(this.ctx.sampleRate * seconds);
+    const impulse = this.ctx.createBuffer(2, length, this.ctx.sampleRate);
+    for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+      const data = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        const envelope = Math.pow(1 - i / length, decay);
+        data[i] = (Math.random() * 2 - 1) * envelope;
+      }
+    }
+    return impulse;
+  }
+
   // ── Pad (continuous, detuned chord) ──────────────────────────────────────
 
   private startPad(): void {
@@ -313,6 +358,7 @@ export class MusicSystem {
 
     this.padGain.connect(this.padLp);
     this.padLp.connect(this.master);
+    this.padLp.connect(this.reverb);
 
     for (const freq of this.theme.padFreqs) {
       for (const detune of [-7, 7]) {

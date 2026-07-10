@@ -24,6 +24,8 @@ export type LevelConfig = {
   spawnCol?:       number;   // tile column for player spawn (default 9)
   spawnRow?:       number;   // tile row (feet); default uses GROUND_Y constant
   trainEffect?:    boolean;  // BG parallax auto-drift to fake lateral motion
+  radioLines:      string[]; // mission-control texture between waves
+  bossWarning:     string;
 };
 
 export const LEVEL_CONFIGS: LevelConfig[] = [
@@ -41,6 +43,14 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     enemyMix:      'balanced',
     voidBottom:    false,
     movingPlatforms: true,
+    radioLines: [
+      'Survey crews are still transmitting. Keep this corridor open.',
+      'Habitat lights are coming back online behind you.',
+      'Maintenance drones report movement beneath the regolith.',
+      'Civilian crawlers are clear. You are weapons-free.',
+      'Surface array is tracking one very large contact.',
+    ],
+    bossWarning: 'Seismic return is moving against the fault line. Brace.',
   },
   // ── Node 1: Trade Lanes ───────────────────────────────────────────────────
   {
@@ -59,6 +69,14 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     spawnCol:      8,
     spawnRow:      21,
     trainEffect:   true,
+    radioLines: [
+      'Cargo traffic is diverting around your firing lane.',
+      'Convoy Seven is trapped ahead. Break the blockade.',
+      'Dock crews have killed the lights. Watch for engine flare.',
+      'Rail control reports unauthorized launches on every vector.',
+      'The carrier signal just swallowed the whole band.',
+    ],
+    bossWarning: 'Heavy carrier emerging from the traffic shadow.',
   },
   // ── Node 2: Deep Facility ─────────────────────────────────────────────────
   {
@@ -74,6 +92,14 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     enemyMix:      'ground-heavy',
     voidBottom:    false,
     movingPlatforms: true,
+    radioLines: [
+      'Life-support telemetry is faint, but it is not zero.',
+      'Excavation lifts are cycling without operators.',
+      'The lower galleries were sealed for a reason.',
+      'Heat blooms ahead. Something is feeding on the grid.',
+      'All surviving crews are behind pressure doors. Push on.',
+    ],
+    bossWarning: 'Massive contact in the bore chamber. No valid transponder.',
   },
   // ── Node 3: Orbital Station ───────────────────────────────────────────────
   {
@@ -89,6 +115,14 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     enemyMix:      'elite',
     voidBottom:    true,
     movingPlatforms: true,
+    radioLines: [
+      'Station-keeping thrusters are firing in the wrong sequence.',
+      'Rescue pods are crossing below. Check your fire.',
+      'Telemetry ghosts are multiplying across the hull.',
+      'The ring habitat has twenty minutes of reserve atmosphere.',
+      'Orbital control is gone. You are the control tower now.',
+    ],
+    bossWarning: 'Docking spine is opening. That is not a ship.',
   },
   // ── Node 4: Nexus Core ────────────────────────────────────────────────────
   {
@@ -104,6 +138,14 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     enemyMix:      'boss-rush',
     voidBottom:    false,
     movingPlatforms: false,
+    radioLines: [
+      'The colony network is speaking with one voice now.',
+      'Every service drone on the Moon just turned toward you.',
+      'Core temperature is rising. This may be deliberate.',
+      'We can hear old crew messages inside the carrier wave.',
+      'No extraction route remains. Finish it.',
+    ],
+    bossWarning: 'NEXUS CORE UNBOUND. ALL CHANNELS ARE YOURS.',
   },
 ];
 
