@@ -15,6 +15,7 @@ import { DebugLog } from '../systems/DebugLog';
 import { PickupSystem } from '../systems/PickupSystem';
 import type { PickupType } from '../systems/PickupSystem';
 import { CollisionRegistry } from '../collisions/CollisionRegistry';
+import { EnvironmentalLife } from '../systems/EnvironmentalLife';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -175,6 +176,7 @@ export class GameScene extends Phaser.Scene {
     // extraPlatforms (see buildMap). makeTilemapGround also populates
     // platformData for the radar.
     this.makeBaseProps();
+    new EnvironmentalLife(this, this.activeConfig).create();
 
     // --- Physics groups ---
     this.playerBullets = this.physics.add.group({
@@ -264,7 +266,13 @@ export class GameScene extends Phaser.Scene {
     // --- Wave audio ---
     const onWaveStart = (wave: number) => {
       this.audio.playWaveStinger();
-      if (wave > cfg.waveCount) this.music?.setBossMode();
+      if (wave > cfg.waveCount) {
+        this.music?.setBossMode();
+        this.showRadioTransmission('PRIORITY', cfg.bossWarning, true);
+      } else {
+        const line = cfg.radioLines[(wave - 1) % cfg.radioLines.length];
+        this.showRadioTransmission('LUNAR CONTROL', line);
+      }
     };
     this.events.on('waveStart', onWaveStart);
     this.gameEventUnsubs.push(() => this.events.off('waveStart', onWaveStart));
@@ -755,6 +763,32 @@ export class GameScene extends Phaser.Scene {
     this.makeBackgroundDomes();
 
     if (this.activeConfig?.nodeIndex === 0) this.makeSurfaceSignature();
+  }
+
+  private showRadioTransmission(speaker: string, message: string, warning = false): void {
+    const accent = warning ? 0xff6655 : 0x72d7ff;
+    const panel = this.add.container(GAME_W / 2, 158)
+      .setDepth(95)
+      .setScrollFactor(0)
+      .setAlpha(0);
+    const back = this.add.rectangle(0, 0, 590, 48, 0x020711, 0.86)
+      .setStrokeStyle(1, accent, 0.55);
+    const tag = this.add.text(-278, -16, speaker, {
+      fontFamily: 'monospace', fontSize: '10px', color: warning ? '#ff8877' : '#72d7ff',
+    });
+    const body = this.add.text(-278, 1, message, {
+      fontFamily: 'monospace', fontSize: '12px', color: '#d8e9ef',
+    }).setWordWrapWidth(556);
+    panel.add([back, tag, body]);
+    this.tweens.add({
+      targets: panel,
+      alpha: 1,
+      y: 150,
+      duration: 260,
+      hold: 3400,
+      yoyo: true,
+      onComplete: () => panel.destroy(true),
+    });
   }
 
   // Surface-Ops-only sky signature: Earth on the horizon, twinkling stars,
