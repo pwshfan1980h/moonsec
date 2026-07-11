@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { DroneScaling } from '../systems/DroneSpawner';
+import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 
 type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DOWNED' | 'DEATH';
 export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
@@ -98,6 +99,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
     this.sinOffset = Math.random() * Math.PI * 2;
     this.setDepth(8);
     this.play(`${type}-hover`);
+    presentEnemyArrival(scene, this, variant === 'sniper' ? 0x44ffee : type === 'drone-green' ? 0x77dd88 : 0xff6655, variant === 'sniper' ? 'sniper' : 'air');
 
     // Stagger first shot so a spawned wave doesn't fire in unison
     this.shootTimer = Math.random() * this.shootInterval;
@@ -335,7 +337,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
         break;
       case 'HURT': {
         this.play(`${this.droneType}-hurt`);
-        this.setTint(0xff8888);
+        flashEnemyHit(this.scene, this);
         this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
           this.clearTint();
           this.removeAllListeners(Phaser.Animations.Events.ANIMATION_COMPLETE);
@@ -377,6 +379,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite {
         this.reviveIndicator = undefined;
 
         this.scene.spawnExplosion(this.x, this.y);
+        presentEnemyBreakup(this.scene, this, this.droneVariant === 'sniper' ? 0x44ffee : 0xff6655, 3);
 
         this.on(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
           this.scene.events.emit('droneKilled', this.x, this.y);

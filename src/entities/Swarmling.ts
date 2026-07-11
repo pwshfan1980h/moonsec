@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Carrier } from './Carrier';
+import { presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 
 type SwarmState = 'HARASS' | 'RECALL' | 'DOCKED' | 'DEATH';
 
@@ -31,6 +32,7 @@ export class Swarmling extends Phaser.Physics.Arcade.Sprite {
     this.setTint(0xffaa55);
     this.setDepth(9);
     this.play('drone-red-attack');
+    presentEnemyArrival(scene, this, 0xffaa55, 'air');
   }
 
   getCarrier(): Carrier | null { return this.carrier; }
@@ -129,6 +131,7 @@ export class Swarmling extends Phaser.Physics.Arcade.Sprite {
     if (body) { body.setVelocity(0, 0); body.enable = false; }
 
     this.scene.spawnExplosion(this.x, this.y);
+    presentEnemyBreakup(this.scene, this, 0xffaa55, 2);
     this.scene.audio.playAt('hit', { rate: 1.4, detune: 300, volume: 0.3 });
 
     if (this.carrier && this.carrier.active) {

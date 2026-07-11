@@ -75,7 +75,13 @@ export class MinimapRenderer {
     }
 
     // ── 3. Platform blips (clipped to circle) ─────────────────────
-    for (const plat of game.platformData) {
+    const movingPlatforms = game.movingPlatforms?.getChildren()
+      .filter(child => child.active)
+      .map(child => {
+        const platform = child as Phaser.Physics.Arcade.Image;
+        return { x: platform.x, y: platform.y, w: platform.displayWidth };
+      }) ?? [];
+    for (const plat of [...game.platformData, ...movingPlatforms]) {
       const pp = proj(plat.x, plat.y);
       const dy = pp.y - RADAR_Y;
       if (Math.abs(dy) >= R) continue;
