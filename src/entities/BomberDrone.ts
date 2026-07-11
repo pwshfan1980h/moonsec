@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { GAME_W } from '../constants';
+import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 
 const FLY_SPEED    = 240;  // px/s horizontal
 const BOMB_RADIUS  = 85;   // px — damage zone radius
@@ -27,6 +28,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
     this.setTint(0xff8800); // orange — distinct from red drones
     this.play('kodiak-hover');
     this.setFlipX(direction < 0);
+    presentEnemyArrival(scene, this, 0xff8800, 'bomber');
   }
 
   /** Required by MinimapRenderer */
@@ -145,6 +147,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
       (this.body as Phaser.Physics.Arcade.Body).enable = false;
       this.play('kodiak-death');
       this.scene.spawnExplosion(this.x, this.y);
+      presentEnemyBreakup(this.scene, this, 0xff8800, 4);
       this.scene.audio.play('explosion');
       this.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
         this.scene.events.emit('droneKilled');
@@ -152,10 +155,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite {
         this.destroy();
       });
     } else {
-      this.setTint(0xffffff);
-      this.scene.time.delayedCall(100, () => {
-        if (this.active) this.setTint(0xff8800);
-      });
+      flashEnemyHit(this.scene, this, 0xff8800);
     }
   }
 

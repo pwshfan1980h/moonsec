@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { playJuggernautDeath } from './effects/juggernautDeath';
 import { PPCRound } from './PPCRound';
+import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 
 const HP_MAX       = 10;
 const FIRE_CADENCE = 2500;   // ms between shots (measured from last fire to next charge start)
@@ -10,7 +11,6 @@ const ROUND_SPEED  = 160;    // px/s — slow enough to sidestep, punishing if y
 const ROUND_LIFE   = 6000;   // ms before the round auto-detonates
 const BARREL_LEN   = 42;
 const TINT_BASE    = 0xaa88cc;
-const TINT_HURT    = 0xffccee;
 
 // Stationary floating platform with a tracking cannon that fires slow,
 // particle-heavy PPC rounds. Shares the Juggernaut death signature on kill.
@@ -35,6 +35,7 @@ export class PPCPlatform extends Phaser.Physics.Arcade.Sprite {
     this.setDepth(10);
     this.setTint(TINT_BASE);
     this.play('juggernaut-hover');
+    presentEnemyArrival(scene, this, 0xcc66ff, 'heavy');
 
     this.barrel = scene.add.graphics().setDepth(11);
     this.drawBarrel();
@@ -138,8 +139,7 @@ export class PPCPlatform extends Phaser.Physics.Arcade.Sprite {
       this.die();
       return;
     }
-    this.setTint(TINT_HURT);
-    this.scene.time.delayedCall(120, () => { if (!this.isDead) this.setTint(TINT_BASE); });
+    flashEnemyHit(this.scene, this, TINT_BASE);
   }
 
   private die(): void {
@@ -148,6 +148,7 @@ export class PPCPlatform extends Phaser.Physics.Arcade.Sprite {
     this.chargeGlow.destroy();
     this.barrel.destroy();
     this.scene.events.emit('droneKilled', this.x, this.y);
+    presentEnemyBreakup(this.scene, this, 0xcc66ff, 5);
     playJuggernautDeath(this.scene, this, { scale: 0.6 });
   }
 }

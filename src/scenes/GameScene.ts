@@ -3,7 +3,7 @@ import { Player } from '../entities/Player';
 import type { MechType } from '../entities/Player';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
-import { MusicSystem } from '../systems/MusicSystem';
+import { MusicSystem, musicIntensityForWave } from '../systems/MusicSystem';
 import { PlayerHud } from '../ui/PlayerHud';
 import { MovingPlatform } from '../entities/MovingPlatform';
 import { PPCRound } from '../entities/PPCRound';
@@ -253,15 +253,17 @@ export class GameScene extends Phaser.Scene {
 
     // --- Moving platforms (Trade Lanes only) ---
     this.movingPlatforms = this.physics.add.group({ runChildUpdate: true });
-    if (this.activeConfig.movingPlatforms) {
+    if (this.activeConfig.movingPlatforms.length > 0) {
       this.spawnMovingPlatforms();
       new CollisionRegistry(this).registerMovingPlatforms();
     }
 
     // --- Spawner ---
     const cfg = this.activeConfig;
-    this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossType, cfg.enemyMix);
-    this.music?.start(0.35);
+    const startAtBoss = import.meta.env.DEV
+      && new URLSearchParams(window.location.search).get('boss') === '1';
+    this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossType, cfg.enemyMix, startAtBoss);
+    this.music?.start(0.34);
 
     // --- Wave audio ---
     const onWaveStart = (wave: number) => {
@@ -270,6 +272,7 @@ export class GameScene extends Phaser.Scene {
         this.music?.setBossMode();
         this.showRadioTransmission('PRIORITY', cfg.bossWarning, true);
       } else {
+        this.music?.setIntensity(musicIntensityForWave(wave, cfg.waveCount));
         const line = cfg.radioLines[(wave - 1) % cfg.radioLines.length];
         this.showRadioTransmission('LUNAR CONTROL', line);
       }
@@ -405,32 +408,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnMovingPlatforms(): void {
-    // Stagger platforms along the level: one every ~300px, alternating travel direction.
-    // Void/aerial missions also get elevators so the safest route is often vertical,
-    // not just left-to-right across isolated deck segments.
-    const spacing   = 300;
-    const count     = Math.floor(WORLD_WIDTH / spacing);
-    for (let i = 0; i < count; i++) {
-      const x          = 150 + i * spacing;
-      const y          = 680 + (i % 3) * 40;  // vary height slightly (rows 21–23 approx)
-      const startRight = i % 2 === 0;
-      const mp = new MovingPlatform(this, x, y, 112, 240, 100 + (i % 3) * 20, startRight);
+    for (const spec of this.activeConfig.movingPlatforms) {
+      const mp = new MovingPlatform(
+        this, spec.x, spec.y, spec.width, spec.travel, spec.speed,
+        spec.startForward ?? true, spec.axis,
+      );
       this.add.existing(mp);
       this.movingPlatforms.add(mp, true);
-    }
-
-    if (this.activeConfig.voidBottom || this.activeConfig.nodeIndex === 2) {
-      const elevatorSpacing = 640;
-      const elevatorCount = Math.floor(WORLD_WIDTH / elevatorSpacing);
-      for (let i = 0; i < elevatorCount; i++) {
-        const x = 420 + i * elevatorSpacing;
-        const y = 820 - (i % 2) * 70;
-        const travel = -300 - (i % 3) * 40;
-        const mp = new MovingPlatform(this, x, y, 96, travel, 85, i % 2 === 0, 'y');
-        this.add.existing(mp);
-        this.movingPlatforms.add(mp, true);
-        this.platformData.push({ x, y: y + travel / 2, w: 96 });
-      }
     }
   }
 

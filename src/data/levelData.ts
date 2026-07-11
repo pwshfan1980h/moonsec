@@ -39,29 +39,10 @@ export type LevelTemplate = {
   tileK:           TileConstants;
   fixedPlatforms:  { col: number; row: number; width: number }[];
   fixedWalls:      { col: number; rowStart: number; height: number }[];
-  variation: {
-    pitCount:       [number, number];
-    pitWidth:       [number, number];
-    extraPlatforms: [number, number];
-    platformRows:   number[];
-    platformWidth:  [number, number];
-  };
+  fixedGaps:       { col: number; width: number; depth: number }[];
 };
 
-// Mulberry32 — fast seedable RNG, no deps
-function mulberry32(seed: number): () => number {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6D2B79F5) >>> 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function buildMap(tmpl: LevelTemplate, seed: number): number[][] {
-  const rng = mulberry32(seed);
-  const randi = (min: number, max: number) => Math.floor(rng() * (max - min + 1)) + min;
+export function buildMap(tmpl: LevelTemplate, _seed: number): number[][] {
   const T = tmpl.tileK;
 
   const map = Array.from({ length: tmpl.rows }, () =>
@@ -96,6 +77,16 @@ export function buildMap(tmpl: LevelTemplate, seed: number): number[][] {
     }
   }
 
+  // Authored gaps are applied before platforms so a lower trench floor can be
+  // placed inside a gap. Traversal geometry intentionally does not vary by seed.
+  for (const gap of tmpl.fixedGaps) {
+    for (let c = gap.col; c < gap.col + gap.width && c < tmpl.cols; c++) {
+      const floorRow = Math.min(tmpl.rows - 1, tmpl.groundRow + gap.depth);
+      for (let r = tmpl.groundRow; r < floorRow; r++) map[r][c] = T.EMPTY;
+      map[floorRow][c] = T.SURFACE;
+    }
+  }
+
   // Fixed platforms
   for (const fp of tmpl.fixedPlatforms) {
     for (let w = 0; w < fp.width; w++) {
@@ -113,61 +104,6 @@ export function buildMap(tmpl: LevelTemplate, seed: number): number[][] {
     }
   }
 
-  // Variation: pits (cut ground tiles; avoids first 12 cols — spawn area)
-  if (tmpl.hasGround && tmpl.variation.pitCount[1] > 0) {
-    const pitCount = randi(tmpl.variation.pitCount[0], tmpl.variation.pitCount[1]);
-    const usedCols = new Set<number>();
-    for (let p = 0; p < pitCount; p++) {
-      const pitW = randi(tmpl.variation.pitWidth[0], tmpl.variation.pitWidth[1]);
-      let startCol = 12;
-      for (let attempt = 0; attempt < 30; attempt++) {
-        const c = randi(14, tmpl.cols - pitW - 5);
-        let clear = true;
-        for (let i = c - 2; i < c + pitW + 2; i++) if (usedCols.has(i)) { clear = false; break; }
-        if (clear) { startCol = c; break; }
-      }
-      for (let c = startCol; c < startCol + pitW && c < tmpl.cols; c++) {
-        usedCols.add(c);
-        for (let r = tmpl.groundRow; r < tmpl.rows; r++) map[r][c] = T.EMPTY;
-      }
-    }
-  }
-
-  // Variation: extra platforms — avoid colliding with existing tiles
-  // (fixed platforms, fixed walls, ceiling/ground). Also keep ≥1-col gap on each
-  // side so a new platform can't butt flush against another platform at the
-  // same row. Up to 20 placement attempts per platform before giving up.
-  const platCount = randi(tmpl.variation.extraPlatforms[0], tmpl.variation.extraPlatforms[1]);
-  const pRows = tmpl.variation.platformRows;
-  const canPlacePlatform = (row: number, col: number, width: number): boolean => {
-    if (row < 0 || row >= tmpl.rows) return false;
-    const c0 = Math.max(0, col - 1);
-    const c1 = Math.min(tmpl.cols - 1, col + width);
-    // Row must be empty across [col, col+width), with 1-col buffer each side
-    for (let c = c0; c <= c1; c++) if (map[row][c] !== T.EMPTY) return false;
-    // Don't spawn directly above/below ≤1 row from fixed features (avoids stacking)
-    for (const adj of [row - 1, row + 1]) {
-      if (adj < 0 || adj >= tmpl.rows) continue;
-      for (let c = col; c < col + width; c++) {
-        if (map[adj][c] !== T.EMPTY) return false;
-      }
-    }
-    return true;
-  };
-  for (let p = 0; p < platCount; p++) {
-    const width = randi(tmpl.variation.platformWidth[0], tmpl.variation.platformWidth[1]);
-    let placed = false;
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const row = pRows[Math.floor(rng() * pRows.length)];
-      const col = randi(5, tmpl.cols - width - 5);
-      if (!canPlacePlatform(row, col, width)) continue;
-      for (let w = 0; w < width && col + w < tmpl.cols; w++) map[row][col + w] = T.SURFACE;
-      placed = true;
-      break;
-    }
-    if (!placed) continue;
-  }
-
   return map;
 }
 
@@ -180,26 +116,13 @@ export const TMPL_SURFACE_OPS: LevelTemplate = {
   fixedArenaWalls: false,
   tileK: TILE,
   fixedPlatforms: [
-    { col: 40,  row: 22, width: 8 },
-    { col: 52,  row: 18, width: 5 },
-    { col: 62,  row: 14, width: 4 },
-    { col: 80,  row: 18, width: 8 },
-    { col: 92,  row: 14, width: 5 },
-    // Jetpack gate — horizontal barrier at row 20 (~320px above ground)
-    // with a 3-tile (96px) gap at cols 108-110. Mech body is ~75px — fits snug.
-    { col: 100, row: 20, width: 8 },
-    { col: 111, row: 20, width: 8 },
-    { col: 130, row: 24, width: 6 },
-    { col: 142, row: 20, width: 5 },
-    { col: 160, row: 19, width: 7 },
-    { col: 172, row: 15, width: 5 },
+    { col: 36,  row: 23, width: 12 }, // survey overlook
+    { col: 90,  row: 20, width: 16 }, // jetpack gate, left side
+    { col: 110, row: 20, width: 14 }, // jetpack gate, right side
+    { col: 158, row: 22, width: 16 }, // final defensive roof
   ],
   fixedWalls: [],
-  variation: {
-    pitCount:       [2, 4], pitWidth:       [4, 8],
-    extraPlatforms: [5, 9], platformRows:   [14, 18, 22, 26],
-    platformWidth:  [4, 8],
-  },
+  fixedGaps: [{ col: 62, width: 4, depth: 2 }, { col: 144, width: 5, depth: 2 }],
 };
 
 export const TMPL_TRADE_LANES: LevelTemplate = {
@@ -209,43 +132,24 @@ export const TMPL_TRADE_LANES: LevelTemplate = {
   fixedArenaWalls: false,
   tileK: TILE,
   fixedPlatforms: [
-    // Main deck — row 22, every 20 cols (~640px gaps, easily jumped)
-    { col:   5, row: 22, width: 15 },
-    { col:  25, row: 22, width: 10 },
-    { col:  45, row: 22, width: 15 },
-    { col:  65, row: 22, width: 10 },
-    { col:  85, row: 22, width: 15 },
-    { col: 105, row: 22, width: 10 },
-    { col: 125, row: 22, width: 15 },
-    { col: 145, row: 22, width: 10 },
-    { col: 165, row: 22, width: 15 },
-    { col: 185, row: 22, width: 10 },
-    // Upper deck — row 17, staggered between lower-deck groups
-    { col:  20, row: 17, width: 8 },
-    { col:  34, row: 13, width: 5 },
-    { col:  42, row:  9, width: 4 },
-    { col:  60, row: 17, width: 8 },
-    { col:  74, row: 13, width: 5 },
-    { col:  82, row:  9, width: 4 },
-    { col: 100, row: 17, width: 8 },
-    { col: 114, row: 13, width: 5 },
-    { col: 122, row:  9, width: 4 },
-    { col: 140, row: 17, width: 8 },
-    { col: 154, row: 13, width: 5 },
-    { col: 162, row:  9, width: 4 },
-    { col: 180, row: 17, width: 8 },
+    // Six large cargo decks form a readable main route.
+    { col:   4, row: 22, width: 26 },
+    { col:  35, row: 22, width: 28 },
+    { col:  68, row: 22, width: 28 },
+    { col: 101, row: 22, width: 29 },
+    { col: 135, row: 22, width: 29 },
+    { col: 169, row: 22, width: 27 },
+    // Optional service route; each catwalk reconnects within one screen.
+    { col:  30, row: 16, width: 14 },
+    { col:  75, row: 14, width: 14 },
+    { col: 120, row: 16, width: 14 },
+    { col: 163, row: 14, width: 14 },
   ],
   fixedWalls: [
-    { col:  30, rowStart: 10, height: 14 },
-    { col:  70, rowStart: 10, height: 14 },
-    { col: 110, rowStart: 10, height: 14 },
-    { col: 150, rowStart: 10, height: 14 },
+    { col:  66, rowStart: 10, height: 12 },
+    { col: 134, rowStart: 10, height: 12 },
   ],
-  variation: {
-    pitCount:       [0, 0], pitWidth:       [0, 0],
-    extraPlatforms: [10, 16], platformRows:   [9, 13, 17, 20, 25],
-    platformWidth:  [3, 6],
-  },
+  fixedGaps: [],
 };
 
 export const TMPL_DEEP_FACILITY: LevelTemplate = {
@@ -255,22 +159,16 @@ export const TMPL_DEEP_FACILITY: LevelTemplate = {
   fixedArenaWalls: false,
   tileK: TILE_VIOLET,
   fixedPlatforms: [
-    { col: 30, row: 17, width: 6 },
-    { col: 42, row: 13, width: 5 },
-    { col: 80, row: 15, width: 5 },
-    { col: 92, row: 11, width: 5 },
-    { col: 132, row: 18, width: 6 },
-    { col: 144, row: 14, width: 5 },
+    { col:  44, row: 18, width: 16 }, // west maintenance shelf
+    { col: 112, row: 16, width: 18 }, // central elevator fallback
+    { col: 148, row: 19, width: 14 }, // east maintenance shelf
+    { col: 176, row: 21, width: 12 }, // final chamber overlook
   ],
   fixedWalls: [
-    { col:  55, rowStart:  9, height: 12 },
-    { col: 110, rowStart:  9, height: 12 },
+    { col:  76, rowStart:  9, height: 11 },
+    { col: 154, rowStart:  9, height: 11 },
   ],
-  variation: {
-    pitCount:       [3, 6], pitWidth:       [6, 10],
-    extraPlatforms: [5, 9], platformRows:   [11, 14, 17, 21, 24],
-    platformWidth:  [4, 7],
-  },
+  fixedGaps: [{ col: 58, width: 10, depth: 4 }, { col: 136, width: 10, depth: 4 }],
 };
 
 export const TMPL_ORBITAL: LevelTemplate = {
@@ -280,22 +178,23 @@ export const TMPL_ORBITAL: LevelTemplate = {
   fixedArenaWalls: false,
   tileK: TILE,
   fixedPlatforms: [
-    { col:  25, row: 12, width: 8 }, { col:  32, row: 15, width: 5 },
-    { col:  42, row:  8, width: 5 },
-    { col:  70, row: 20, width: 8 }, { col:  75, row: 23, width: 5 },
-    { col:  84, row: 16, width: 5 },
-    { col: 110, row: 10, width: 8 }, { col: 116, row: 14, width: 5 },
-    { col: 126, row:  7, width: 5 },
-    { col: 152, row: 18, width: 8 }, { col: 158, row: 22, width: 5 },
-    { col: 168, row: 14, width: 5 },
-    { col: 184, row:  8, width: 5 },
+    // Eight broad hull plates carry the critical route.
+    { col:   3, row: 23, width: 22 },
+    { col:  29, row: 21, width: 20 },
+    { col:  54, row: 24, width: 20 },
+    { col:  79, row: 20, width: 21 },
+    { col: 105, row: 23, width: 20 },
+    { col: 130, row: 19, width: 21 },
+    { col: 156, row: 22, width: 20 },
+    { col: 181, row: 20, width: 16 },
+    // Optional antenna/service decks.
+    { col:  34, row: 13, width: 12 },
+    { col:  84, row: 12, width: 12 },
+    { col: 134, row: 11, width: 12 },
+    { col: 172, row: 13, width: 12 },
   ],
   fixedWalls: [],
-  variation: {
-    pitCount:       [0, 0], pitWidth:       [0, 0],
-    extraPlatforms: [8, 14], platformRows:   [6, 8, 12, 16, 20, 24],
-    platformWidth:  [4, 8],
-  },
+  fixedGaps: [],
 };
 
 export const TMPL_NEXUS_CORE: LevelTemplate = {
@@ -305,21 +204,13 @@ export const TMPL_NEXUS_CORE: LevelTemplate = {
   fixedArenaWalls: true,
   tileK: TILE,
   fixedPlatforms: [
-    { col:  15, row: 19, width: 15 },
-    { col:  35, row: 14, width: 7 },
-    { col:  70, row: 15, width: 10 },
-    { col:  85, row: 19, width: 10 },
-    { col: 118, row: 13, width: 8 },
-    { col: 155, row: 19, width: 12 }, // shifted right of wall@col 150
+    { col:  28, row: 20, width: 18 },
+    { col:  88, row: 18, width: 20 },
+    { col: 151, row: 20, width: 18 },
   ],
   fixedWalls: [
-    { col:  50, rowStart: 5, height: 14 }, // shortened so platform@row 19 clears
-    { col: 100, rowStart: 5, height: 14 },
-    { col: 150, rowStart: 5, height: 14 },
+    { col:  62, rowStart: 5, height: 13 },
+    { col: 138, rowStart: 5, height: 13 },
   ],
-  variation: {
-    pitCount:       [1, 2], pitWidth:       [4, 6],
-    extraPlatforms: [5, 8], platformRows:   [12, 14, 18, 22, 25],
-    platformWidth:  [4, 7],
-  },
+  fixedGaps: [],
 };

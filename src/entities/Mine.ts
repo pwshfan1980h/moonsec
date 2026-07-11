@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
+import { presentEnemyArrival } from './effects/enemyPresentation';
 
 type MineState = 'IDLE' | 'ARMED' | 'DETONATING' | 'DEAD';
 
@@ -21,6 +22,7 @@ export class Mine extends Phaser.Physics.Arcade.Sprite {
     this.setScale(6, 4);
     this.setTint(0x445566);
     this.setDepth(8);
+    presentEnemyArrival(scene, this, 0x556677, 'mine');
 
     // LED indicator dot above mine
     this.ledGfx = scene.add.graphics();

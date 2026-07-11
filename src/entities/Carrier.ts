@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { Swarmling } from './Swarmling';
 import { playJuggernautDeath } from './effects/juggernautDeath';
+import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 
 type CarrierState = 'PATROL' | 'DEPLOYING' | 'HARASS' | 'RECALL' | 'ROOST' | 'DEATH';
 
@@ -12,7 +13,6 @@ const DEPLOY_STAGGER  = 120;   // ms between individual swarmling spawns
 const HARASS_DURATION = 5000;  // ms from last deploy until recall
 const ROOST_DURATION  = 6000;  // ms docked cooldown before next deploy
 const TINT_BASE       = 0xdd7766;
-const TINT_HURT       = 0xffddcc;
 
 // Slow-moving mothership that periodically disgorges a swarm of Swarmlings.
 // States cycle: PATROL → DEPLOYING → HARASS → RECALL → ROOST → DEPLOYING.
@@ -35,6 +35,7 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite {
     this.setTint(TINT_BASE);
     this.play('juggernaut-hover');
     this.patrolDir = Math.random() < 0.5 ? -1 : 1;
+    presentEnemyArrival(scene, this, 0xffaa55, 'heavy');
   }
 
   initBody(): void {
@@ -182,10 +183,7 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite {
       this.die();
       return;
     }
-    this.setTint(TINT_HURT);
-    this.scene.time.delayedCall(120, () => {
-      if (this.carrierState !== 'DEATH') this.setTint(TINT_BASE);
-    });
+    flashEnemyHit(this.scene, this, TINT_BASE);
   }
 
   private die(): void {
@@ -197,6 +195,7 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.scene.events.emit('droneKilled', this.x, this.y);
+    presentEnemyBreakup(this.scene, this, 0xffaa55, 5);
     playJuggernautDeath(this.scene, this, { scale: 0.65 });
   }
 }

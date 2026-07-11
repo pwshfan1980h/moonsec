@@ -8,6 +8,16 @@ import type { BossType } from '../entities/NexusBoss';
 export type MusicTheme  = 'surface' | 'trade-lanes' | 'deep-facility' | 'orbital' | 'nexus-core';
 export type EnemyMix    = 'balanced' | 'aerial' | 'ground-heavy' | 'elite' | 'boss-rush';
 
+export type MovingPlatformSpec = {
+  x: number;
+  y: number;
+  width: number;
+  axis: 'x' | 'y';
+  travel: number;
+  speed: number;
+  startForward?: boolean;
+};
+
 export type LevelConfig = {
   nodeIndex:       number;
   label:           string;
@@ -20,7 +30,7 @@ export type LevelConfig = {
   musicTheme:      MusicTheme;
   enemyMix:        EnemyMix;
   voidBottom:      boolean;  // true = falling is lethal (no ground)
-  movingPlatforms: boolean;  // spawn horizontal moving platforms
+  movingPlatforms: MovingPlatformSpec[];
   spawnCol?:       number;   // tile column for player spawn (default 9)
   spawnRow?:       number;   // tile row (feet); default uses GROUND_Y constant
   trainEffect?:    boolean;  // BG parallax auto-drift to fake lateral motion
@@ -42,7 +52,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'surface',
     enemyMix:      'balanced',
     voidBottom:    false,
-    movingPlatforms: true,
+    movingPlatforms: [],
     radioLines: [
       'Survey crews are still transmitting. Keep this corridor open.',
       'Habitat lights are coming back online behind you.',
@@ -65,7 +75,10 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'trade-lanes',
     enemyMix:      'aerial',
     voidBottom:    true,
-    movingPlatforms: true,
+    movingPlatforms: [
+      { x: 1024, y: 690, width: 128, axis: 'y', travel: -176, speed: 88 },
+      { x: 4224, y: 690, width: 128, axis: 'y', travel: -176, speed: 88, startForward: false },
+    ],
     spawnCol:      8,
     spawnRow:      21,
     trainEffect:   true,
@@ -91,7 +104,11 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'deep-facility',
     enemyMix:      'ground-heavy',
     voidBottom:    false,
-    movingPlatforms: true,
+    movingPlatforms: [
+      { x: 3520, y: 800, width: 128, axis: 'y', travel: -280, speed: 84 },
+    ],
+    spawnCol:      9,
+    spawnRow:      25,
     radioLines: [
       'Life-support telemetry is faint, but it is not zero.',
       'Excavation lifts are cycling without operators.',
@@ -114,7 +131,12 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'orbital',
     enemyMix:      'elite',
     voidBottom:    true,
-    movingPlatforms: true,
+    movingPlatforms: [
+      { x: 1632, y: 680, width: 144, axis: 'x', travel: 160, speed: 92 },
+      { x: 4896, y: 650, width: 144, axis: 'x', travel: 160, speed: 92, startForward: false },
+    ],
+    spawnCol:      9,
+    spawnRow:      22,
     radioLines: [
       'Station-keeping thrusters are firing in the wrong sequence.',
       'Rescue pods are crossing below. Check your fire.',
@@ -137,7 +159,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     musicTheme:    'nexus-core',
     enemyMix:      'boss-rush',
     voidBottom:    false,
-    movingPlatforms: false,
+    movingPlatforms: [],
     radioLines: [
       'The colony network is speaking with one voice now.',
       'Every service drone on the Moon just turned toward you.',

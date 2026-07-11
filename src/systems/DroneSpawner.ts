@@ -45,11 +45,16 @@ export class DroneSpawner {
     waveCount: number,
     bossType:  BossType,
     enemyMix:  EnemyMix,
+    startAtBoss = false,
   ) {
     this.scene     = scene;
     this.waveCount = waveCount;
     this.bossType  = bossType;
     this.enemyMix  = enemyMix;
+    if (startAtBoss) {
+      this.waveIndex = waveCount;
+      this.nextWaveTime = 0;
+    }
 
     this.onHostileSpawned = (count = 1) => {
       scene.events.emit('dronesRemaining', this.hostileCounter.add(count));
@@ -123,10 +128,16 @@ export class DroneSpawner {
     let bracket = WAVE_BRACKETS[0];
     for (const b of WAVE_BRACKETS) if (this.waveIndex >= b.minWave) bracket = b;
 
-    const camX    = this.scene.cameras.main.scrollX + GAME_W / 2;
+    const camera  = this.scene.cameras.main;
+    const camX    = camera.scrollX + GAME_W / 2;
+    const camY    = Phaser.Math.Clamp(
+      camera.worldView.top + 220,
+      180,
+      this.scene.getApproxGroundY() - 220,
+    );
     const variant = BOSS_VARIANTS[this.bossType];
 
-    const boss = new NexusBoss(this.scene, camX, 180, bracket, variant);
+    const boss = new NexusBoss(this.scene, camX, camY, bracket, variant);
     this.scene.add.existing(boss);
     this.scene.physics.add.existing(boss);
     this.scene.drones.add(boss);

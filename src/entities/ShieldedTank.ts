@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
+import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 
 type TankState = 'PATROL' | 'ATTACK' | 'SHIELD_BREAK' | 'EXPOSED_ATTACK' | 'HURT' | 'DEATH';
 
@@ -40,6 +41,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
     this.setDepth(8);
     this.setTint(0x8888ff); // blue-tinted hull
     this.play('kodiak-hover');
+    presentEnemyArrival(scene, this, 0x6699ff, 'ground');
 
     // Shield visual — rendered above tank
     this.shieldGfx = scene.add.graphics();
@@ -236,7 +238,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
         break;
 
       case 'HURT':
-        this.setTint(0xff8888);
+        flashEnemyHit(this.scene, this, undefined, 180);
         this.scene.time.delayedCall(250, () => {
           if (this.active && this.tankState === 'HURT') {
             this.clearTint();
@@ -254,6 +256,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
         body.enable = false;
         // Large explosion for tank
         this.scene.spawnExplosion(this.x, this.y - 20);
+        presentEnemyBreakup(this.scene, this, 0x6699ff, 5);
         this.scene.time.delayedCall(120, () => {
           if (this.scene?.sys.isActive()) this.scene.spawnExplosion(this.x + 20, this.y - 10);
         });
