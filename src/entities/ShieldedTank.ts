@@ -1,25 +1,32 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 type TankState = 'PATROL' | 'ATTACK' | 'SHIELD_BREAK' | 'EXPOSED_ATTACK' | 'HURT' | 'DEATH';
 
 const SHIELD_HP        = 3;
 const HULL_HP          = 5;
-const MOVE_SPEED       = 50;
+const MOVE_SPEED       = 30;
 const PATROL_HALF      = 350;
 const ATTACK_RANGE_H   = 420;
 const ATTACK_RANGE_V   = 300;
 const RETURN_DIST      = 500;
-const SHELL_SPEED      = 180;
+const SHELL_SPEED      = 108;
 const SHELL_RADIUS     = 100; // blast radius for damage check
-const TELEGRAPH_MS     = 1200;
-const FIRE_INTERVAL_1  = 3500; // ms while shielded
-const FIRE_INTERVAL_2  = 2200; // ms once exposed
+const TELEGRAPH_MS     = 1620;
+const FIRE_INTERVAL_1  = 4725; // ms while shielded
+const FIRE_INTERVAL_2  = 2970; // ms once exposed
 const RETICLE_COLOR    = 0xff4400;
 
-export class ShieldedTank extends Phaser.Physics.Arcade.Sprite {
+export class ShieldedTank extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 1, fromTurret: 1, fromMissile: 3,
+    chunkTint: 0x776655, chunkChance: 0.55, chunkCount: 3,
+    showDamageText: false, impactAudio: true,
+  };
 
   private tankState: TankState = 'PATROL';
   private shieldHp  = SHIELD_HP;

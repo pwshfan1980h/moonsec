@@ -2,11 +2,12 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Carrier } from './Carrier';
 import { presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 type SwarmState = 'HARASS' | 'RECALL' | 'DOCKED' | 'DEATH';
 
-const HARASS_SPEED  = 180;
-const RECALL_SPEED  = 240;
+const HARASS_SPEED  = 108;
+const RECALL_SPEED  = 144;
 const DOCK_RADIUS   = 24;   // px from carrier to dock
 const SIN_AMP       = 50;   // vertical weave amplitude
 const COLLIDE_DAMAGE = 1;
@@ -14,8 +15,15 @@ const COLLIDE_DAMAGE = 1;
 // Small darting enemy deployed by the Carrier. Weaves toward the player,
 // damages on contact, recalls home when the Carrier signals, and docks
 // invisibly until the next deploy cycle.
-export class Swarmling extends Phaser.Physics.Arcade.Sprite {
+export class Swarmling extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  // Swarmling voices its own death blip (impactAudio off) and sheds no chunks.
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 1, fromTurret: 1, fromMissile: 3,
+    chunkTint: 0x000000, chunkChance: 0, chunkCount: 0,
+    showDamageText: false, impactAudio: false,
+  };
 
   private swarmState: SwarmState = 'HARASS';
   private hp = 1;

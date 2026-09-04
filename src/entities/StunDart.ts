@@ -1,16 +1,23 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from './Player';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 type DartState = 'APPROACH' | 'CHARGE' | 'HURT' | 'DEATH';
 
-const APPROACH_SPEED = 160;  // idle drift toward player
-const CHARGE_SPEED   = 520;  // EMP ram speed
+const APPROACH_SPEED = 96;  // idle drift toward player
+const CHARGE_SPEED   = 312;  // EMP ram speed
 const CHARGE_RANGE   = 340;  // switch to full charge within this range
 const EMP_DURATION   = 3000; // ms mech is stunned
 
-export class StunDart extends Phaser.Physics.Arcade.Sprite {
+export class StunDart extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 1, fromTurret: 1, fromMissile: 3,
+    chunkTint: 0x66aaff, chunkChance: 0.4, chunkCount: 2,
+    showDamageText: false, impactAudio: true,
+  };
 
   private dartState: DartState = 'APPROACH';
   private hp = 2;

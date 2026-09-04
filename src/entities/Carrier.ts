@@ -3,26 +3,33 @@ import type { GameScene } from '../scenes/GameScene';
 import { Swarmling } from './Swarmling';
 import { playJuggernautDeath } from './effects/juggernautDeath';
 import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 type CarrierState = 'PATROL' | 'DEPLOYING' | 'HARASS' | 'RECALL' | 'ROOST' | 'DEATH';
 
 const HP_MAX          = 12;
-const PATROL_SPEED    = 40;
+const PATROL_SPEED    = 24;
 const DEPLOY_COUNT    = 5;
-const DEPLOY_STAGGER  = 120;   // ms between individual swarmling spawns
-const HARASS_DURATION = 5000;  // ms from last deploy until recall
-const ROOST_DURATION  = 6000;  // ms docked cooldown before next deploy
+const DEPLOY_STAGGER  = 162;   // ms between individual swarmling spawns
+const HARASS_DURATION = 6750;  // ms from last deploy until recall
+const ROOST_DURATION  = 8100;  // ms docked cooldown before next deploy
 const TINT_BASE       = 0xdd7766;
 
 // Slow-moving mothership that periodically disgorges a swarm of Swarmlings.
 // States cycle: PATROL → DEPLOYING → HARASS → RECALL → ROOST → DEPLOYING.
-export class Carrier extends Phaser.Physics.Arcade.Sprite {
+export class Carrier extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 0.5, fromTurret: 1, fromMissile: 3,
+    chunkTint: TINT_BASE, chunkChance: 0.5, chunkCount: 3,
+    showDamageText: false, impactAudio: true,
+  };
 
   private carrierState: CarrierState = 'PATROL';
   private hp = HP_MAX;
   private patrolDir = 1;
-  private phaseTimer = 2200;            // time until next state transition (ms)
+  private phaseTimer = 2970;            // time until next state transition (ms)
   private swarmlings: Swarmling[] = [];
   private sinOffset = Math.random() * Math.PI * 2;
 
@@ -123,25 +130,10 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite {
     (swarmling.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
     this.scene.events.emit('hostileSpawned', 1);
 
-    // Player bullets damage
-    this.scene.physics.add.overlap(this.scene.playerBullets, swarmling,
-      (_s, bullet) => {
-        const b = bullet as Phaser.Physics.Arcade.Image;
-        const ix = b.x, iy = b.y;
-        b.setActive(false).setVisible(false);
-        if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = false;
-        (_s as unknown as Swarmling).takeDamage(1);
-        this.scene.spawnBulletImpact(ix, iy, 'enemy');
-      });
-    this.scene.physics.add.overlap(this.scene.missiles, swarmling,
-      (_s, missile) => {
-        const m = missile as Phaser.Physics.Arcade.Image;
-        m.setData('hitTarget', true);
-        m.setActive(false).setVisible(false);
-        if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = false;
-        this.scene.spawnExplosion(m.x, m.y);
-        (_s as unknown as Swarmling).takeDamage(3);
-      });
+    // Player weapon hits — owned by HostileCombat
+    this.scene.hostileCombat.register(swarmling);
+
+    // Swarmling colliding with the player (player-facing) stays here
     this.scene.physics.add.overlap(this.scene.player, swarmling,
       (playerObj, _s) => {
         (_s as unknown as Swarmling).onHitPlayer(playerObj as Phaser.Physics.Arcade.Sprite & { takeDamage: (n: number) => void });
@@ -156,7 +148,7 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite {
       if (s.active && !s.isDead() && !s.isDocked()) s.recall();
     }
     // Safety — force state even if swarmlings never dock (e.g. all killed mid-recall)
-    this.scene.time.delayedCall(2500, () => {
+    this.scene.time.delayedCall(3375, () => {
       if (this.carrierState === 'RECALL') this.enterRoost();
     });
   }

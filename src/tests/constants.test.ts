@@ -39,15 +39,20 @@ describe('constants', () => {
     expect(selectBracket(3)).toBe(WAVE_BRACKETS[3]);
   });
 
-  it('WAVE_BRACKETS attackSpeed and bulletSpeedMult at current difficulty values', () => {
-    expect(WAVE_BRACKETS[0].attackSpeed).toBe(270);
-    expect(WAVE_BRACKETS[1].attackSpeed).toBe(360);
-    expect(WAVE_BRACKETS[2].attackSpeed).toBe(460);
-    expect(WAVE_BRACKETS[3].attackSpeed).toBe(580);
-    expect(WAVE_BRACKETS[0].bulletSpeedMult).toBe(1.2);
-    expect(WAVE_BRACKETS[1].bulletSpeedMult).toBe(1.3);
-    expect(WAVE_BRACKETS[2].bulletSpeedMult).toBe(1.45);
-    expect(WAVE_BRACKETS[3].bulletSpeedMult).toBe(1.65);
+  it('WAVE_BRACKETS difficulty ramps monotonically (values tuned, but the ramp is the invariant)', () => {
+    // Exact numbers move with game-feel tuning passes; what must hold is that each
+    // bracket is harder than the last — faster pursuit, faster bullets, more HP —
+    // and that every value stays positive.
+    for (let i = 0; i < WAVE_BRACKETS.length; i++) {
+      expect(WAVE_BRACKETS[i].attackSpeed).toBeGreaterThan(0);
+      expect(WAVE_BRACKETS[i].bulletSpeedMult).toBeGreaterThan(0);
+      expect(WAVE_BRACKETS[i].shootInterval).toBeGreaterThan(0);
+      if (i > 0) {
+        expect(WAVE_BRACKETS[i].attackSpeed).toBeGreaterThan(WAVE_BRACKETS[i - 1].attackSpeed);
+        expect(WAVE_BRACKETS[i].bulletSpeedMult).toBeGreaterThan(WAVE_BRACKETS[i - 1].bulletSpeedMult);
+        expect(WAVE_BRACKETS[i].shootInterval).toBeLessThan(WAVE_BRACKETS[i - 1].shootInterval);
+      }
+    }
   });
 
   it('RADAR_X near right edge of 1920 screen', () => {

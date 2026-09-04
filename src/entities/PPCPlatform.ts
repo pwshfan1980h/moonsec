@@ -3,23 +3,30 @@ import type { GameScene } from '../scenes/GameScene';
 import { playJuggernautDeath } from './effects/juggernautDeath';
 import { PPCRound } from './PPCRound';
 import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 const HP_MAX       = 10;
-const FIRE_CADENCE = 2500;   // ms between shots (measured from last fire to next charge start)
-const CHARGE_MS    = 800;    // muzzle charge-up before round fires
-const ROUND_SPEED  = 160;    // px/s — slow enough to sidestep, punishing if you don't
+const FIRE_CADENCE = 3375;   // ms between shots (measured from last fire to next charge start)
+const CHARGE_MS    = 1080;    // muzzle charge-up before round fires
+const ROUND_SPEED  = 96;    // px/s — slow enough to sidestep, punishing if you don't
 const ROUND_LIFE   = 6000;   // ms before the round auto-detonates
 const BARREL_LEN   = 42;
 const TINT_BASE    = 0xaa88cc;
 
 // Stationary floating platform with a tracking cannon that fires slow,
 // particle-heavy PPC rounds. Shares the Juggernaut death signature on kill.
-export class PPCPlatform extends Phaser.Physics.Arcade.Sprite {
+export class PPCPlatform extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 0.5, fromTurret: 1, fromMissile: 3,
+    chunkTint: TINT_BASE, chunkChance: 0.5, chunkCount: 3,
+    showDamageText: false, impactAudio: true,
+  };
 
   private hp = HP_MAX;
   private isDead = false;
-  private fireTimer = 1200;           // initial delay before first shot
+  private fireTimer = 1620;           // initial delay before first shot
   private charging = false;
   private aimAngle = 0;
 

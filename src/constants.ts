@@ -21,10 +21,10 @@ export const WAVE_BRACKETS: {
   minWave: number; attackSpeed: number; shootInterval: number;
   extraHp: number; bulletSpeedMult: number;
 }[] = [
-  { minWave: 0,  attackSpeed: 270, shootInterval: 1800, extraHp: 0, bulletSpeedMult: 1.2  },
-  { minWave: 1,  attackSpeed: 360, shootInterval: 1400, extraHp: 0, bulletSpeedMult: 1.3  },
-  { minWave: 2,  attackSpeed: 460, shootInterval: 1050, extraHp: 1, bulletSpeedMult: 1.45 },
-  { minWave: 3,  attackSpeed: 580, shootInterval: 800,  extraHp: 2, bulletSpeedMult: 1.65 },
+  { minWave: 0,  attackSpeed: 162, shootInterval: 2430, extraHp: 0, bulletSpeedMult: 0.72 },
+  { minWave: 1,  attackSpeed: 216, shootInterval: 1890, extraHp: 0, bulletSpeedMult: 0.78 },
+  { minWave: 2,  attackSpeed: 276, shootInterval: 1418, extraHp: 1, bulletSpeedMult: 0.87 },
+  { minWave: 3,  attackSpeed: 348, shootInterval: 1080, extraHp: 2, bulletSpeedMult: 0.99 },
 ];
 
 export const PATROL_LANES = [300, 420, 540, 660, 780, 900];
@@ -41,8 +41,8 @@ export const MECH_STATS: Record<string, {
 }> = {
   mech: {   // STRIDER — speed archetype: fast, high fuel, low HP
     maxHp: 3,
-    walkSpeed: 440,
-    runSpeed: 700,
+    walkSpeed: 264,
+    runSpeed: 420,
     jumpVelocity: -510,
     jetpackAccel: -1840,
     jetpackMaxFuel: 4400,
@@ -50,8 +50,8 @@ export const MECH_STATS: Record<string, {
   },
   mech4: {  // SCOUT — balanced baseline
     maxHp: 5,
-    walkSpeed: 220,
-    runSpeed: 350,
+    walkSpeed: 132,
+    runSpeed: 210,
     jumpVelocity: -510,
     jetpackAccel: -920,
     jetpackMaxFuel: 2200,

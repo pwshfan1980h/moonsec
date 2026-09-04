@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { presentEnemyArrival } from './effects/enemyPresentation';
+import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
 
 type MineState = 'IDLE' | 'ARMED' | 'DETONATING' | 'DEAD';
 
@@ -8,8 +9,16 @@ const ARM_RADIUS   = 120; // px — proximity arm distance
 const FUSE_MS      = 800; // ms from arming to detonation
 const BLAST_RADIUS = 90;  // px — damage zone
 
-export class Mine extends Phaser.Physics.Arcade.Sprite {
+export class Mine extends Phaser.Physics.Arcade.Sprite implements Hostile {
   declare scene: GameScene;
+
+  // Mine voices its own detonation (impactAudio off) and sheds no chunks — any hit
+  // detonates it regardless of the amount.
+  readonly damageProfile: DamageProfile = {
+    fromRapid: 1, fromTurret: 1, fromMissile: 1,
+    chunkTint: 0x000000, chunkChance: 0, chunkCount: 0,
+    showDamageText: false, impactAudio: false,
+  };
 
   private mineState: MineState = 'IDLE';
   private ledGfx: Phaser.GameObjects.Graphics;
