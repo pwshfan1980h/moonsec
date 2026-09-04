@@ -7,9 +7,9 @@ export const WORLD_HEIGHT = 1080;
 export const GROUND_Y = 960;       // top surface of ground
 export const GROUND_HEIGHT = 120;
 
-// Radar minimap — upgraded to a readable tactical scope
+// Compact radar with a safe inset for the bezel and cardinal labels.
 export const RADAR_WORLD_RADIUS = 460;   // world units visible around player (widened with bigger radar)
-export const RADAR_SCREEN_RADIUS = 115;  // px radius of drawn circle
+export const RADAR_SCREEN_RADIUS = 86;   // px radius of drawn circle
 export const RADAR_X = 1770;             // screen-space center X — leaves room for the +28 cardinal "E" glyph at x=1913
 export const RADAR_Y = 830;              // screen-space center Y
 

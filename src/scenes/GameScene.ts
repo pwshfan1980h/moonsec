@@ -750,29 +750,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showRadioTransmission(speaker: string, message: string, warning = false): void {
-    const accent = warning ? 0xff6655 : 0x72d7ff;
-    const panel = this.add.container(GAME_W / 2, 158)
-      .setDepth(95)
-      .setScrollFactor(0)
-      .setAlpha(0);
-    const back = this.add.rectangle(0, 0, 590, 48, 0x020711, 0.86)
-      .setStrokeStyle(1, accent, 0.55);
-    const tag = this.add.text(-278, -16, speaker, {
-      fontFamily: 'monospace', fontSize: '10px', color: warning ? '#ff8877' : '#72d7ff',
-    });
-    const body = this.add.text(-278, 1, message, {
-      fontFamily: 'monospace', fontSize: '12px', color: '#d8e9ef',
-    }).setWordWrapWidth(556);
-    panel.add([back, tag, body]);
-    this.tweens.add({
-      targets: panel,
-      alpha: 1,
-      y: 150,
-      duration: 260,
-      hold: 3400,
-      yoyo: true,
-      onComplete: () => panel.destroy(true),
-    });
+    this.events.emit('radioTransmission', speaker, message, warning);
   }
 
   // Surface-Ops-only sky signature: Earth on the horizon, twinkling stars,

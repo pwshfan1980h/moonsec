@@ -349,6 +349,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.missile.fire(this);
     }
 
+    const surgeActive = time < this.surgeUntil;
+    const surgeReady = time >= this.surgeCooldownAt;
+    const surgeProgress = surgeReady ? 1 : surgeActive ? 0
+      : Phaser.Math.Clamp(1 - (this.surgeCooldownAt - time) / this.SURGE_COOLDOWN, 0, 1);
+    this.scene.events.emit('surgeChange', surgeActive ? 'active' : surgeReady ? 'ready' : 'cooldown', surgeProgress);
+
     // Emit weapon cooldowns + fuel to HUD
     this.scene.events.emit('missileCooldown', this.missile.getCooldownProgress());
     this.scene.events.emit('turretCooldown', this.turret.getCooldownProgress(time));

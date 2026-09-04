@@ -32,12 +32,13 @@
         height: 100%;
       }
       body {
-        background: #000;
+        background: #02060c;
         display: flex;
         justify-content: center;
-        align-items: flex-start;
+        align-items: center;
         overflow: hidden;
       }
+      #game { width: 100%; height: 100%; }
       canvas {
         display: block;
         image-rendering: pixelated;
@@ -46,6 +47,7 @@
     </style>
   </head>
   <body>
+    <main id="game" aria-label="Moonsec — lunar mech defense game"></main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

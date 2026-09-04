@@ -23,7 +23,7 @@ export class MinimapRenderer {
   private prevInRange = new Set<object>();
 
   constructor(scene: Phaser.Scene) {
-    this.gfx = scene.add.graphics().setDepth(100);
+    this.gfx = scene.add.graphics().setDepth(5);
   }
 
   draw(time: number, game: GameScene): void {

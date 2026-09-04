@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { repairStatus, type RepairPhase } from '../ui/repairStatus';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
 import type { GameScene } from './GameScene';
 import type { PlayerUpgradeId } from '../entities/Player';
@@ -6,13 +7,13 @@ import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { GAME_W, GAME_H, RADAR_X, RADAR_Y, RADAR_SCREEN_RADIUS } from '../constants';
 
 // ── Tactical HUD design tokens ────────────────────────────────────────────
-const FONT_MONO     = 'VT323, "Share Tech Mono", monospace';
+const FONT_MONO     = '"Share Tech Mono", monospace';
 const FONT_READOUT  = '"Share Tech Mono", VT323, monospace';
 
 const COL = {
   // chrome
   panelFill:    0x02111e,
-  panelFillA:   0.78,
+  panelFillA:   0.92,
   rail:         0x18456e,
   railDim:      0x0d2a42,
   hair:         0x0f2638,
@@ -23,8 +24,8 @@ const COL = {
   cyanDimHex:   '#3a7a96',
   // text inks
   ink:          '#cfe9ff',
-  inkDim:       '#5d85a3',
-  inkFaint:     '#2e4a62',
+  inkDim:       '#8aa6b8',
+  inkFaint:     '#688799',
   label:        '#6de3ff',
   // danger / alert
   red:          0xff3a4a,
@@ -35,20 +36,25 @@ const COL = {
   greenHex:     '#56e39f',
 };
 
-// Panel geometry
-const BAR_W     = 260;                      // bar width
-const BAR_H_PRI = 18;                       // HP, MSL
-const BAR_H_SEC = 12;                       // JP, TRT, Nanoheal, Ammo
-const PAD_EDGE  = 18;                       // outer margin
-const PAD_IN    = 14;                       // panel internal padding
-const ROW_GAP   = 10;
-const LABEL_H   = 18;
-const PANEL_W   = PAD_IN + BAR_W + PAD_IN;  // 288
-
-// Bracket corner size (the [ ] marks at each panel corner)
-const BR = 12;
+// All HUD coordinates use the fixed 1920 × 1080 game canvas.
+const BAR_W = 244;
+const BAR_H_PRI = 10;
+const BAR_H_SEC = 10;
+const BR = 10;
 
 export class UIScene extends Phaser.Scene {
+  private surgeFill!: Phaser.GameObjects.Graphics;
+  private surgeState!: Phaser.GameObjects.Text;
+  private surgeRect = { x: 0, y: 0, w: BAR_W, h: 6 };
+  private repairCue!: Phaser.GameObjects.Graphics;
+  private repairHint!: Phaser.GameObjects.Text;
+  private healthFill!: Phaser.GameObjects.Graphics;
+  private fuelFill!: Phaser.GameObjects.Graphics;
+  private healthValue!: Phaser.GameObjects.Text;
+  private fuelValue!: Phaser.GameObjects.Text;
+  private healthRect = { x: 56, y: 116, w: 320, h: 12 };
+  private fuelRect = { x: 56, y: 171, w: 320, h: 8 };
+  private radioPanel: Phaser.GameObjects.Container | null = null;
   private missileFill!: Phaser.GameObjects.Graphics;
   private turretFill!: Phaser.GameObjects.Graphics;
   private naniteFill!: Phaser.GameObjects.Graphics;
@@ -81,8 +87,7 @@ export class UIScene extends Phaser.Scene {
   // nanite state tracking
   private naniteActive = false;
   private naniteReady = true;
-  private lowHpPrompt: Phaser.GameObjects.Text | null = null;
-  private lowHpPulseTween: Phaser.Tweens.Tween | null = null;
+  private repairPulseTween: Phaser.Tweens.Tween | null = null;
   private nanitePulseTween: Phaser.Tweens.Tween | null = null;
   private naniteProgress = 1;
   private missileProgress = 1;
@@ -165,113 +170,18 @@ export class UIScene extends Phaser.Scene {
     this.naniteProgress = 1;
     this.missileProgress = 1;
     this.turretProgress = 1;
-    this.lowHpPrompt = null;
-    this.lowHpPulseTween = null;
+    this.repairPulseTween = null;
     this.waveTotalDrones = 0;
     this.waveKilled = 0;
     this.waveLastRemaining = 0;
     this.bossPhaseActive = false;
     this.missileReloadActive = false;
 
-    // ── LEFT STAT PANEL (top-left) ────────────────────────────────
-    // HP and Thruster Fuel are now drawn diegetically above the mech (PlayerHud);
-    // this panel only carries Nanoheal + Rapid Ammo.
-    const panelX = PAD_EDGE;
-    const barX   = panelX + PAD_IN;
-
-    const leftR0Lbl = PAD_EDGE + PAD_IN + 4;
-    const leftR0Bar = leftR0Lbl + LABEL_H;
-    const leftR1Lbl = leftR0Bar + BAR_H_SEC + ROW_GAP;
-    const leftR1Bar = leftR1Lbl + LABEL_H;
-
-    const panelH = (leftR1Bar + BAR_H_SEC + PAD_IN) - PAD_EDGE;
-
-    this.drawPanel(panelX, PAD_EDGE, PANEL_W, panelH, 'L-01 · MECH STATUS');
-
-    // Nanoheal row
-    this.naniteLabel = this.add.text(barX, leftR0Lbl, 'NANOHEAL', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
-    });
-    this.naniteState = this.add.text(barX + BAR_W, leftR0Lbl, 'READY', {
-      fontFamily: FONT_READOUT, fontSize: '16px', color: COL.greenHex,
-    }).setOrigin(1, 0);
-    this.naniteRect = { x: barX, y: leftR0Bar, w: BAR_W, h: BAR_H_SEC };
-    this.naniteFill = this.add.graphics();
-    this.drawBarFrame(this.naniteRect, 4);
-    this.paintBar(this.naniteFill, this.naniteRect, 1, COL.green, 4);
-
-    // Rapid ammo row
-    this.ammoLabel = this.add.text(barX, leftR1Lbl, 'RAPID AMMO', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
-    });
-    this.ammoValue = this.add.text(barX + BAR_W, leftR1Lbl, '', {
-      fontFamily: FONT_READOUT, fontSize: '16px', color: COL.cyanHex,
-    }).setOrigin(1, 0);
-    this.ammoRect = { x: barX, y: leftR1Bar, w: BAR_W, h: BAR_H_SEC };
-    this.ammoFill = this.add.graphics();
-    this.drawBarFrame(this.ammoRect, 5);
-    this.paintBar(this.ammoFill, this.ammoRect, 1, COL.cyan, 5);
-
-    // ── RIGHT STAT PANEL (top-right) ──────────────────────────────
-    const panelRX  = W - PAD_EDGE - PANEL_W;
-    const barRX    = panelRX + PAD_IN;
-    // Right panel keeps its original 2-row layout (MSL=PRI, TRT=SEC) so weapon rows aren't shifted by the left panel changes
-    const rightR0Lbl = PAD_EDGE + PAD_IN + 4;
-    const rightR0Bar = rightR0Lbl + LABEL_H;
-    const rightR1Lbl = rightR0Bar + BAR_H_PRI + ROW_GAP;
-    const rightR1Bar = rightR1Lbl + LABEL_H;
-    const rightPanelH = (rightR1Bar + BAR_H_SEC + PAD_IN) - PAD_EDGE;
-
-    this.drawPanel(panelRX, PAD_EDGE, PANEL_W, rightPanelH, 'R-01 · WEAPONS');
-
-    // MSL row
-    this.missileIcon = this.add.graphics();
-    this.missileIconCx = barRX + 10;
-    this.missileIconCy = rightR0Lbl + 10;
-    this.drawMissileIcon(this.missileIcon, this.missileIconCx, this.missileIconCy, COL.cyan);
-    this.missileLabel = this.add.text(barRX + 24, rightR0Lbl, 'HOMING MISSILE', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
-    });
-    this.missileState = this.add.text(barRX + BAR_W, rightR0Lbl, 'READY', {
-      fontFamily: FONT_READOUT, fontSize: '16px', color: COL.cyanHex,
-    }).setOrigin(1, 0);
-    this.missileRect = { x: barRX, y: rightR0Bar, w: BAR_W, h: BAR_H_PRI };
-    this.missileFill = this.add.graphics();
-    this.drawBarFrame(this.missileRect, 4);
-    this.paintBar(this.missileFill, this.missileRect, 1, COL.cyan, 4);
-
-    // TRT row
-    this.turretLabel = this.add.text(barRX, rightR1Lbl, 'TURRET', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.label,
-    });
-    this.turretState = this.add.text(barRX + BAR_W, rightR1Lbl, 'READY', {
-      fontFamily: FONT_READOUT, fontSize: '16px', color: COL.cyanHex,
-    }).setOrigin(1, 0);
-    this.turretRect = { x: barRX, y: rightR1Bar, w: BAR_W, h: BAR_H_SEC };
-    this.turretFill = this.add.graphics();
-    this.drawBarFrame(this.turretRect, 4);
-    this.paintBar(this.turretFill, this.turretRect, 1, COL.cyan, 4);
-
-    // ── Score (top-center) — tactical readout ─────────────────────
-    const scoreY = PAD_EDGE + 6;
-    this.scoreCaption = this.add.text(W / 2, scoreY, '— SCORE —', {
-      fontFamily: FONT_MONO, fontSize: '16px', color: COL.inkDim,
-    }).setOrigin(0.5, 0);
-    this.scoreText = this.add.text(W / 2, scoreY + 18, '0000000', {
-      fontFamily: FONT_READOUT, fontSize: '42px', color: COL.ink,
-    }).setOrigin(0.5, 0);
-
-    this.waveCounter = this.add.text(W / 2, scoreY + 66, '', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.cyanHex,
-    }).setOrigin(0.5, 0);
-
-    this.dronesRemainingText = this.add.text(W / 2, scoreY + 90, '', {
-      fontFamily: FONT_MONO, fontSize: '18px', color: COL.redHex,
-    }).setOrigin(0.5, 0).setAlpha(0);
+    this.buildCombatHud();
 
     // ── Wave announcement (big, fades out) ────────────────────────
     this.waveText = this.add.text(W / 2, H / 2 - 48, '', {
-      fontFamily: FONT_MONO, fontSize: '72px', color: COL.cyanHex,
+      fontFamily: FONT_MONO, fontSize: '56px', color: COL.cyanHex,
       stroke: '#001a2a', strokeThickness: 4, align: 'center',
     }).setOrigin(0.5, 0.5).setAlpha(0).setDepth(30);
     this.waveSubText = this.add.text(W / 2, H / 2 + 10, '', {
@@ -282,25 +192,33 @@ export class UIScene extends Phaser.Scene {
     this.pauseBg = this.add.rectangle(W / 2, H / 2, W, H, 0x000812, 0.72)
       .setDepth(50).setVisible(false);
     this.pauseFrame = this.add.graphics().setDepth(50).setVisible(false);
-    this.pauseText = this.add.text(W / 2, H / 2 - 24, '[ PAUSED ]', {
-      fontFamily: FONT_MONO, fontSize: '64px', color: COL.cyanHex,
+    this.pauseText = this.add.text(W / 2, H / 2 - 46, 'MISSION PAUSED', {
+      fontFamily: FONT_MONO, fontSize: '56px', color: COL.cyanHex,
     }).setOrigin(0.5).setDepth(51).setVisible(false);
     this.pauseSub = this.add.text(W / 2, H / 2 + 40, 'ESC TO RESUME     H FOR CONTROLS', {
-      fontFamily: FONT_MONO, fontSize: '22px', color: COL.inkDim,
+      fontFamily: FONT_MONO, fontSize: '26px', color: COL.inkDim,
     }).setOrigin(0.5).setDepth(51).setVisible(false);
 
     // ── Radar frame (drawn once) ──────────────────────────────────
     this.drawRadarFrame();
 
     // ── Wave progress bar (top-center, thin, wide) ────────────────
-    const wpW = 820;
-    this.waveProgressRect = { x: (W - wpW) / 2, y: 6, w: wpW, h: 6 };
+    const wpW = 480;
+    this.waveProgressRect = { x: (W - wpW) / 2, y: 148, w: wpW, h: 5 };
     this.waveProgressFrame = this.add.graphics().setDepth(20);
     this.waveProgressFill  = this.add.graphics().setDepth(21);
     this.drawWaveProgress();
 
     // ── Listen for events from GameScene ──────────────────────────
     this.attachGameEventListeners();
+    const game = this.scene.get('Game') as GameScene;
+    // Game.create can emit its initial values before the UI has subscribed.
+    this.time.delayedCall(0, () => {
+      game.events.emit('healthChange', game.player.hp, game.player.maxHp);
+      game.events.emit('rapidAmmoChange', game.player.rapidAmmo, game.player.rapidAmmoMax);
+      game.events.emit('scoreChange', (this.registry.get('totalScore') as number) ?? 0);
+    });
+
 
     // ── Keyboard handlers ─────────────────────────────────────────
     const onEsc = () => {
@@ -336,26 +254,90 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
+  private buildCombatHud(): void {
+    const game = this.scene.get('Game') as GameScene;
+    const text = (x: number, y: number, value: string, size = 24, color = COL.ink) =>
+      this.add.text(x, y, value, { fontFamily: FONT_READOUT, fontSize: `${size}px`, color });
+
+    this.drawPanel(32, 32, 368, 168, '');
+    text(56, 48, 'MECH / SYSTEM STATUS', 20, COL.inkDim);
+    text(56, 84, 'INTEGRITY', 22);
+    this.healthValue = text(376, 80, '', 28, COL.greenHex).setOrigin(1, 0);
+    this.healthFill = this.add.graphics().setDepth(1);
+    this.drawBarFrame(this.healthRect, 5);
+    text(56, 140, 'SPACE / THRUST', 20, COL.inkDim);
+    this.fuelValue = text(376, 138, '100%', 22, COL.cyanHex).setOrigin(1, 0);
+    this.fuelFill = this.add.graphics().setDepth(1);
+    this.drawBarFrame(this.fuelRect, 4);
+    this.paintBar(this.fuelFill, this.fuelRect, 1, COL.cyan, 4);
+
+    const mission = LEVEL_CONFIGS[game.currentNode]?.label ?? 'SURFACE OPS';
+    text(GAME_W / 2, 32, `OPERATION ${String(game.currentNode + 1).padStart(2, '0')}`, 20, COL.inkDim).setOrigin(0.5, 0);
+    text(GAME_W / 2, 62, mission, 34).setOrigin(0.5, 0);
+    this.waveCounter = text(GAME_W / 2 - 240, 112, 'STANDBY', 22, COL.cyanHex);
+    this.dronesRemainingText = text(GAME_W / 2 + 240, 112, '', 22, COL.amberHex).setOrigin(1, 0);
+    this.scoreCaption = text(1888, 36, 'MISSION SCORE', 20, COL.inkDim).setOrigin(1, 0);
+    this.scoreText = text(1888, 64, '0000000', 44).setOrigin(1, 0);
+    text(1680, 128, 'H  HELP', 20, COL.inkDim).setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.toggleControls());
+    text(1888, 128, 'ESC  PAUSE', 20, COL.inkDim).setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+        if (!this.controlsOpen && !this.gameOverActive) this.togglePause();
+      });
+
+    // A single row of equal cards keeps every weapon's key and state together.
+    const card = (index: number, key: string, title: string, color: string) => {
+      const x = 32 + index * 292, y = 958;
+      this.drawPanel(x, y, 280, 98, '');
+      this.add.rectangle(x + 41, y + 25, 58, 28, 0x16303d);
+      text(x + 41, y + 25, key, 20, COL.ink).setOrigin(0.5);
+      const label = text(x + 82, y + 13, title, 22, color);
+      const state = text(x + 18, y + 47, 'READY', 23, color);
+      const rect = { x: x + 18, y: y + 80, w: BAR_W, h: 6 };
+      this.drawBarFrame(rect, 4);
+      const fill = this.add.graphics();
+      this.paintBar(fill, rect, 1, Phaser.Display.Color.HexStringToColor(color).color, 4);
+      return { label, state, rect, fill };
+    };
+    const turret = card(0, 'LMB', 'TURRET', COL.cyanHex);
+    this.turretLabel = turret.label; this.turretState = turret.state;
+    this.turretRect = turret.rect; this.turretFill = turret.fill;
+    const rapid = card(1, 'RMB', 'RAPID FIRE', COL.cyanHex);
+    this.ammoLabel = rapid.label; this.ammoValue = rapid.state;
+    this.ammoRect = rapid.rect; this.ammoFill = rapid.fill;
+    const missile = card(2, 'E', 'MISSILE', COL.amberHex);
+    this.missileLabel = missile.label; this.missileState = missile.state;
+    this.missileRect = missile.rect; this.missileFill = missile.fill;
+    this.missileIcon = this.add.graphics();
+    this.missileIconCx = missile.rect.x + missile.rect.w - 12;
+    this.missileIconCy = missile.rect.y - 22;
+    this.drawMissileIcon(this.missileIcon, this.missileIconCx, this.missileIconCy, COL.amber);
+    const repair = card(3, 'Q', 'REPAIR', COL.greenHex);
+    this.naniteLabel = repair.label; this.naniteState = repair.state;
+    this.naniteRect = repair.rect; this.naniteFill = repair.fill;
+    this.repairCue = this.add.graphics();
+    this.repairCue.lineStyle(3, COL.green, 1);
+    this.repairCue.strokeRect(908, 958, 280, 98);
+    this.repairCue.setVisible(false);
+    this.repairHint = text(1048, 928, 'Q  RESTORE ARMOR', 24, COL.greenHex).setOrigin(0.5).setVisible(false);
+    this.repairHint.setStroke('#02111e', 5);
+    const surge = card(4, 'A/D', 'SURGE DASH', COL.cyanHex);
+    this.surgeState = surge.state.setText('DOUBLE-TAP TO DASH').setFontSize(21);
+    this.surgeRect = surge.rect; this.surgeFill = surge.fill;
+  }
+
   // ── Drawing helpers ────────────────────────────────────────────────────────
 
   /** Tactical panel: dark fill, hair border, bracketed corners, title caption. */
   private drawPanel(x: number, y: number, w: number, h: number, title: string): void {
     const g = this.add.graphics();
-    // Fill + inner stripe
     g.fillStyle(COL.panelFill, COL.panelFillA);
     g.fillRect(x, y, w, h);
-    // Subtle horizontal scan lines
-    g.fillStyle(0x0a1b2b, 0.18);
-    for (let sy = y + 3; sy < y + h; sy += 4) g.fillRect(x + 2, sy, w - 4, 1);
-    // Hair border
-    g.lineStyle(1, COL.rail, 0.9);
+    g.lineStyle(1, COL.rail, 0.75);
     g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-    // Inner track (double-line look)
-    g.lineStyle(1, COL.hair, 0.6);
-    g.strokeRect(x + 3.5, y + 3.5, w - 7, h - 7);
 
     // Bracketed corners — thicker cyan accents at 4 corners
-    g.lineStyle(2, COL.cyan, 0.95);
+    g.lineStyle(2, COL.cyan, 0.5);
     // top-left
     g.lineBetween(x, y + BR, x, y); g.lineBetween(x, y, x + BR, y);
     // top-right
@@ -365,6 +347,7 @@ export class UIScene extends Phaser.Scene {
     // bottom-right
     g.lineBetween(x + w - BR, y + h, x + w, y + h); g.lineBetween(x + w, y + h - BR, x + w, y + h);
 
+    if (!title) return;
     // Title caption — small offset label in a notch
     const capX = x + 14;
     const cap = this.add.text(capX, y - 1, title, {
@@ -413,18 +396,22 @@ export class UIScene extends Phaser.Scene {
     _segments: number,
   ): void {
     gfx.clear();
-    const filled = Math.max(0, Math.min(r.w, Math.floor(r.w * t)));
+    const innerW = r.w - 2;
+    const filled = Math.round(innerW * Phaser.Math.Clamp(t, 0, 1));
     if (filled <= 0) return;
-    gfx.fillStyle(color, 1);
-    gfx.fillRect(r.x + 1, r.y + 1, filled - 1, r.h - 2);
-    // Hot highlight row
-    gfx.fillStyle(0xffffff, 0.28);
-    gfx.fillRect(r.x + 1, r.y + 1, filled - 1, 1);
+    // Preserve real gaps between segments, including partially filled segments.
+    const step = innerW / _segments;
+    gfx.fillStyle(color, 0.95);
+    for (let i = 0; i < _segments; i++) {
+      const start = Math.round(i * step);
+      const width = Math.min(filled - start, Math.round(step) - 3);
+      if (width > 0) gfx.fillRect(r.x + 1 + start, r.y + 1, width, r.h - 2);
+    }
   }
 
   /** Draw the permanent radar bezel + ticks + caption. */
   private drawRadarFrame(): void {
-    const g = this.add.graphics().setDepth(99);
+    const g = this.add.graphics().setDepth(4);
     const rx = RADAR_X, ry = RADAR_Y, R = RADAR_SCREEN_RADIUS;
 
     // Outer ring — thick brushed steel look (2 rings)
@@ -448,7 +435,7 @@ export class UIScene extends Phaser.Scene {
     const card = (ch: string, dx: number, dy: number) => {
       this.add.text(rx + dx, ry + dy, ch, {
         fontFamily: FONT_MONO, fontSize: '16px', color: COL.cyanDimHex,
-      }).setOrigin(0.5).setDepth(100);
+      }).setOrigin(0.5).setDepth(5);
     };
     card('N', 0, -(R + 28));
     card('S', 0,  (R + 28));
@@ -457,12 +444,12 @@ export class UIScene extends Phaser.Scene {
 
     // Caption chip above radar
     const capY = ry - R - 46;
-    const capTxt = 'R-02 · RADAR';
+    const capTxt = 'LOCAL SCAN';
     const cap = this.add.text(rx, capY, capTxt, {
-      fontFamily: FONT_MONO, fontSize: '15px', color: COL.inkFaint,
-    }).setOrigin(0.5).setDepth(100);
+      fontFamily: FONT_MONO, fontSize: '20px', color: COL.inkDim,
+    }).setOrigin(0.5).setDepth(5);
     // subtle underline
-    const g2 = this.add.graphics().setDepth(99);
+    const g2 = this.add.graphics().setDepth(4);
     g2.lineStyle(1, COL.rail, 0.7);
     g2.lineBetween(rx - cap.width / 2 - 6, capY + 10, rx + cap.width / 2 + 6, capY + 10);
 
@@ -558,10 +545,13 @@ export class UIScene extends Phaser.Scene {
     on('healthChange', (hp: number, maxHp: number) => {
       this.curHp = hp;
       this.curMaxHp = maxHp;
-      // HP bar itself is rendered diegetically by PlayerHud — UI only handles ambient feedback
+      const ratio = maxHp > 0 ? hp / maxHp : 0;
+      const color = ratio > 0.5 ? COL.green : ratio > 0.25 ? COL.amber : COL.red;
+      this.paintBar(this.healthFill, this.healthRect, ratio, color, Math.max(1, maxHp));
+      this.healthValue.setText(`${Number(hp.toFixed(1))} / ${maxHp}`).setColor(ratio > 0.5 ? COL.greenHex : ratio > 0.25 ? COL.amberHex : COL.redHex);
       if (hp < this.lastHp) this.cameras.main.flash(200, 220, 30, 30, false);
       this.lastHp = hp;
-      this.updateLowHpPrompt();
+      this.updateRepairAvailability();
     });
 
     on('playerDamaged', ({ amount, direction, x, y }: { amount: number; direction: -1 | 1; x: number; y: number }) => {
@@ -569,6 +559,7 @@ export class UIScene extends Phaser.Scene {
     });
 
     on('missileCooldown', (progress: number) => {
+      if (progress === this.missileProgress) return;
       const prev = this.missileProgress;
       this.missileProgress = progress;
 
@@ -595,12 +586,13 @@ export class UIScene extends Phaser.Scene {
       } else {
         this.paintBar(this.missileFill, this.missileRect, progress, 0xffb347, 4);
         this.missileLabel.setColor(COL.amberHex);
-        this.missileState.setText(`CHG ${Math.floor(progress * 100).toString().padStart(2, '0')}%`).setColor('#8a7040');
+        this.missileState.setText(`RELOAD ${Math.floor(progress * 100)}%`).setColor(COL.amberHex);
         this.drawMissileIcon(this.missileIcon, this.missileIconCx, this.missileIconCy, COL.amber);
       }
     });
 
     on('turretCooldown', (progress: number) => {
+      if (progress === this.turretProgress) return;
       this.turretProgress = progress;
       if (progress >= 1) {
         this.paintBar(this.turretFill, this.turretRect, 1, COL.cyan, 4);
@@ -609,12 +601,23 @@ export class UIScene extends Phaser.Scene {
       } else {
         this.paintBar(this.turretFill, this.turretRect, progress, 0xffb347, 4);
         this.turretLabel.setColor(COL.amberHex);
-        this.turretState.setText(`CHG ${Math.floor(progress * 100).toString().padStart(2, '0')}%`).setColor('#8a7040');
+        this.turretState.setText(`RELOAD ${Math.floor(progress * 100)}%`).setColor(COL.amberHex);
       }
     });
 
-    // Thruster fuel bar is rendered diegetically by PlayerHud — UI no longer subscribes to jetpackFuel
+    on('jetpackFuel', (fuel: number, max: number) => {
+      const ratio = max > 0 ? Phaser.Math.Clamp(fuel / max, 0, 1) : 0;
+      this.paintBar(this.fuelFill, this.fuelRect, ratio, ratio > 0.25 ? COL.cyan : COL.amber, 4);
+      this.fuelValue.setText(`${Math.round(ratio * 100)}%`);
+    });
+    on('radioTransmission', (speaker: string, message: string, warning: boolean) => {
+      this.showRadioTransmission(speaker, message, warning);
+    });
 
+    on('surgeChange', (state: string, progress: number) => {
+      this.surgeState.setText(state === 'active' ? 'SURGING' : state === 'ready' ? 'DOUBLE-TAP TO DASH' : 'RECHARGING');
+      this.paintBar(this.surgeFill, this.surgeRect, progress, state === 'active' ? COL.amber : COL.cyan, 4);
+    });
     on('naniteChange', (state: string, progress: number) => {
       this.naniteProgress = progress;
       this.onNaniteChange(state, progress);
@@ -628,7 +631,7 @@ export class UIScene extends Phaser.Scene {
       const hex = t > 0.4 ? COL.cyanHex : t > 0.2 ? COL.amberHex : COL.redHex;
       this.ammoLabel.setColor(hex);
       this.ammoValue.setColor(hex);
-      this.ammoValue.setText(`${String(ammo).padStart(3, '0')} / ${String(max).padStart(3, '0')}`);
+      this.ammoValue.setText(ammo === 0 ? 'EMPTY · FIND AMMO' : `${String(ammo).padStart(3, '0')} / ${String(max).padStart(3, '0')}`);
     });
 
     on('scoreChange', (score: number) => {
@@ -657,27 +660,13 @@ export class UIScene extends Phaser.Scene {
         alpha: 0, duration: 2000, delay: 1600, ease: 'Power2',
       });
 
-      // Show level name on wave 1 only
-      if (wave === 1) {
-        const gs    = this.scene.get('Game') as GameScene;
-        const label = LEVEL_CONFIGS[gs?.currentNode ?? 0]?.label ?? '';
-        const t = this.add.text(W / 2, 160, `> ${label} <`, {
-          fontFamily: FONT_MONO, fontSize: '30px',
-          color: COL.cyanHex,
-          stroke: '#001a2a', strokeThickness: 3,
-        }).setOrigin(0.5).setDepth(50).setAlpha(0);
-        this.tweens.add({
-          targets: t, alpha: 1, duration: 400, yoyo: true, hold: 1400,
-          onComplete: () => t.destroy(),
-        });
-      }
     });
 
     on('dronesRemaining', (count: number) => {
       if (count > 0) {
-        this.dronesRemainingText.setText(`-- ${String(count).padStart(2, '0')} HOSTILES REMAIN --`).setAlpha(1);
+        this.dronesRemainingText.setText(`${String(count).padStart(2, '0')} HOSTILES`).setAlpha(1);
       } else {
-        this.dronesRemainingText.setAlpha(0);
+        this.dronesRemainingText.setText('SECTOR CLEAR').setAlpha(1);
       }
       this.waveLastRemaining = count;
     });
@@ -711,6 +700,7 @@ export class UIScene extends Phaser.Scene {
     on('levelComplete', () => {
       if (this.levelCompleteActive) return;
       this.levelCompleteActive = true;
+      this.updateRepairAvailability();
       this.clearTelegraph();
       this.showLevelComplete();
     });
@@ -763,7 +753,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   update(time: number, _delta: number): void {
-    if (this.gameOverActive) return;
+    if (this.gameOverActive || this.paused || this.controlsOpen || this.upgradeOpen) return;
     const game = this.scene.get('Game') as GameScene;
     if (!game || !game.sys.isActive()) return;
     this.minimap.draw(time, game);
@@ -777,6 +767,7 @@ export class UIScene extends Phaser.Scene {
 
   shutdown(): void {
     this.clearTelegraph();
+    if (this.radioPanel) { this.tweens.killTweensOf(this.radioPanel); this.radioPanel.destroy(); this.radioPanel = null; }
     this.closeUpgradeOverlay(false);
     for (const unsub of this.gameEventUnsubs.splice(0)) unsub();
     for (const unsub of this.keyboardEventUnsubs.splice(0)) unsub();
@@ -787,13 +778,13 @@ export class UIScene extends Phaser.Scene {
       this.missileReloadActive = false;
     }
     if (this.nanitePulseTween) { this.nanitePulseTween.stop(); this.nanitePulseTween = null; }
-    if (this.lowHpPulseTween)  { this.lowHpPulseTween.stop();  this.lowHpPulseTween  = null; }
-    this.lowHpPrompt?.destroy();
-    this.lowHpPrompt = null;
+    if (this.repairPulseTween)  { this.repairPulseTween.stop();  this.repairPulseTween  = null; }
   }
 
   private togglePause(): void {
+    if (this.upgradeOpen || this.levelCompleteActive) return;
     this.paused = !this.paused;
+    this.updateRepairAvailability();
     if (this.paused) {
       this.scene.pause('Game');
       this.pauseBg.setVisible(true);
@@ -814,26 +805,25 @@ export class UIScene extends Phaser.Scene {
     const g = this.pauseFrame;
     g.clear();
     const W = GAME_W, H = GAME_H;
-    // Outer corner brackets
-    g.lineStyle(3, COL.cyan, 0.9);
-    const inset = 80, size = 60;
-    // TL
-    g.lineBetween(inset, inset, inset + size, inset); g.lineBetween(inset, inset, inset, inset + size);
-    // TR
-    g.lineBetween(W - inset, inset, W - inset - size, inset); g.lineBetween(W - inset, inset, W - inset, inset + size);
-    // BL
-    g.lineBetween(inset, H - inset, inset + size, H - inset); g.lineBetween(inset, H - inset, inset, H - inset - size);
-    // BR
-    g.lineBetween(W - inset, H - inset, W - inset - size, H - inset); g.lineBetween(W - inset, H - inset, W - inset, H - inset - size);
+    g.fillStyle(COL.panelFill, 1);
+    g.fillRect(W / 2 - 530, H / 2 - 180, 1060, 360);
+    g.lineStyle(1, COL.rail, 1);
+    g.strokeRect(W / 2 - 530, H / 2 - 180, 1060, 360);
+    g.fillStyle(COL.cyan, 1);
+    g.fillRect(W / 2 - 530, H / 2 - 180, 6, 360);
   }
 
   private onNaniteChange(state: string, progress: number): void {
+    // Ready is emitted every frame; health changes already refresh availability.
+    if (state === 'ready' && this.naniteReady && !this.naniteActive) return;
+    const status = repairStatus(this.curHp, this.curMaxHp, state as RepairPhase, progress,
+      (this.scene.get('Game') as GameScene).player.naniteCooldownMs);
     if (state === 'active') {
       this.naniteActive = true;
       // Mech-mounted HP bar glows green via PlayerHud's nanite hook
-      this.paintBar(this.naniteFill, this.naniteRect, 1, COL.green, 4);
+      this.paintBar(this.naniteFill, this.naniteRect, progress, COL.green, 4);
       this.naniteLabel.setColor(COL.greenHex);
-      this.naniteState.setText('ACTIVE').setColor(COL.greenHex);
+      this.naniteState.setText(status.label).setColor(COL.greenHex);
       if (!this.nanitePulseTween) {
         this.nanitePulseTween = this.tweens.add({
           targets: this.naniteFill,
@@ -847,49 +837,64 @@ export class UIScene extends Phaser.Scene {
       this.naniteFill.setAlpha(1);
       this.paintBar(this.naniteFill, this.naniteRect, progress, 0x2a6b88, 4);
       this.naniteLabel.setColor(COL.cyanDimHex);
-      this.naniteState.setText(`RECHARGING ${Math.floor(progress * 100)}%`).setColor('#5d85a3');
+      this.naniteState.setText(status.label).setColor(COL.inkDim);
     } else if (state === 'ready') {
       this.naniteActive = false;
       if (this.nanitePulseTween) { this.nanitePulseTween.stop(); this.nanitePulseTween = null; }
       this.naniteFill.setAlpha(1);
       this.paintBar(this.naniteFill, this.naniteRect, 1, COL.green, 4);
       this.naniteLabel.setColor(COL.greenHex);
-      this.naniteState.setText('READY').setColor(COL.greenHex);
     }
     this.naniteReady = (state === 'ready');
-    this.updateLowHpPrompt();
+    this.updateRepairAvailability();
   }
 
-  private updateLowHpPrompt(): void {
-    const hpRatio = this.curMaxHp > 0 ? this.curHp / this.curMaxHp : 1;
-    const shouldShow = hpRatio < 0.25
-      && this.curHp > 0
-      && this.naniteReady
-      && !this.gameOverActive
-      && !this.levelCompleteActive
-      && !this.upgradeOpen
-      && !this.controlsOpen;
-
-    if (shouldShow && !this.lowHpPrompt) {
-      this.lowHpPrompt = this.add.text(
-        GAME_W / 2, GAME_H - 150,
-        '<<  PRESS Q -- NANITE PROTOCOL  >>',
-        {
-          fontFamily: FONT_MONO, fontSize: '28px', color: COL.greenHex,
-          stroke: '#001a12', strokeThickness: 3,
-        },
-      ).setOrigin(0.5).setDepth(45);
-      this.lowHpPulseTween = this.tweens.add({
-        targets: this.lowHpPrompt,
-        alpha: { from: 0.35, to: 1.0 },
-        duration: 520, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-      });
-    } else if (!shouldShow && this.lowHpPrompt) {
-      this.lowHpPulseTween?.stop();
-      this.lowHpPulseTween = null;
-      this.lowHpPrompt.destroy();
-      this.lowHpPrompt = null;
+  private updateRepairAvailability(): void {
+    if (!this.repairCue) return;
+    const status = repairStatus(this.curHp, this.curMaxHp, 'ready', 1, 0);
+    const usable = status.usable && this.naniteReady && !this.naniteActive;
+    const visible = usable && !this.gameOverActive && !this.levelCompleteActive
+      && !this.upgradeOpen && !this.controlsOpen && !this.paused;
+    this.repairCue.setVisible(visible);
+    this.repairHint.setVisible(visible);
+    if (this.naniteReady && !this.naniteActive) {
+      this.naniteState.setText(status.label)
+        .setColor(status.usable ? COL.greenHex : COL.inkDim);
+      this.paintBar(this.naniteFill, this.naniteRect, 1, status.usable ? COL.green : COL.cyanDim, 4);
     }
+    if (visible && !this.repairPulseTween) {
+      this.repairPulseTween = this.tweens.add({
+        targets: this.repairCue, alpha: { from: 0.45, to: 1 },
+        duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    } else if (!visible && this.repairPulseTween) {
+      this.repairPulseTween.stop();
+      this.repairPulseTween = null;
+      this.repairCue.setAlpha(1);
+    }
+  }
+
+  private showRadioTransmission(speaker: string, message: string, warning: boolean): void {
+    if (this.radioPanel) {
+      this.tweens.killTweensOf(this.radioPanel);
+      this.radioPanel.destroy();
+    }
+    const panel = this.add.container(GAME_W / 2, 224).setDepth(25).setAlpha(0);
+    this.radioPanel = panel;
+    const accent = warning ? COL.amberHex : COL.cyanHex;
+    const body = this.add.text(-366, 0, message, {
+      fontFamily: FONT_READOUT, fontSize: '24px', color: COL.ink,
+      wordWrap: { width: 732 }, lineSpacing: 6,
+    });
+    const height = Math.max(100, body.height + 60);
+    const back = this.add.rectangle(0, height / 2 - 36, 780, height, COL.panelFill, 0.95).setStrokeStyle(1, COL.rail);
+    const tag = this.add.text(-366, -29, `${speaker} / INCOMING`, {
+      fontFamily: FONT_READOUT, fontSize: '18px', color: accent,
+    });
+    panel.add([back, tag, body]);
+    this.tweens.add({ targets: panel, alpha: 1, duration: 260, hold: 4400, yoyo: true,
+      onComplete: () => { if (this.radioPanel === panel) this.radioPanel = null; panel.destroy(); },
+    });
   }
 
   private showDamageFeedback(amount: number, direction: -1 | 1, x: number, y: number): void {
@@ -928,6 +933,7 @@ export class UIScene extends Phaser.Scene {
     if (!game?.player?.active) return;
 
     this.upgradeOpen = true;
+    this.updateRepairAvailability();
     this.scene.pause('Game');
 
     const W = GAME_W, H = GAME_H;
@@ -937,7 +943,7 @@ export class UIScene extends Phaser.Scene {
     push(this.add.rectangle(W / 2, H / 2, W, H, 0x000812, 0.72).setDepth(62).setScrollFactor(0));
 
     const frame = push(this.add.graphics().setDepth(63).setScrollFactor(0)) as Phaser.GameObjects.Graphics;
-    const bw = 1080, bh = 430;
+    const bw = 1450, bh = 560;
     const bx = W / 2 - bw / 2, by = H / 2 - bh / 2;
     frame.fillStyle(0x02111e, 0.92);
     frame.fillRect(bx, by, bw, bh);
@@ -963,43 +969,52 @@ export class UIScene extends Phaser.Scene {
       { id: 'ammo',  key: '2', title: 'AMMO FEED',     body: '+35 RAPID CAP\nREFILL RAPID AMMO', color: COL.cyanHex },
       { id: 'fuel',  key: '3', title: 'THRUSTER CELLS', body: '+500 JETPACK FUEL\nFULL FUEL REFILL', color: COL.amberHex },
     ];
-    const startX = W / 2 - 330;
+    const startX = W / 2 - 440;
     options.forEach((opt, i) => {
-      const x = startX + i * 330;
-      const y = by + 190;
+      const x = startX + i * 440;
+      const y = by + 230;
       const panel = push(this.add.graphics().setDepth(64).setScrollFactor(0)) as Phaser.GameObjects.Graphics;
       panel.fillStyle(0x050f19, 0.95);
-      panel.fillRect(x - 135, y - 55, 270, 160);
+      panel.fillRect(x - 200, y - 55, 400, 230);
       panel.lineStyle(1, COL.rail, 0.9);
-      panel.strokeRect(x - 134.5, y - 54.5, 269, 159);
+      panel.strokeRect(x - 199.5, y - 54.5, 399, 229);
       panel.lineStyle(2, i === 0 ? COL.green : i === 1 ? COL.cyan : COL.amber, 0.9);
-      panel.lineBetween(x - 135, y - 55, x - 105, y - 55);
-      panel.lineBetween(x + 105, y + 105, x + 135, y + 105);
+      panel.lineBetween(x - 200, y - 55, x - 160, y - 55);
+      panel.lineBetween(x + 160, y + 175, x + 200, y + 175);
 
-      push(this.add.text(x - 112, y - 34, `[${opt.key}]`, {
+      push(this.add.text(x - 170, y - 20, `[${opt.key}]`, {
         fontFamily: FONT_READOUT, fontSize: '28px', color: opt.color,
       }).setOrigin(0, 0.5).setDepth(65).setScrollFactor(0));
-      push(this.add.text(x, y - 2, opt.title, {
-        fontFamily: FONT_MONO, fontSize: '24px', color: opt.color,
+      push(this.add.text(x, y + 42, opt.title, {
+        fontFamily: FONT_MONO, fontSize: '28px', color: opt.color,
       }).setOrigin(0.5).setDepth(65).setScrollFactor(0));
-      push(this.add.text(x, y + 54, opt.body, {
-        fontFamily: FONT_MONO, fontSize: '19px', color: COL.ink,
+      push(this.add.text(x, y + 108, opt.body, {
+        fontFamily: FONT_MONO, fontSize: '26px', color: COL.ink,
         align: 'center',
       }).setOrigin(0.5).setDepth(65).setScrollFactor(0));
     });
 
-    const footer = push(this.add.text(W / 2, by + bh - 46, 'PRESS 1 / 2 / 3 TO DEPLOY UPGRADE', {
+    const footer = push(this.add.text(W / 2, by + bh - 46, 'CHOOSE A CARD OR PRESS 1 / 2 / 3', {
       fontFamily: FONT_MONO, fontSize: '20px', color: COL.cyanDimHex,
     }).setOrigin(0.5).setDepth(65).setScrollFactor(0));
-    this.tweens.add({ targets: footer, alpha: 0.35, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
 
     const choose = (idx: number): void => {
+      if (!this.upgradeOpen) return;
       const opt = options[idx];
       if (!opt) return;
       game.player.applyUpgrade(opt.id);
       game.audio.play('ui-confirm');
       this.closeUpgradeOverlay(true);
     };
+    options.forEach((_, i) => {
+      const x = startX + i * 440;
+      const hover = push(this.add.rectangle(x, by + 290, 400, 230, COL.cyan, 0).setDepth(65));
+      const hit = push(this.add.zone(x, by + 290, 400, 230).setDepth(66).setInteractive({ useHandCursor: true }));
+      hit.on('pointerover', () => hover.setFillStyle(COL.cyan, 0.08));
+      hit.on('pointerout', () => hover.setFillStyle(COL.cyan, 0));
+      hit.on('pointerdown', () => choose(i));
+    });
     const keys: Array<[string, () => void]> = [
       ['keydown-ONE', () => choose(0)],
       ['keydown-TWO', () => choose(1)],
@@ -1022,6 +1037,7 @@ export class UIScene extends Phaser.Scene {
       obj.destroy();
     }
     if (resumeGame) this.scene.resume('Game');
+    this.updateRepairAvailability();
   }
 
   private controlsOpen = false;
@@ -1030,13 +1046,14 @@ export class UIScene extends Phaser.Scene {
   private controlsDismissFn: (() => void) | null = null;
 
   private toggleControls(): void {
-    if (this.gameOverActive || this.levelCompleteActive || this.paused) return;
+    if (this.gameOverActive || this.levelCompleteActive || this.upgradeOpen) return;
     if (this.controlsOpen) this.closeControlsOverlay();
     else                   this.openControlsOverlay();
   }
 
   private openControlsOverlay(): void {
     this.controlsOpen = true;
+    this.updateRepairAvailability();
     this.scene.pause('Game');
 
     const W = GAME_W, H = GAME_H;
@@ -1045,66 +1062,56 @@ export class UIScene extends Phaser.Scene {
 
     push(this.add.rectangle(W / 2, H / 2, W, H, 0x000812, 0.94).setDepth(60).setScrollFactor(0));
 
-    // scanline overlay
-    const scanG = push(this.add.graphics()).setDepth(60).setScrollFactor(0) as Phaser.GameObjects.Graphics;
-    scanG.fillStyle(0x0a1b2b, 0.35);
-    for (let y = 0; y < H; y += 4) scanG.fillRect(0, y, W, 1);
+    const text = (x: number, y: number, value: string, size = 28, color = COL.ink) =>
+      push(this.add.text(x, y, value, { fontFamily: FONT_READOUT, fontSize: `${size}px`, color }).setDepth(61));
+    const frame = push(this.add.graphics().setDepth(60));
+    frame.fillStyle(0x071622, 1);
+    frame.fillRect(80, 80, 1760, 920);
+    frame.lineStyle(1, 0x244353, 1);
+    frame.strokeRect(80, 80, 1760, 920);
+    frame.fillStyle(COL.cyan, 1);
+    frame.fillRect(80, 80, 6, 920);
+    frame.lineStyle(1, 0x244353, 1);
+    frame.lineBetween(652, 120, 652, 946);
+    text(128, 126, 'LUNAR DEFENSE DIVISION', 22, COL.cyanHex);
+    text(122, 164, 'MOONSEC', 94);
+    text(128, 278, 'PILOT FIELD GUIDE', 24, COL.inkDim);
 
-    // Title strip
-    push(this.add.text(W / 2, H * 0.12, 'MECH-IV // GDI TERMINAL', {
-      fontFamily: FONT_MONO, fontSize: '16px', color: COL.inkFaint,
-    }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+    // Use the real pixel sprite as the visual anchor for the briefing.
+    const game = this.scene.get('Game') as GameScene;
+    const texture = game.player.texture.key;
+    frame.lineStyle(1, 0x244353, 0.65);
+    frame.strokeCircle(366, 562, 168);
+    frame.strokeCircle(366, 562, 198);
+    frame.lineBetween(148, 562, 584, 562);
+    frame.lineBetween(366, 344, 366, 780);
+    push(this.add.sprite(366, 692, texture, game.player.frame.name).setOrigin(0.5, 1).setScale(5).setDepth(61));
+    text(128, 794, 'HOLD THE LINE.', 36);
+    text(128, 850, 'Clear each wave. Upgrade your mech.\nKeep your armor and fuel in view.', 22, COL.inkDim).setLineSpacing(12);
+    text(716, 128, 'KNOW YOUR MECH', 44);
+    text(716, 192, 'Move, aim and manage your systems to survive.', 24, COL.inkDim);
 
-    push(this.add.text(W / 2, H * 0.18, '[ CONTROLS ]', {
-      fontFamily: FONT_MONO, fontSize: '64px', color: COL.cyanHex,
-      stroke: '#002a3f', strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
+    const row = (x: number, y: number, key: string, title: string, description: string, accent = COL.cyanHex) => {
+      const keyWidth = key.length > 5 ? 168 : 94;
+      push(this.add.rectangle(x + keyWidth / 2, y + 19, keyWidth, 40, 0x17313f).setDepth(61));
+      text(x + keyWidth / 2, y + 19, key, 23, accent).setOrigin(0.5);
+      text(x, y + 60, title, 29);
+      text(x, y + 104, description, 22, COL.inkDim).setLineSpacing(8);
+    };
+    row(716, 274, 'A / D', 'Move & surge', 'Double-tap a direction to dash.');
+    row(1288, 274, 'SPACE', 'Jump & fly', 'Hold in the air to use thrust.\nLand to recharge your fuel.');
+    row(716, 464, 'LMB / RMB', 'Aim & fire', 'Aim with the mouse. Left: turret.\nRight: rapid fire. Watch your ammo.');
+    row(1288, 464, 'E', 'Homing missile', 'Tracks a nearby target.\nWait for READY to fire again.', COL.amberHex);
+    row(716, 654, 'Q', 'Nanite repair', 'Restores damaged armor over time.\nThe Q card lights up when usable.', COL.greenHex);
+    row(1288, 654, 'H / ESC', 'Stay in control', 'H opens this guide.\nEscape pauses the mission.');
 
-    // Divider
-    const divG = push(this.add.graphics()).setDepth(61).setScrollFactor(0) as Phaser.GameObjects.Graphics;
-    divG.lineStyle(1, COL.rail, 0.8);
-    divG.lineBetween(W * 0.2, H * 0.25, W * 0.8, H * 0.25);
-    divG.lineStyle(2, COL.cyan, 0.9);
-    divG.lineBetween(W * 0.48, H * 0.25, W * 0.52, H * 0.25);
-
-    const cx      = W / 2;
-    const prefX   = cx - 250;
-    const keyX    = cx - 140;
-    const sepX    = cx - 100;
-    const actX    = cx - 40;
-    const startY  = H * 0.32;
-    const rowH    = 58;
-
-    const bindings: [string, string, boolean?][] = [
-      ['A / D',     'LOCOMOTION'],
-      ['A·A / D·D', 'SURGE DASH',      true],
-      ['SPACE',     'VERTICAL THRUST'],
-      ['LMB',       'TURRET FIRE'],
-      ['RMB',       'RAPID SUPPRESSION'],
-      ['E',         'HOMING MISSILE',  true],
-      ['Q',         'NANITE REPAIR',   true],
-      ['H',         'TOGGLE HELP'],
-      ['ESC',       'PAUSE / MENU'],
-    ];
-
-    bindings.forEach(([key, action, highlight], i) => {
-      const y = startY + i * rowH;
-      const keyCol = highlight ? COL.amberHex : COL.cyanHex;
-      const actCol = highlight ? '#d69840'   : COL.ink;
-      push(this.add.text(prefX, y, '>',      { fontFamily: FONT_MONO, fontSize: '22px', color: COL.inkFaint }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
-      push(this.add.text(keyX,  y, key,      { fontFamily: FONT_MONO, fontSize: '24px', color: keyCol      }).setOrigin(1, 0.5).setDepth(61).setScrollFactor(0));
-      push(this.add.text(sepX,  y, '──',     { fontFamily: FONT_MONO, fontSize: '22px', color: COL.inkFaint }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
-      push(this.add.text(actX,  y, action,   { fontFamily: FONT_MONO, fontSize: '24px', color: actCol      }).setOrigin(0, 0.5).setDepth(61).setScrollFactor(0));
-    });
-
-    const dismissPrompt = push(this.add.text(W / 2, H * 0.92, '< PRESS SPACE / ENTER / H / ESC TO RESUME >', {
-      fontFamily: FONT_MONO, fontSize: '20px', color: COL.cyanDimHex,
-    }).setOrigin(0.5).setDepth(61).setScrollFactor(0));
-    this.tweens.add({ targets: dismissPrompt, alpha: 0.25, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-
-    push(this.add.text(W - 20, H - 20, `ALPHA  v${__APP_VERSION__}`, {
-      fontFamily: FONT_MONO, fontSize: '16px', color: COL.inkFaint,
-    }).setOrigin(1, 1).setDepth(61).setScrollFactor(0));
+    const button = push(this.add.rectangle(1508, 919, 548, 70, COL.cyan).setDepth(61).setInteractive({ useHandCursor: true }));
+    text(1508, 919, this.paused ? 'RETURN TO PAUSE  →' : 'ENTER  /  RESUME MISSION  →', 27, '#071622').setOrigin(0.5);
+    button.on('pointerover', () => button.setFillStyle(0xb4f2ff));
+    button.on('pointerout', () => button.setFillStyle(COL.cyan));
+    button.on('pointerdown', () => this.closeControlsOverlay());
+    text(716, 909, 'SYSTEMS ONLINE', 22, COL.greenHex);
+    text(1800, 1040, `ALPHA / ${__APP_VERSION__}`, 18, COL.inkDim).setOrigin(1, 0.5);
 
     // Extra dismiss keys — ESC and H are already bound at scene level
     const dismiss = (): void => this.closeControlsOverlay();
@@ -1128,7 +1135,8 @@ export class UIScene extends Phaser.Scene {
       this.controlsDismissFn = null;
       this.controlsDismissKeys = [];
     }
-    if (resumeGame) this.scene.resume('Game');
+    if (resumeGame && !this.paused) this.scene.resume('Game');
+    this.updateRepairAvailability();
   }
 
   private showLevelComplete(): void {
@@ -1186,6 +1194,7 @@ export class UIScene extends Phaser.Scene {
 
   private showGameOver(): void {
     this.gameOverActive = true;
+    this.updateRepairAvailability();
 
     const W = GAME_W, H = GAME_H;
 

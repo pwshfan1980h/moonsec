@@ -8,7 +8,9 @@ Moonsec is a Phaser 3 / Vite / TypeScript side-scrolling mech shooter set across
 - Branching overworld map between missions
 - Multiple enemy families: drones, bombers, carriers/swarmlings, PPC platforms, mines, shielded tanks, boss variants
 - Three player weapons: rail/rapid fire, turret fire, homing missiles
-- Diegetic mech HUD for HP/fuel plus tactical UI for ammo, cooldowns, radar, score, wave state
+- Readable armor/fuel panel, mission readout, compact radar, and a unified weapon/ability dock
+- Contextual Q repair prompt whenever damaged armor can be healed; healing progress and recharge countdown
+- Illustrated pilot guide, pause menu, and field upgrades selectable by mouse or keyboard
 - Procedural music/SFX support through `AudioSystem` / `MusicSystem`
 
 ## Controls
