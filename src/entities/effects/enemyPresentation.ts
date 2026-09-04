@@ -64,9 +64,11 @@ export function flashEnemyHit(
 ): void {
   const token = ((target.getData('_hitFlashToken') as number | undefined) ?? 0) + 1;
   target.setData('_hitFlashToken', token);
-  target.setTintFill();
+  target.setTint(0xffffff);
+  target.setTintMode(1); // Phaser.TintModes.FILL (renderer-free helper)
   scene.time.delayedCall(duration, () => {
     if (!target.active || target.getData('_hitFlashToken') !== token) return;
+    target.setTintMode(0); // Phaser.TintModes.MULTIPLY
     if (baseTint === undefined) target.clearTint();
     else target.setTint(baseTint);
   });

@@ -9,8 +9,20 @@
 - Prune stale upgrade/title assets and stale generated files from `main`.
 - Add README and architecture notes for future work.
 
+## Surface Ops vertical slice — implemented
+
+- Playable movement/weapon introduction, with persistent objectives and directional beacons.
+- Three authored relay encounters with bounded enemy and attack budgets.
+- Telegraphing skirmishers, snipers, and chargers.
+- One specialization with explicit weapon/repair tradeoffs; relay resupply between fights.
+- Warden boss with shield/exposure cycles, ground sweeps, and locked orbital strikes.
+- Dedicated Shift dash, buffered jumps, coyote time, and consistent thrust limits.
+- Phaser 4.2, TypeScript 7, Vite 8.2, Vitest 5, and Node 24 in CI.
+
 ## v0.8 — Campaign polish
 
+- Playtest Surface Ops with new players and tune time to kill, warning duration, and relay rewards.
+- Extend the objective/encounter structure to the other four mission nodes, each with a different mission mechanic.
 - Balance all five current mission nodes.
 - Give each boss variant at least one unique attack pattern, not just a palette/theme shift.
 - Add mission modifiers: EMP storm, ammo scarcity, shielded elites, low gravity, or hazardous terrain.

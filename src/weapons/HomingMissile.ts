@@ -29,12 +29,12 @@ export class HomingMissile {
 
   getCooldownProgress(): number {
     const elapsed = this.scene.time.now - this.lastFire;
-    return Math.min(1, elapsed / COOLDOWN);
+    return Math.min(1, elapsed / this.scene.player.missileCooldownMs);
   }
 
   fire(player: Player): void {
     const now = this.scene.time.now;
-    if (now - this.lastFire < COOLDOWN) return;
+    if (now - this.lastFire < this.scene.player.missileCooldownMs) return;
     if (this.active.length >= player.missileSlots) return;
     this.lastFire = now;
 
@@ -126,7 +126,7 @@ export class HomingMissile {
       const target = go as MissileTarget;
       if (!target.active) return;
       // Always prefer the boss — escorts are closer but the player wants missiles on the boss
-      if (go instanceof NexusBoss) {
+      if (go instanceof NexusBoss || (go as unknown as { isBoss?: boolean }).isBoss) {
         nearest = target;
         bestDist = 0; // zero so no escort can displace it
         return;

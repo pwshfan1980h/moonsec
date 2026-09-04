@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import type { MechType } from '../entities/Player';
+import { SurfaceMission } from '../systems/SurfaceMission';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem, musicIntensityForWave } from '../systems/MusicSystem';
@@ -41,6 +42,7 @@ export class GameScene extends Phaser.Scene {
   ground!: Phaser.Physics.Arcade.StaticGroup;
   groundLayer?: Phaser.Tilemaps.TilemapLayer | Phaser.Tilemaps.TilemapGPULayer;
   private spawner?: DroneSpawner;
+  surfaceMission?: SurfaceMission;
   private pickupSystem?: PickupSystem;
   private gameEventUnsubs: Array<() => void> = [];
   private bgStars?: Phaser.GameObjects.TileSprite;
@@ -241,7 +243,7 @@ export class GameScene extends Phaser.Scene {
     pb.setSize(bc.w, bc.h, false);
     pb.setOffset(bc.offX, bc.offY);
     pb.setCollideWorldBounds(true);
-    pb.setMaxVelocityX(400);
+    pb.setMaxVelocityX(1200);
 
     new CollisionRegistry(this).registerCore();
     this.pickupSystem.registerCollectionOverlap();
@@ -262,12 +264,17 @@ export class GameScene extends Phaser.Scene {
     const cfg = this.activeConfig;
     const startAtBoss = import.meta.env.DEV
       && new URLSearchParams(window.location.search).get('boss') === '1';
-    this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossType, cfg.enemyMix, startAtBoss);
+    if (this.currentNode !== 0) this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossType, cfg.enemyMix, startAtBoss);
     this.music?.start(0.34);
 
     // --- Wave audio ---
     const onWaveStart = (wave: number) => {
       this.audio.playWaveStinger();
+      if (this.currentNode === 0) {
+        if (wave > 3) this.music?.setBossMode();
+        else this.music?.setIntensity(musicIntensityForWave(wave, 3));
+        return;
+      }
       if (wave > cfg.waveCount) {
         this.music?.setBossMode();
         this.showRadioTransmission('PRIORITY', cfg.bossWarning, true);
@@ -344,6 +351,12 @@ export class GameScene extends Phaser.Scene {
     this.events.on('levelComplete', onLevelComplete);
     this.gameEventUnsubs.push(() => this.events.off('levelComplete', onLevelComplete));
 
+    if (this.currentNode === 0) {
+      const requested = import.meta.env.DEV ? Number(new URLSearchParams(window.location.search).get('encounter')) : 0;
+      const startAtEncounter = requested >= 1 && requested <= 3 && Number.isInteger(requested) ? requested - 1 : undefined;
+      this.surfaceMission = new SurfaceMission(this, startAtBoss, startAtEncounter);
+    }
+
     // --- Emit initial HUD state ---
     this.events.emit('healthChange', this.player.hp, this.player.maxHp);
     this.events.emit('missileCooldown', 0);
@@ -366,6 +379,7 @@ export class GameScene extends Phaser.Scene {
       delta,
     });
     this.spawner?.update(time, delta);
+    this.surfaceMission?.update(time, delta);
     // Moving platforms: runChildUpdate is true on the group, so they self-update
     this.ppcRounds.getChildren().forEach((go) => {
       const r = go as PPCRound;
@@ -378,6 +392,8 @@ export class GameScene extends Phaser.Scene {
 
   shutdown(): void {
     for (const unsub of this.gameEventUnsubs.splice(0)) unsub();
+    this.surfaceMission?.destroy();
+    this.surfaceMission = undefined;
     this.spawner?.destroy();
     this.spawner = undefined;
     this.music?.destroy();

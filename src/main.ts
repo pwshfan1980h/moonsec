@@ -46,3 +46,7 @@ const game = new Phaser.Game(config);
 if (import.meta.env.DEV) {
   (window as unknown as { __moonsec?: { game: Phaser.Game } }).__moonsec = { game };
 }
+
+if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('playtest')) {
+  void import('./dev/playtest').then(({ mountPlaytest }) => mountPlaytest(game));
+}

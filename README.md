@@ -1,9 +1,10 @@
 # Moonsec
 
-Moonsec is a Phaser 3 / Vite / TypeScript side-scrolling mech shooter set across a branching lunar campaign.
+Moonsec is a Phaser 4 / Vite / TypeScript side-scrolling mech shooter set across a branching lunar campaign.
 
 ## Current state
 
+- Surface Ops: playable systems check, three relay encounters, a specialization choice, and a shielded Warden boss
 - Five mission nodes: Surface Ops, Trade Lanes, Deep Facility, Orbital Station, Nexus Core
 - Branching overworld map between missions
 - Multiple enemy families: drones, bombers, carriers/swarmlings, PPC platforms, mines, shielded tanks, boss variants
@@ -16,19 +17,23 @@ Moonsec is a Phaser 3 / Vite / TypeScript side-scrolling mech shooter set across
 ## Controls
 
 - `A / D` — move
-- double-tap `A / D` — surge dash
+- `Shift` (or double-tap `A / D`) — surge dash in your movement direction
 - `Space` — jump / jetpack thrust
 - left mouse — turret fire
 - right mouse — rapid/rail fire
 - `E` — homing missile
 - `Q` — nanite repair
+- hold `F` — restore a cleared Surface Ops relay
 - `H` — controls overlay
 - `Esc` — pause
 - dev only: `?level=N` or number keys `1-5` jump to a mission node
 
 ## Development
 
+Use Node 24 (also pinned in `.nvmrc` and CI).
+
 ```bash
+nvm use
 npm ci
 npm run dev
 npm test
@@ -49,5 +54,7 @@ CI runs both tests and production build before publishing GitHub Pages.
 - `src/data/` — level configuration and map templates
 - `src/ui/` — reusable HUD/minimap components
 - `src/tests/` — pure/system guardrail tests
+
+See `docs/SURFACE_OPS.md` for mission design, specialization tradeoffs, and local playtest routes.
 
 See `docs/ARCHITECTURE.md` for the cleanup plan and maintenance boundaries.

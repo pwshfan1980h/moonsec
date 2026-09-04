@@ -47,7 +47,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
     bgSkyColor:    0x030318,
     bgTerrainTint: 0xffffff,
     template:      TMPL_SURFACE_OPS,
-    waveCount:     5,
+    waveCount:     3,
     bossType:      'nexus-red',
     musicTheme:    'surface',
     enemyMix:      'balanced',

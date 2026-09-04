@@ -11,7 +11,7 @@ function spriteMock() {
     setAlpha: vi.fn(function (this: unknown) { return this; }),
     setData: vi.fn((key: string, value: unknown) => { data.set(key, value); }),
     getData: vi.fn((key: string) => data.get(key)),
-    setTintFill: vi.fn(),
+    setTintMode: vi.fn(),
     clearTint: vi.fn(),
     setTint: vi.fn(),
   };
@@ -38,7 +38,8 @@ describe('enemy presentation helpers', () => {
     const scene = { time: { delayedCall: vi.fn((_ms: number, callback: () => void) => { finish = callback; }) } };
 
     flashEnemyHit(scene as never, target as never, 0xff8800, 90);
-    expect(target.setTintFill).toHaveBeenCalledTimes(1);
+    expect(target.setTint).toHaveBeenCalledWith(0xffffff);
+    expect(target.setTintMode).toHaveBeenCalledWith(1);
     finish();
     expect(target.setTint).toHaveBeenCalledWith(0xff8800);
   });
@@ -50,6 +51,7 @@ describe('enemy presentation helpers', () => {
 
     flashEnemyHit(scene as never, target as never, 0xff0000);
     flashEnemyHit(scene as never, target as never, 0x00ff00);
+    target.setTint.mockClear();
     finishes[0]();
     expect(target.setTint).not.toHaveBeenCalled();
     finishes[1]();

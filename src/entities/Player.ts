@@ -3,6 +3,7 @@ import type { GameScene } from '../scenes/GameScene';
 import { RapidGun } from '../weapons/RapidGun';
 import { Turret } from '../weapons/Turret';
 import { HomingMissile } from '../weapons/HomingMissile';
+import { JumpAssist } from '../systems/JumpAssist';
 import { MECH_STATS } from '../constants';
 
 type AnimState = 'idle' | 'walk' | 'run' | 'jump_loop' | 'jump_start' | 'jump_land' | 'hurt' | 'death';
@@ -12,7 +13,7 @@ const FRICTION = 0.78;
 const NANITE_HEAL_DURATION = 4000;  // ms
 
 export type MechType = 'mech' | 'mech4';
-export type PlayerUpgradeId = 'armor' | 'ammo' | 'fuel';
+export type PlayerUpgradeId = 'armor' | 'ammo' | 'fuel' | 'capacitor' | 'missile-rack' | 'repair-core';
 
 const MECH_CONFIG: Record<MechType, {
   textureKey: string; animPrefix: string; scale: number;
@@ -38,6 +39,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   rapidAmmo         = 150;
   rapidAmmoMax      = 150;
   turretCooldownMs  = 420;
+  turretDamage = 1;
+  missileCooldownMs = 5000;
   missileSlots      = 6;
   naniteCooldownMs  = 20000;
   naniteHealAmount  = 1;
@@ -75,6 +78,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private keyD: Phaser.Input.Keyboard.Key;
   private keySpace: Phaser.Input.Keyboard.Key;
   private keyE: Phaser.Input.Keyboard.Key;
+  private jumpAssist = new JumpAssist();
+  private keyDash: Phaser.Input.Keyboard.Key;
   private keyQ: Phaser.Input.Keyboard.Key;
 
   private rapidGun: RapidGun;
@@ -127,6 +132,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.keyD      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
     this.keySpace  = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.keyE      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+    this.keyDash   = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     this.keyQ      = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
 
     this.rapidGun = new RapidGun(scene);
@@ -215,6 +221,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.keyQ.on('down', () => {
       if (!this.naniteActive && this.naniteCooldown <= 0 && this.hp < this.maxHp && !this.dead) {
         this.naniteActive = true;
+        this.scene.events.emit('pilotAction', 'repair');
         this.naniteHealElapsed = 0;
         this.naniteHealStart = this.hp;
         this.startNaniteParticles();
@@ -276,6 +283,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
+    if (Phaser.Input.Keyboard.JustDown(this.keyDash)) this.tryStartSurge(left ? -1 : right ? 1 : this.flipX ? -1 : 1, time);
+
     const surging = time < this.surgeUntil;
 
     // --- Horizontal movement ---
@@ -294,29 +303,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       body.setVelocityX(this.walkSpeed);
       this.setFlipX(false);
     } else {
-      body.setVelocityX(body.velocity.x * FRICTION);
+      body.setVelocityX(body.velocity.x * Math.pow(FRICTION, delta / (1000 / 60)));
     }
 
-    // --- Jump / Jetpack ---
-    if (space) {
-      if (this.onGround && Phaser.Input.Keyboard.JustDown(this.keySpace)) {
-        body.setVelocityY(this.jumpVelocity);
-        this.playAnim('jump_start');
-        this.scene.audio.play('jump');
-      } else if (!this.onGround && this.jetpackFuel > 0) {
-        this.jetpackFuel -= delta;
-        body.setAccelerationY(this.jetpackAccel);
-        body.velocity.y = Math.max(body.velocity.y, -200);
-        this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
-        this.scene.audio.startLoop('jetpack');
-      }
+    // Buffered presses can jump on landing or just after leaving an edge.
+    const jump = this.jumpAssist.update(time, this.onGround, Phaser.Input.Keyboard.JustDown(this.keySpace));
+    const thrust = space && !this.onGround && this.jetpackFuel > 0 && !jump;
+    body.setAccelerationY(0);
+    if (jump) {
+      body.setVelocityY(this.jumpVelocity);
+      this.playAnim('jump_start');
+      this.scene.audio.play('jump');
+      this.scene.events.emit('pilotAction', 'jump');
+    } else if (thrust) {
+      this.jetpackFuel = Math.max(0, this.jetpackFuel - delta);
+      body.setAccelerationY(this.jetpackAccel);
+      body.velocity.y = Math.max(body.velocity.y, -420);
+      this.scene.audio.startLoop('jetpack');
     } else {
-      body.setAccelerationY(0);
       this.scene.audio.stopLoop('jetpack');
-      if (this.onGround && this.jetpackFuel < this.jetpackMaxFuel) {
-        this.jetpackFuel = Math.min(this.jetpackMaxFuel, this.jetpackFuel + delta * 0.6);
-        this.scene.events.emit('jetpackFuel', this.jetpackFuel, this.jetpackMaxFuel);
-      }
+      if (this.onGround) this.jetpackFuel = Math.min(this.jetpackMaxFuel, this.jetpackFuel + delta * 0.8);
     }
 
     // --- Jetpack flame ---
@@ -387,6 +393,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.hurtLock > 0) return;
     if (time < this.surgeCooldownAt) return;
 
+    this.scene.events.emit('pilotAction', 'dash');
     this.surgeDir      = dir;
     this.surgeUntil    = time + this.SURGE_DURATION;
     this.surgeCooldownAt = time + this.SURGE_DURATION + this.SURGE_COOLDOWN;
@@ -469,6 +476,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   applyUpgrade(id: PlayerUpgradeId): void {
     if (this.dead) return;
+    if (id === 'capacitor') {
+      this.turretDamage = 2;
+      this.turretCooldownMs = 650;
+      return;
+    }
+    if (id === 'missile-rack') {
+      this.missileCooldownMs = 3000;
+      this.rapidAmmoMax = Math.max(50, this.rapidAmmoMax - 50);
+      this.rapidAmmo = Math.min(this.rapidAmmo, this.rapidAmmoMax);
+      this.scene.events.emit('rapidAmmoChange', this.rapidAmmo, this.rapidAmmoMax);
+      return;
+    }
+    if (id === 'repair-core') {
+      this.naniteHealAmount = 2;
+      this.naniteCooldownMs = 28000;
+      this.heal(1);
+      return;
+    }
     if (id === 'armor') {
       this.maxHp += 1;
       this.hp = Math.min(this.maxHp, this.hp + 1);

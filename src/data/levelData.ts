@@ -116,13 +116,13 @@ export const TMPL_SURFACE_OPS: LevelTemplate = {
   fixedArenaWalls: false,
   tileK: TILE,
   fixedPlatforms: [
-    { col: 36,  row: 23, width: 12 }, // survey overlook
-    { col: 90,  row: 20, width: 16 }, // jetpack gate, left side
-    { col: 110, row: 20, width: 14 }, // jetpack gate, right side
-    { col: 158, row: 22, width: 16 }, // final defensive roof
+    { col: 30,  row: 25, width: 12 }, // training overlook
+    { col: 88,  row: 24, width: 8 },  // low habitat cover; jumpable roof
+    { col: 113, row: 23, width: 8 },  // optional elevated firing position
+    { col: 158, row: 25, width: 10 }, // low cover before the Warden arena
   ],
   fixedWalls: [],
-  fixedGaps: [{ col: 62, width: 4, depth: 2 }, { col: 144, width: 5, depth: 2 }],
+  fixedGaps: [{ col: 20, width: 4, depth: 2 }, { col: 80, width: 5, depth: 2 }],
 };
 
 export const TMPL_TRADE_LANES: LevelTemplate = {

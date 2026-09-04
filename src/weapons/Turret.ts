@@ -34,6 +34,8 @@ export class Turret {
     if (!b) return;
 
     b.setActive(true).setVisible(true).setDepth(15);
+    b.setData('damage', this.scene.player.turretDamage);
+    this.scene.events.emit('pilotAction', 'turret');
     b.setBlendMode(Phaser.BlendModes.ADD);
     b.setRotation(angle);
     if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;

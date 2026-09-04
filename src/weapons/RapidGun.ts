@@ -42,6 +42,8 @@ export class RapidGun {
     if (!b) { console.warn('[RapidGun] pool exhausted — no bullet returned'); return; }
 
     b.setActive(true).setVisible(true).setDepth(15);
+    b.setData('damage', 1);
+    this.scene.events.emit('pilotAction', 'rapid');
     b.setBlendMode(Phaser.BlendModes.ADD);
     if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;
     b.setVelocity(vx, vy);

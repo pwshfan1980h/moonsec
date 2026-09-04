@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { repairStatus, type RepairPhase } from '../ui/repairStatus';
 import { MinimapRenderer } from '../ui/MinimapRenderer';
+import type { MissionObjective } from '../systems/SurfaceMission';
 import type { GameScene } from './GameScene';
 import type { PlayerUpgradeId } from '../entities/Player';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
@@ -43,6 +44,12 @@ const BAR_H_SEC = 10;
 const BR = 10;
 
 export class UIScene extends Phaser.Scene {
+  private objectiveText?: Phaser.GameObjects.Text;
+  private objectiveDetail?: Phaser.GameObjects.Text;
+  private objectiveBeacon?: Phaser.GameObjects.Text;
+  private objectiveTarget = 650;
+  private bossReadout?: Phaser.GameObjects.Text;
+  private bossHealthFill?: Phaser.GameObjects.Graphics;
   private surgeFill!: Phaser.GameObjects.Graphics;
   private surgeState!: Phaser.GameObjects.Text;
   private surgeRect = { x: 0, y: 0, w: BAR_W, h: 6 };
@@ -217,6 +224,13 @@ export class UIScene extends Phaser.Scene {
       game.events.emit('healthChange', game.player.hp, game.player.maxHp);
       game.events.emit('rapidAmmoChange', game.player.rapidAmmo, game.player.rapidAmmoMax);
       game.events.emit('scoreChange', (this.registry.get('totalScore') as number) ?? 0);
+      if (game.surfaceMission) {
+        game.events.emit('missionObjective', game.surfaceMission.objective);
+        if (game.surfaceMission.phase === 'boss') {
+          game.events.emit('waveStart', 4, 3, 1);
+          game.events.emit('dronesRemaining', 1);
+        }
+      }
     });
 
 
@@ -250,7 +264,7 @@ export class UIScene extends Phaser.Scene {
     //    SPACE / ENTER / H / ESC to dismiss it. The overlay pauses the game.
     if (this.registry.get('firstBoot') === true) {
       this.registry.set('firstBoot', false);
-      this.openControlsOverlay();
+      if (game.currentNode !== 0) this.openControlsOverlay();
     }
   }
 
@@ -274,7 +288,7 @@ export class UIScene extends Phaser.Scene {
     const mission = LEVEL_CONFIGS[game.currentNode]?.label ?? 'SURFACE OPS';
     text(GAME_W / 2, 32, `OPERATION ${String(game.currentNode + 1).padStart(2, '0')}`, 20, COL.inkDim).setOrigin(0.5, 0);
     text(GAME_W / 2, 62, mission, 34).setOrigin(0.5, 0);
-    this.waveCounter = text(GAME_W / 2 - 240, 112, 'STANDBY', 22, COL.cyanHex);
+    this.waveCounter = text(GAME_W / 2 - 240, 112, game.currentNode === 0 ? 'FIELD TRAINING' : 'STANDBY', 22, COL.cyanHex);
     this.dronesRemainingText = text(GAME_W / 2 + 240, 112, '', 22, COL.amberHex).setOrigin(1, 0);
     this.scoreCaption = text(1888, 36, 'MISSION SCORE', 20, COL.inkDim).setOrigin(1, 0);
     this.scoreText = text(1888, 64, '0000000', 44).setOrigin(1, 0);
@@ -290,7 +304,7 @@ export class UIScene extends Phaser.Scene {
       const x = 32 + index * 292, y = 958;
       this.drawPanel(x, y, 280, 98, '');
       this.add.rectangle(x + 41, y + 25, 58, 28, 0x16303d);
-      text(x + 41, y + 25, key, 20, COL.ink).setOrigin(0.5);
+      text(x + 41, y + 25, key, key === 'SHIFT' ? 16 : 20, COL.ink).setOrigin(0.5);
       const label = text(x + 82, y + 13, title, 22, color);
       const state = text(x + 18, y + 47, 'READY', 23, color);
       const rect = { x: x + 18, y: y + 80, w: BAR_W, h: 6 };
@@ -321,9 +335,21 @@ export class UIScene extends Phaser.Scene {
     this.repairCue.setVisible(false);
     this.repairHint = text(1048, 928, 'Q  RESTORE ARMOR', 24, COL.greenHex).setOrigin(0.5).setVisible(false);
     this.repairHint.setStroke('#02111e', 5);
-    const surge = card(4, 'A/D', 'SURGE DASH', COL.cyanHex);
-    this.surgeState = surge.state.setText('DOUBLE-TAP TO DASH').setFontSize(21);
+    const surge = card(4, 'SHIFT', 'SURGE DASH', COL.cyanHex);
+    this.surgeState = surge.state.setText('SHIFT TO DASH').setFontSize(21);
     this.surgeRect = surge.rect; this.surgeFill = surge.fill;
+    if (game.currentNode === 0) {
+      this.drawPanel(32, 224, 480, 190, '');
+      text(56, 244, 'CURRENT OBJECTIVE', 18, COL.cyanHex);
+      this.objectiveText = text(56, 278, '', 24).setWordWrapWidth(432);
+      this.objectiveDetail = text(56, 324, '', 20, COL.inkDim).setWordWrapWidth(432);
+      this.objectiveBeacon = text(600, 780, '', 23, COL.cyanHex).setOrigin(0.5).setDepth(20).setStroke('#02111e', 5);
+      this.bossReadout = text(GAME_W / 2, 190, '', 23, COL.amberHex).setOrigin(0.5).setDepth(20);
+      this.bossHealthFill = this.add.graphics().setDepth(20);
+    } else {
+      this.objectiveText = undefined; this.objectiveDetail = undefined; this.objectiveBeacon = undefined;
+      this.bossReadout = undefined; this.bossHealthFill = undefined;
+    }
   }
 
   // ── Drawing helpers ────────────────────────────────────────────────────────
@@ -542,6 +568,21 @@ export class UIScene extends Phaser.Scene {
       this.gameEventUnsubs.push(() => game.events.off(ev, handler));
     };
 
+    on('missionObjective', (objective: MissionObjective) => {
+      this.objectiveText?.setText(objective.title);
+      this.objectiveDetail?.setText(objective.detail);
+      if (this.objectiveText && this.objectiveDetail) this.objectiveDetail.y = this.objectiveText.y + this.objectiveText.height + 12;
+      this.objectiveTarget = objective.x;
+    });
+    on('surfaceBossStatus', (hp: number, max: number, hint: string, exposed: boolean) => {
+      this.bossReadout?.setText(`WARDEN  /  ${hint}`).setColor(exposed ? COL.amberHex : COL.cyanHex);
+      const g = this.bossHealthFill;
+      if (g) {
+        g.clear().fillStyle(COL.panelFill, 1).fillRect(600, 226, 720, 12);
+        g.fillStyle(exposed ? COL.amber : COL.cyan, 1).fillRect(600, 226, 720 * hp / max, 12);
+      }
+    });
+    on('fieldUpgrade', (wave: number) => this.showUpgradeOverlay(wave));
     on('healthChange', (hp: number, maxHp: number) => {
       this.curHp = hp;
       this.curMaxHp = maxHp;
@@ -615,7 +656,7 @@ export class UIScene extends Phaser.Scene {
     });
 
     on('surgeChange', (state: string, progress: number) => {
-      this.surgeState.setText(state === 'active' ? 'SURGING' : state === 'ready' ? 'DOUBLE-TAP TO DASH' : 'RECHARGING');
+      this.surgeState.setText(state === 'active' ? 'SURGING' : state === 'ready' ? 'SHIFT TO DASH' : 'RECHARGING');
       this.paintBar(this.surgeFill, this.surgeRect, progress, state === 'active' ? COL.amber : COL.cyan, 4);
     });
     on('naniteChange', (state: string, progress: number) => {
@@ -648,16 +689,17 @@ export class UIScene extends Phaser.Scene {
       this.waveKilled = 0;
       this.waveLastRemaining = 0;
       this.drawWaveProgress();
-      this.waveCounter.setText(this.bossPhaseActive ? 'BOSS  PHASE' : `WAVE  ${String(wave).padStart(2, '0')}`);
+      const surface = (game as GameScene).currentNode === 0;
+      this.waveCounter.setText(this.bossPhaseActive ? 'BOSS PHASE' : `${surface ? 'ENCOUNTER' : 'WAVE'} ${String(wave).padStart(2, '0')}`);
 
       const W = GAME_W, H = GAME_H;
 
       // Big announcement
-      this.waveText.setText(this.bossPhaseActive ? '// BOSS PHASE //' : `// WAVE ${String(wave).padStart(2, '0')} //`).setAlpha(1);
-      this.waveSubText.setText(this.bossPhaseActive ? 'NEXUS SIGNATURE DETECTED' : 'ENGAGE HOSTILES').setAlpha(1);
+      this.waveText.setText(this.bossPhaseActive ? '// BOSS PHASE //' : `${surface ? 'ENCOUNTER' : 'WAVE'} ${String(wave).padStart(2, '0')}`).setAlpha(1);
+      this.waveSubText.setText(this.bossPhaseActive ? (surface ? 'WARDEN INBOUND' : 'NEXUS SIGNATURE DETECTED') : 'ENGAGE HOSTILES').setAlpha(1);
       this.tweens.add({
         targets: [this.waveText, this.waveSubText],
-        alpha: 0, duration: 2000, delay: 1600, ease: 'Power2',
+        alpha: 0, duration: surface ? 600 : 2000, delay: surface ? 600 : 1600, ease: 'Power2',
       });
 
     });
@@ -677,7 +719,7 @@ export class UIScene extends Phaser.Scene {
     });
 
     on('waveCleared', (wave: number) => {
-      if (wave >= this.waveTotalCount || this.gameOverActive || this.levelCompleteActive) return;
+      if ((game as GameScene).currentNode === 0 || wave >= this.waveTotalCount || this.gameOverActive || this.levelCompleteActive) return;
       this.showUpgradeOverlay(wave);
     });
 
@@ -757,6 +799,15 @@ export class UIScene extends Phaser.Scene {
     const game = this.scene.get('Game') as GameScene;
     if (!game || !game.sys.isActive()) return;
     this.minimap.draw(time, game);
+    if (this.objectiveBeacon) {
+      const camera = game.cameras.main;
+      const rawX = (this.objectiveTarget - camera.worldView.x) * camera.zoom;
+      const x = Phaser.Math.Clamp(rawX, 80, GAME_W - 80);
+      const y = Phaser.Math.Clamp((780 - camera.worldView.y) * camera.zoom, 420, 840);
+      const distance = Math.round(Math.abs(this.objectiveTarget - game.player.x) / 32);
+      const arrow = rawX < 80 ? '◀ ' : rawX > GAME_W - 80 ? '▶ ' : '◇ ';
+      this.objectiveBeacon.setPosition(x, y).setText(`${arrow}${distance}m`);
+    }
   }
 
   private clearTelegraph(): void {
@@ -956,7 +1007,7 @@ export class UIScene extends Phaser.Scene {
     frame.lineBetween(bx, by + bh - cb, bx, by + bh); frame.lineBetween(bx, by + bh, bx + cb, by + bh);
     frame.lineBetween(bx + bw - cb, by + bh, bx + bw, by + bh); frame.lineBetween(bx + bw, by + bh - cb, bx + bw, by + bh);
 
-    push(this.add.text(W / 2, by + 54, `WAVE ${String(wave).padStart(2, '0')} CLEARED`, {
+    push(this.add.text(W / 2, by + 54, game.currentNode === 0 ? 'SURVEY RELAY ONLINE' : `WAVE ${String(wave).padStart(2, '0')} CLEARED`, {
       fontFamily: FONT_MONO, fontSize: '42px', color: COL.cyanHex,
       stroke: '#001a2a', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(64).setScrollFactor(0));
@@ -964,7 +1015,11 @@ export class UIScene extends Phaser.Scene {
       fontFamily: FONT_MONO, fontSize: '22px', color: COL.inkDim,
     }).setOrigin(0.5).setDepth(64).setScrollFactor(0));
 
-    const options: Array<{ id: PlayerUpgradeId; key: string; title: string; body: string; color: string }> = [
+    const options: Array<{ id: PlayerUpgradeId; key: string; title: string; body: string; color: string }> = game.currentNode === 0 ? [
+      { id: 'capacitor', key: '1', title: 'PULSE CAPACITOR', body: 'TURRET DAMAGE ×2\nSLOWER: 0.65s / SHOT', color: COL.cyanHex },
+      { id: 'missile-rack', key: '2', title: 'MISSILE RACK', body: 'MISSILES EVERY 3s\n−50 RAPID AMMO CAP', color: COL.amberHex },
+      { id: 'repair-core', key: '3', title: 'REPAIR CORE', body: 'HEAL 2 HP PER USE\nLONGER: 28s RECHARGE', color: COL.greenHex },
+    ] : [
       { id: 'armor', key: '1', title: 'ARMOR PLATING', body: '+1 MAX HP\nREPAIR 1 HP', color: COL.greenHex },
       { id: 'ammo',  key: '2', title: 'AMMO FEED',     body: '+35 RAPID CAP\nREFILL RAPID AMMO', color: COL.cyanHex },
       { id: 'fuel',  key: '3', title: 'THRUSTER CELLS', body: '+500 JETPACK FUEL\nFULL FUEL REFILL', color: COL.amberHex },
@@ -1004,6 +1059,7 @@ export class UIScene extends Phaser.Scene {
       const opt = options[idx];
       if (!opt) return;
       game.player.applyUpgrade(opt.id);
+      game.events.emit('upgradeChosen', opt.id);
       game.audio.play('ui-confirm');
       this.closeUpgradeOverlay(true);
     };
@@ -1092,18 +1148,18 @@ export class UIScene extends Phaser.Scene {
     text(716, 192, 'Move, aim and manage your systems to survive.', 24, COL.inkDim);
 
     const row = (x: number, y: number, key: string, title: string, description: string, accent = COL.cyanHex) => {
-      const keyWidth = key.length > 5 ? 168 : 94;
+      const keyWidth = key.length > 5 ? 190 : 94;
       push(this.add.rectangle(x + keyWidth / 2, y + 19, keyWidth, 40, 0x17313f).setDepth(61));
       text(x + keyWidth / 2, y + 19, key, 23, accent).setOrigin(0.5);
       text(x, y + 60, title, 29);
       text(x, y + 104, description, 22, COL.inkDim).setLineSpacing(8);
     };
-    row(716, 274, 'A / D', 'Move & surge', 'Double-tap a direction to dash.');
+    row(716, 274, 'A/D + SHIFT', 'Move & surge', 'A / D to move. Shift to dash.\nDouble-tap also triggers a dash.');
     row(1288, 274, 'SPACE', 'Jump & fly', 'Hold in the air to use thrust.\nLand to recharge your fuel.');
     row(716, 464, 'LMB / RMB', 'Aim & fire', 'Aim with the mouse. Left: turret.\nRight: rapid fire. Watch your ammo.');
     row(1288, 464, 'E', 'Homing missile', 'Tracks a nearby target.\nWait for READY to fire again.', COL.amberHex);
     row(716, 654, 'Q', 'Nanite repair', 'Restores damaged armor over time.\nThe Q card lights up when usable.', COL.greenHex);
-    row(1288, 654, 'H / ESC', 'Stay in control', 'H opens this guide.\nEscape pauses the mission.');
+    row(1288, 654, 'F / H / ESC', 'Relay & mission controls', 'Hold F at a cleared relay.\nH: this guide. Escape: pause.');
 
     const button = push(this.add.rectangle(1508, 919, 548, 70, COL.cyan).setDepth(61).setInteractive({ useHandCursor: true }));
     text(1508, 919, this.paused ? 'RETURN TO PAUSE  →' : 'ENTER  /  RESUME MISSION  →', 27, '#071622').setOrigin(0.5);
