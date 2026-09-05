@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FlightRoute } from '../systems/FlightNavigation';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from './Player';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
@@ -22,11 +23,13 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite implements Hostile {
   private dartState: DartState = 'APPROACH';
   private hp = 2;
   private sinOffset: number;
+  private flightRoute?: FlightRoute;
   private chargeDir = { x: 0, y: 0 };
 
   constructor(scene: GameScene, x: number, y: number) {
     super(scene, x, y, 'dart');
     this.scene      = scene;
+    if (scene.flightNavigation) this.flightRoute = new FlightRoute(scene.flightNavigation);
     this.sinOffset  = Math.random() * Math.PI * 2;
     this.setScale(2.2);
     this.setDepth(8);
@@ -40,18 +43,25 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite implements Hostile {
     const body   = this.body as Phaser.Physics.Arcade.Body;
     const target = this.scene.getPlayerPos();
     const dx     = target.x - this.x;
-    const dy     = target.y - this.y;
+    const dy     = target.y - (this.flightRoute ? 60 : 0) - this.y;
     const dist   = Math.sqrt(dx * dx + dy * dy);
 
     switch (this.dartState) {
       case 'APPROACH': {
         // Float toward player with sinusoidal weave
-        const nx = dx / dist;
-        const ny = dy / dist;
+        const nx = dx / Math.max(1, dist);
+        const ny = dy / Math.max(1, dist);
         body.setVelocityX(nx * APPROACH_SPEED);
         body.setVelocityY(ny * APPROACH_SPEED + Math.sin(time * 0.003 + this.sinOffset) * 50);
         this.setFlipX(dx > 0);
-        if (dist < CHARGE_RANGE) {
+        const nav = this.scene.flightNavigation;
+        const aim = { x: target.x, y: target.y - 60 };
+        if (nav && this.flightRoute) {
+          const goal = nav.firingPosition(this, aim, 180);
+          const v = this.flightRoute.steer(this, goal, 150, time);
+          body.setVelocity(v.x, v.y);
+        }
+        if (dist < CHARGE_RANGE && (!nav || nav.lineClear(this, aim, 24, 24))) {
           // Lock charge direction and ram
           this.chargeDir = { x: nx, y: ny };
           this.setDartState('CHARGE');
@@ -64,7 +74,7 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite implements Hostile {
         body.setVelocityX(this.chargeDir.x * CHARGE_SPEED);
         body.setVelocityY(this.chargeDir.y * CHARGE_SPEED);
         // Miss check: if overshot, re-approach
-        if (dist > CHARGE_RANGE * 1.8) {
+        if (dist > CHARGE_RANGE * 1.8 || body.blocked.left || body.blocked.right || body.blocked.up || body.blocked.down) {
           this.setDartState('APPROACH');
         }
         break;

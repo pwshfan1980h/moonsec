@@ -17,6 +17,8 @@ import { PickupSystem } from '../systems/PickupSystem';
 import type { PickupType } from '../systems/PickupSystem';
 import { CollisionRegistry } from '../collisions/CollisionRegistry';
 import { EnvironmentalLife } from '../systems/EnvironmentalLife';
+import { drawTradeLaneArt, makeFreightLiftTexture } from '../systems/TradeLaneArt';
+import { FlightNavigation } from '../systems/FlightNavigation';
 import { HostileCombat } from '../collisions/HostileCombat';
 
 export class GameScene extends Phaser.Scene {
@@ -45,6 +47,7 @@ export class GameScene extends Phaser.Scene {
   groundLayer?: Phaser.Tilemaps.TilemapLayer | Phaser.Tilemaps.TilemapGPULayer;
   private spawner?: DroneSpawner;
   surfaceMission?: SurfaceMission;
+  flightNavigation?: FlightNavigation;
   private pickupSystem?: PickupSystem;
   private gameEventUnsubs: Array<() => void> = [];
   private bgStars?: Phaser.GameObjects.TileSprite;
@@ -164,14 +167,18 @@ export class GameScene extends Phaser.Scene {
       mpg.destroy();
     }
 
+    if (nodeIdx === 1) makeFreightLiftTexture(this);
+
     // --- Background ---
     this.makeBackground();
 
     // --- Ground (tilemap) ---
     this.ground = this.physics.add.staticGroup();
     const mapSeed = Math.random() * 0xFFFFFFFF | 0;
+    const mapTiles = buildMap(this.activeConfig.template, mapSeed);
+    this.flightNavigation = nodeIdx === 1 ? new FlightNavigation(mapTiles) : undefined;
     this.makeTilemapGround(
-      buildMap(this.activeConfig.template, mapSeed),
+      mapTiles,
       this.activeConfig.tilesetKey,
     );
 
@@ -180,6 +187,7 @@ export class GameScene extends Phaser.Scene {
     // extraPlatforms (see buildMap). makeTilemapGround also populates
     // platformData for the radar.
     this.makeBaseProps();
+    if (nodeIdx === 1) drawTradeLaneArt(this, this.activeConfig.template);
     new EnvironmentalLife(this, this.activeConfig).create();
 
     // --- Physics groups ---

@@ -45,12 +45,13 @@ export function mountPlaytest(game: Phaser.Game): void {
   button('Missile', () => hold('e', 'KeyE', 69));
   button('Repair', () => hold('q', 'KeyQ', 81));
   button('Hold F', () => hold('f', 'KeyF', 70, 2200));
+  button('Restart', () => hold('r', 'KeyR', 82));
   button('Pause', () => hold('Escape', 'Escape', 27));
   button('Snapshot', () => {
     const scene = game.scene.getScene('Game') as GameScene;
     const p = scene.player;
     readout.textContent = JSON.stringify({ phase: scene.surfaceMission?.phase, encounter: scene.surfaceMission?.encounter,
-      x: Math.round(p.x), y: Math.round(p.y), hp: p.hp, units: scene.drones.getChildren().filter(x => x.active).map(o => { const u = o as Phaser.Physics.Arcade.Sprite & { hp?: number; phase?: string }; return {x: Math.round(u.x), y: Math.round(u.y), hp:u.hp, phase:u.phase}; }),
+      x: Math.round(p.x), y: Math.round(p.y), hp: p.hp, units: scene.drones.getChildren().filter(x => x.active).map(o => { const u = o as Phaser.Physics.Arcade.Sprite & { hp?: number; phase?: string; getState?: () => string }; return {x: Math.round(u.x), y: Math.round(u.y), hp:u.hp, phase:u.phase, state:u.getState?.(), clear:scene.flightNavigation?.isOpen(u, 35, 28)}; }),
       objective: scene.surfaceMission?.objective.title,
       errors: (window as unknown as { __moonsecErrors?: string[] }).__moonsecErrors,
     });

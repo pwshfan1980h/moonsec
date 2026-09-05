@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FlightRoute } from '../systems/FlightNavigation';
 import type { GameScene } from '../scenes/GameScene';
 import { Drone } from './Drone';
 import type { DroneType, DroneVariant } from './Drone';
@@ -72,6 +73,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
   private lifeHpMax: number;
   private lifeHp: number;
   private lives: number;
+  private flightRoute?: FlightRoute;
   private driftDir = -1;
   private phaseTimer = DRIFT_MS;
   private attackCycle = 0; // increments each CHARGE; every 3rd → orbital blast
@@ -90,6 +92,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
   constructor(scene: GameScene, x: number, y: number, scaling: DroneScaling, variant: BossVariantConfig) {
     super(scene, x, y, 'juggernaut');
     this.scene   = scene;
+    if (scene.flightNavigation) this.flightRoute = new FlightRoute(scene.flightNavigation, 100, 72);
     this.scaling = scaling;
     this.variant = variant;
 
@@ -151,8 +154,9 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
     const count = this.escortSlots.length;
     const spacing = count >= 3 ? 160 : 120;
     const dx = (slot - (count - 1) / 2) * spacing;
+    const safe = this.scene.flightNavigation?.nearestOpen({ x: this.x + dx, y: this.y });
     const escort = new Drone(
-      this.scene, this.x + dx, this.y,
+      this.scene, safe?.x ?? this.x + dx, safe?.y ?? this.y,
       this.variant.escortType, this.scaling, this.variant.escortVariant,
     );
     this.scene.add.existing(escort);
@@ -195,6 +199,12 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
         if (this.x < camCentreX - 500) this.driftDir = 1;
         if (this.x > camCentreX + 500) this.driftDir = -1;
         this.setFlipX(this.driftDir > 0);
+        if (this.flightRoute && this.scene.flightNavigation) {
+          const player = this.scene.getPlayerPos();
+          const goal = this.scene.flightNavigation.firingPosition(this, { x: player.x, y: player.y - 60 }, 350, 100, 72);
+          const v = this.flightRoute.steer(this, goal, 120, _time);
+          body.setVelocity(v.x, v.y);
+        }
 
         this.phaseTimer -= delta;
         if (this.phaseTimer <= 0) this.setBossState('CHARGE');
@@ -202,7 +212,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
       }
 
       case 'CHARGE': {
-        body.setVelocityX(0);
+        body.setVelocity(0, 0);
         this.phaseTimer -= delta;
         if (this.phaseTimer <= 0) {
           // Every 3rd charge cycle → orbital blast instead of spread fire

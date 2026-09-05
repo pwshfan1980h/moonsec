@@ -137,7 +137,8 @@ export class DroneSpawner {
     );
     const variant = BOSS_VARIANTS[this.bossType];
 
-    const boss = new NexusBoss(this.scene, camX, camY, bracket, variant);
+    const safe = this.scene.flightNavigation?.nearestOpen({ x: camX, y: camY }, 100, 72);
+    const boss = new NexusBoss(this.scene, safe?.x ?? camX, safe?.y ?? camY, bracket, variant);
     this.scene.add.existing(boss);
     this.scene.physics.add.existing(boss);
     this.scene.drones.add(boss);
@@ -222,7 +223,16 @@ export class DroneSpawner {
         : (i % 2 === 0 ? 'drone-red' : 'drone-green');
 
       const patrolY      = Math.min(lane, this.scene.getApproxGroundY() - 40);
-      const finalSpawnY  = side === 2 ? spawnY : patrolY;
+      let finalSpawnY  = side === 2 ? spawnY : patrolY;
+      const nav = this.scene.flightNavigation;
+      if (nav) {
+        const view = cam.worldView;
+        const safe = nav.nearestOpen({
+          x: i % 2 === 0 ? view.left - 100 : view.right + 100,
+          y: this.scene.player.y - 180 - (i % 3) * 90,
+        });
+        if (safe) { spawnX = safe.x; finalSpawnY = safe.y; }
+      }
 
       if (isStunDart) {
         const dart = new StunDart(this.scene, spawnX, finalSpawnY);
@@ -298,7 +308,8 @@ export class DroneSpawner {
       const cx  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.65, 300, WORLD_WIDTH - 300);
       const groundY = this.scene.getApproxGroundY();
       const cy  = Phaser.Math.Clamp(groundY - 260, 160, groundY - 180);
-      const carrier = new Carrier(this.scene, cx, cy);
+      const safe = this.scene.flightNavigation?.nearestOpen({ x: cx, y: this.scene.player.y - 260 });
+      const carrier = new Carrier(this.scene, safe?.x ?? cx, safe?.y ?? cy);
       this.scene.add.existing(carrier);
       this.scene.physics.add.existing(carrier);
       this.scene.drones.add(carrier);
@@ -314,7 +325,8 @@ export class DroneSpawner {
       const px  = Phaser.Math.Clamp(cam.scrollX + GAME_W * 0.7, 200, WORLD_WIDTH - 200);
       const groundY = this.scene.getApproxGroundY();
       const py  = Phaser.Math.Clamp(groundY - 340, 120, groundY - 200);
-      const platform = new PPCPlatform(this.scene, px, py);
+      const safe = this.scene.flightNavigation?.nearestOpen({ x: px, y: this.scene.player.y - 280 });
+      const platform = new PPCPlatform(this.scene, safe?.x ?? px, safe?.y ?? py);
       this.scene.add.existing(platform);
       this.scene.physics.add.existing(platform);
       this.scene.drones.add(platform);

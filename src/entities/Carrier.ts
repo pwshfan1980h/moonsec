@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FlightRoute } from '../systems/FlightNavigation';
 import type { GameScene } from '../scenes/GameScene';
 import { Swarmling } from './Swarmling';
 import { playJuggernautDeath } from './effects/juggernautDeath';
@@ -31,11 +32,13 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite implements Hostile {
   private patrolDir = 1;
   private phaseTimer = 2970;            // time until next state transition (ms)
   private swarmlings: Swarmling[] = [];
+  private flightRoute?: FlightRoute;
   private sinOffset = Math.random() * Math.PI * 2;
 
   constructor(scene: GameScene, x: number, y: number) {
     super(scene, x, y, 'juggernaut');
     this.scene = scene;
+    if (scene.flightNavigation) this.flightRoute = new FlightRoute(scene.flightNavigation);
 
     this.setScale(0.6);
     this.setDepth(10);
@@ -62,6 +65,12 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite implements Hostile {
     body.setVelocityX(this.patrolDir * PATROL_SPEED);
     body.setVelocityY(Math.sin(time * 0.0018 + this.sinOffset) * 18);
     this.setFlipX(this.patrolDir < 0);
+    if (this.flightRoute && this.scene.flightNavigation) {
+      const player = this.scene.getPlayerPos();
+      const goal = this.scene.flightNavigation.firingPosition(this, { x: player.x, y: player.y - 60 }, 360);
+      const v = this.flightRoute.steer(this, goal, 90, time);
+      body.setVelocity(v.x, v.y);
+    }
 
     // Turn around at world edges
     if ((this.x < 200 && this.patrolDir < 0) || (this.x > this.scene.physics.world.bounds.width - 200 && this.patrolDir > 0)) {

@@ -21,7 +21,7 @@ export class MovingPlatform extends Phaser.Physics.Arcade.Image {
     axis:       'x' | 'y' = 'x',
   ) {
     // Draw a platform texture once, reuse key 'moving-platform'
-    super(scene, x, y, 'moving-platform');
+    super(scene, x, y, scene.currentNode === 1 ? 'freight-lift' : 'moving-platform');
     this.scene    = scene;
     this.axis     = axis;
     const startPos = axis === 'x' ? x : y;

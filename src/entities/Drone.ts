@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FlightRoute, type FlightPoint } from '../systems/FlightNavigation';
 import type { GameScene } from '../scenes/GameScene';
 import type { DroneScaling } from '../systems/DroneSpawner';
 import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
@@ -62,6 +63,9 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
   private altitudeOffset = 0;        // preferred Y relative to player (negative = above)
   private personalityTimer = 0;
   private firingTelegraph = false;
+  private flightRoute?: FlightRoute;
+  private flightGoal?: FlightPoint;
+  private nextFlightGoalAt = 0;
 
   constructor(
     scene: GameScene,
@@ -75,6 +79,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
   ) {
     super(scene, x, y, type);
     this.scene = scene;
+    if (scene.flightNavigation) this.flightRoute = new FlightRoute(scene.flightNavigation);
     this.droneType = type;
     this.droneVariant = variant;
 
@@ -140,6 +145,8 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
     if (!this.active || this.droneState === 'DEATH' || this.droneState === 'DOWNED') return;
 
     const body   = this.body as Phaser.Physics.Arcade.Body;
+    if (this.scene.isGameOverActive() || this.scene.player.hp <= 0) { body.stop(); return; }
+    if (this.flightRoute && this.droneState !== 'HURT') { this.updateFlight(time, delta); return; }
     const target = this.scene.getPlayerPos();
     const dist   = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
 
@@ -261,8 +268,31 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
     }
   }
 
+  private updateFlight(time: number, delta: number): void {
+    const nav = this.scene.flightNavigation!;
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const player = this.scene.getPlayerPos();
+    const target = { x: player.x, y: player.y - 60 };
+    if (!this.flightGoal || time >= this.nextFlightGoalAt) {
+      this.flightGoal = nav.firingPosition(this, target, this.droneVariant === 'sniper' ? 400 : 220 + (this.sinOffset % 1) * 100, 48, 40, this.attackRange + 90);
+      this.nextFlightGoalAt = time + 900;
+    }
+    const velocity = this.flightRoute!.steer(this, this.flightGoal, this.droneVariant === 'sniper' ? 130 : Math.max(150, this.attackSpeed * 0.8), time);
+    body.setVelocity(velocity.x, velocity.y);
+    this.setFlipX(target.x > this.x);
+    const canFire = Math.hypot(target.x - this.x, target.y - this.y) < this.attackRange + 100 && nav.lineClear(this, target, 3, 3);
+    const state = canFire ? 'ATTACK' : 'HOVER';
+    if (this.droneState !== state) this.setDroneState(state);
+    if (canFire) {
+      this.shootTimer -= delta;
+      if (this.shootTimer <= 0) { this.shootTimer = this.shootInterval + Math.random() * 600; this.shoot(); }
+    }
+  }
+
   private shoot(): void {
-    const target = this.scene.getPlayerPos();
+    const player = this.scene.getPlayerPos();
+    const target = { x: player.x, y: player.y - (this.flightRoute ? 60 : 0) };
+    if (this.scene.flightNavigation && !this.scene.flightNavigation.lineClear(this, target, 3, 3)) return;
     const angle  = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
 
     if (this.firingTelegraph) return;
@@ -289,7 +319,8 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
       this.firingTelegraph = false;
       aimLine.destroy();
       if (!this.active || this.droneState === 'DEATH' || this.droneState === 'DOWNED') return;
-      this.fireBullet(angle);
+      if (this.scene.flightNavigation && !this.scene.flightNavigation.lineClear(this, target, 3, 3)) return;
+      this.fireBullet(this.flightRoute ? Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y) : angle);
     });
   }
 

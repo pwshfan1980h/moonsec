@@ -6,6 +6,8 @@ Moonsec is a Phaser 4 / Vite / TypeScript side-scrolling mech shooter set across
 
 - Surface Ops: playable systems check, three relay encounters, a specialization choice, and a shielded Warden boss
 - Five mission nodes: Surface Ops, Trade Lanes, Deep Facility, Orbital Station, Nexus Core
+- Trade Lanes flyers navigate around cargo decks and bulkheads, with clear firing lanes and safe arrival positions
+- Detailed freight-deck hulls, landing lights, and industrial lift panels
 - Branching overworld map between missions
 - Multiple enemy families: drones, bombers, carriers/swarmlings, PPC platforms, mines, shielded tanks, boss variants
 - Three player weapons: rail/rapid fire, turret fire, homing missiles

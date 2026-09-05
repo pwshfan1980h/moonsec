@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FlightRoute } from '../systems/FlightNavigation';
 import type { GameScene } from '../scenes/GameScene';
 import type { Carrier } from './Carrier';
 import { presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
@@ -29,11 +30,13 @@ export class Swarmling extends Phaser.Physics.Arcade.Sprite implements Hostile {
   private hp = 1;
   private sinOffset = Math.random() * Math.PI * 2;
   private carrier: Carrier | null;
+  private flightRoute?: FlightRoute;
   private hasHit = false;
 
   constructor(scene: GameScene, x: number, y: number, carrier: Carrier) {
     super(scene, x, y, 'drone-red');
     this.scene = scene;
+    if (scene.flightNavigation) this.flightRoute = new FlightRoute(scene.flightNavigation, 24, 24);
     this.carrier = carrier;
 
     this.setScale(1.1);
@@ -103,6 +106,10 @@ export class Swarmling extends Phaser.Physics.Arcade.Sprite implements Hostile {
         const angle = Math.atan2(dy, dx);
         body.setVelocity(Math.cos(angle) * RECALL_SPEED, Math.sin(angle) * RECALL_SPEED);
         this.setFlipX(dx < 0);
+        if (this.flightRoute) {
+          const v = this.flightRoute.steer(this, this.carrier, RECALL_SPEED, time);
+          body.setVelocity(v.x, v.y);
+        }
         return;
       }
     }
@@ -115,6 +122,10 @@ export class Swarmling extends Phaser.Physics.Arcade.Sprite implements Hostile {
     const vx = Math.cos(angle) * HARASS_SPEED;
     const vy = Math.sin(angle) * HARASS_SPEED + Math.sin(time * 0.006 + this.sinOffset) * SIN_AMP;
     body.setVelocity(vx, vy);
+    if (this.flightRoute) {
+      const v = this.flightRoute.steer(this, { x: target.x, y: target.y - 60 }, HARASS_SPEED, time);
+      body.setVelocity(v.x, v.y);
+    }
     this.setFlipX(dx < 0);
   }
 
