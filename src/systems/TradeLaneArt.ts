@@ -1,3 +1,4 @@
+import { label as uiLabel } from '../ui/kit/draw';
 import type Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { LevelTemplate } from '../data/levelData';
@@ -30,9 +31,7 @@ export function drawTradeLaneArt(scene: GameScene, template: LevelTemplate): voi
     }
     if (main) {
       bay++;
-      scene.add.text(x + 48, y + 82, `LUNAR FREIGHT  /  ${String(bay).padStart(2, '0')}`, {
-        fontFamily: '"Share Tech Mono", monospace', fontSize: '18px', color: '#52768f',
-      }).setDepth(3);
+      uiLabel(scene, x + 48, y + 82, `LF-${String(bay).padStart(2, '0')}`, 'small', 'accentDim').setDepth(3);
       // Hazard stripes identify the lip without filling the air route with UI.
       for (const edge of [x + 8, x + width - 62]) for (let i = 0; i < 4; i++) {
         g.fillStyle(i % 2 ? 0x152331 : 0xc79a57, 1).fillRect(edge + i * 14, y + 20, 12, 10);

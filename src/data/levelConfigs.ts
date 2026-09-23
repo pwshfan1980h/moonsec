@@ -182,11 +182,3 @@ export const NODE_GRAPH: { nextNodes: number[]; requiredNodes: number[] }[] = [
   { nextNodes: [],     requiredNodes: [3]   }, // 4 — Nexus Core
 ];
 
-// Labels shown below node name on overworld (randomly picked per visit)
-export const NODE_SUBTITLES: string[][] = [
-  ['HOSTILE TERRITORY',  'SCAN ANOMALY DETECTED', 'FIRST CONTACT ZONE'],
-  ['CARGO INTERCEPT',    'CONVOY DISRUPTION',      'HIGH-SPEED TRANSIT'],
-  ['EXCAVATION BREACH',  'SUBSURFACE CONFLICT',    'TUNNEL WARFARE'],
-  ['ZERO-G ENGAGEMENT',  'STATION BREACH',         'ORBITAL INSERTION'],
-  ['CORE ASSAULT',       'FINAL RECKONING',         'NEXUS ELIMINATION'],
-];

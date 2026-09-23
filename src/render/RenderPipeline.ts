@@ -54,7 +54,7 @@ export function installPipeline(scene: Phaser.Scene, camera: Phaser.Cameras.Scen
     apply(s) {
       const on = s.grid || s.quantize;
       retro.active = on;
-      retro.block = kind === 'world' && s.grid ? blockSize(s) : 1;
+      retro.block = !s.grid ? 1 : kind === 'world' ? blockSize(s) : 2;
       retro.quantize = s.quantize;
       retro.spread = kind === 'world' && s.dither ? 1 : 0;
       retro.scanlines = kind === 'world' && s.scanlines ? 1 : 0;

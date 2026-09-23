@@ -1,3 +1,6 @@
+import { icon as uiIcon } from '../../ui/kit/draw';
+import type { IconName } from '../../ui/icons';
+import { tc, type Role } from '../../ui/theme';
 import Phaser from 'phaser';
 import type { GameScene } from '../../scenes/GameScene';
 import { Flyer, Walker, fireBullet, profile, BASE_SCALING, type Scaling } from './base';
@@ -63,7 +66,7 @@ export class Warden extends Walker {
   private arms: HitPart[] = [];
   private dish: HitPart;
   private g: Phaser.GameObjects.Graphics;
-  private status: Phaser.GameObjects.Text;
+  private status: Phaser.GameObjects.Image;
   private strikeX = SURFACE_BOSS_X;
   private shieldNoticeAt = 0;
 
@@ -93,9 +96,7 @@ export class Warden extends Walker {
         this.announce('UPLINK DISH DOWN · NO MORE ORBITAL STRIKES');
       }));
     this.g = scene.add.graphics().setDepth(10);
-    this.status = scene.add.text(this.x, this.y + 40, '', {
-      fontFamily: '"Share Tech Mono", monospace', fontSize: '22px', color: '#ffb347', stroke: '#020812', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(12);
+    this.status = uiIcon(scene, this.x, this.y + 40, 'armor', 4, 'accent').setDepth(12);
     this.announce('SHIELD ONLINE · WATCH THE GROUND');
   }
 
@@ -105,7 +106,11 @@ export class Warden extends Walker {
   private announce(hint: string): void {
     this.scene.events.emit('surfaceBossStatus', this.hp, this.maxHp, hint, this.cycle.phase === 'exposed');
     const c = this.cycle;
-    this.status.setText(c.phase === 'exposed' ? 'CORE OPEN' : c.phase === 'warning' ? (c.attack === 'sweep' ? 'JUMP THE SWEEP' : 'DASH CLEAR') : 'SHIELDED');
+    // an icon over the Warden says what to do: shoot the core, jump the sweep, dash clear
+    const [glyph, role]: [IconName, Role] = c.phase === 'exposed' ? ['target', 'warn']
+      : c.phase === 'warning' ? (c.attack === 'sweep' ? ['arrowU', 'danger'] : ['surge', 'danger'])
+      : ['armor', 'accent'];
+    this.status.setFrame(glyph).setTint(tc(role));
   }
 
   protected think(dt: number, time: number): void {
@@ -187,7 +192,7 @@ export class Warden extends Walker {
     if (!dmg) {
       if (this.scene.time.now > this.shieldNoticeAt) {
         this.shieldNoticeAt = this.scene.time.now + 900;
-        this.scene.spawnFloatingText(this.x, this.y - 180, 'SHIELDED', '#6de3ff', { fontSize: '22px' });
+        this.scene.spawnFloatingText(this.x, this.y - 180, '', 'accent', { icon: 'armor' });
       }
       return;
     }
@@ -198,7 +203,7 @@ export class Warden extends Walker {
   die(): void {
     this.cycle.phase = 'dead';
     this.g.clear();
-    this.status.setText('WARDEN DISABLED');
+    this.status.setFrame('check').setTint(tc('repair'));
     this.scene.events.emit('surfaceBossStatus', 0, this.maxHp, 'WARDEN DISABLED', false);
     this.dieStaged({ booms: 7, event: 'bossKilled', spacingMs: 300 });
   }

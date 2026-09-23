@@ -1,3 +1,6 @@
+import { icon as uiIcon, label as uiLabel } from '../ui/kit/draw';
+import type { IconName } from '../ui/icons';
+import type { Role } from '../ui/theme';
 import Phaser from 'phaser';
 import { Player, HARROW_BODY } from '../entities/Player';
 import { SurfaceMission } from '../systems/SurfaceMission';
@@ -507,22 +510,27 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  /** Bitmap callout that rises and fades over the world (damage numbers, pickups). */
   spawnFloatingText(
     x: number,
     y: number,
     text: string,
-    color = '#ffffff',
-    opts?: { fontSize?: string; rise?: number; duration?: number; stroke?: string },
+    role: Role = 'ink',
+    opts?: { icon?: IconName; big?: boolean; rise?: number; duration?: number },
   ): void {
-    const fontSize = opts?.fontSize ?? '14px';
-    const rise     = opts?.rise     ?? 30;
+    const rise = opts?.rise ?? 30;
     const duration = opts?.duration ?? 600;
-    const style: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontFamily: 'monospace', fontSize, color,
-    };
-    if (opts?.stroke) { style.stroke = opts.stroke; style.strokeThickness = 3; }
-    const t = this.add.text(x, y, text, style).setDepth(25).setOrigin(0.5, 1);
-    this.tweens.add({ targets: t, y: y - rise, alpha: 0, duration, onComplete: () => t.destroy() });
+    const parts: Phaser.GameObjects.GameObject[] = [];
+    const t = text ? uiLabel(this, 0, 0, text, opts?.big ? 'body' : 'small', role).setOrigin(opts?.icon ? 0 : 0.5, 1) : undefined;
+    if (opts?.icon) {
+      const g = uiIcon(this, 0, -8, opts.icon, 2, role);
+      parts.push(g);
+      if (t) t.setX(16);
+    }
+    if (t) parts.push(t);
+    const w = (t?.width ?? 0) + (opts?.icon ? 16 : 0);
+    const c = this.add.container(Math.round(x - (opts?.icon ? w / 2 : 0)), Math.round(y), parts).setDepth(25);
+    this.tweens.add({ targets: c, y: y - rise, alpha: 0, duration, onComplete: () => c.destroy() });
   }
 
   /**
@@ -575,7 +583,7 @@ export class GameScene extends Phaser.Scene {
       s.takeDamage(damage);
       const sx = (s as unknown as { x: number }).x;
       const sy = (s as unknown as { y: number }).y;
-      this.spawnFloatingText(sx, sy - 20, `-${damage}`, '#6de3ff');
+      this.spawnFloatingText(sx, sy - 20, `-${damage}`, 'accent');
     };
     this.drones.getChildren().forEach(damageOne);
     this.tanks.getChildren().forEach(damageOne);
@@ -695,7 +703,7 @@ export class GameScene extends Phaser.Scene {
         const dy = obj.y - y;
         if (dx * dx + dy * dy > r2) return;
         obj.takeDamage(splashDamage);
-        this.spawnFloatingText(obj.x, obj.y - 16, `-${splashDamage}`, '#ffaa44');
+        this.spawnFloatingText(obj.x, obj.y - 16, `-${splashDamage}`, 'warn');
       });
     };
     splashGroup(this.drones);

@@ -1,3 +1,5 @@
+import { icon as uiIcon, label as uiLabel } from '../ui/kit/draw';
+import { tc } from '../ui/theme';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { EncounterSchedule, SURFACE_ENCOUNTERS, SURFACE_MAX_ATTACKERS, type SurfaceEnemyRole } from '../data/surfaceMission';
@@ -21,7 +23,7 @@ export class SurfaceMission {
   private interact: Phaser.Input.Keyboard.Key;
   private relayProgress = 0;
   private markers: Phaser.GameObjects.Graphics;
-  private relayLabels: Phaser.GameObjects.Text[] = [];
+  private relayLabels: { glyph: Phaser.GameObjects.Image; num: Phaser.GameObjects.BitmapText }[] = [];
   private readonly unsubs: (() => void)[] = [];
   private readonly onAction = (action: string) => { this.actions.add(action); };
 
@@ -48,10 +50,9 @@ export class SurfaceMission {
     this.unsubs.push(() => scene.events.off('bossKilled', onBossKilled));
     if (scene.ai) Object.assign(scene.ai.tokens.pools, { ranged: SURFACE_MAX_ATTACKERS, melee: 1, artillery: 1 });
     SURFACE_ENCOUNTERS.forEach((e, i) => {
-      this.relayLabels.push(scene.add.text(e.relayX, 780, `${String(i + 1).padStart(2, '0')} / ${e.name}`, {
-        fontFamily: '"Share Tech Mono", monospace', fontSize: '20px', color: '#aac3d0',
-        stroke: '#020812', strokeThickness: 5,
-      }).setOrigin(0.5).setDepth(7));
+      const glyph = uiIcon(scene, e.relayX - 20, 780, 'relay', 2, 'inkDim').setDepth(7);
+      const num = uiLabel(scene, e.relayX + 4, 780, String(i + 1).padStart(2, '0'), 'small', 'inkDim').setOrigin(0, 0.5).setDepth(7);
+      this.relayLabels.push({ glyph, num });
     });
     if (startAtBoss) {
       scene.player.setPosition(5200, 950);
@@ -82,7 +83,7 @@ export class SurfaceMission {
     }
     unit.onKilled = defeated;
     s.hostileCombat.register(unit);
-    if (role !== 'target') s.spawnFloatingText(x, floor - 140, 'INCOMING', '#ffb347', { fontSize: '20px' });
+    if (role !== 'target') s.spawnFloatingText(x, floor - 140, '', 'warn', { icon: 'hazard', rise: 40, duration: 900 });
   }
 
   update(_time: number, delta: number): void {
@@ -120,7 +121,9 @@ export class SurfaceMission {
       this.relayProgress = near && this.interact.isDown ? Math.min(1, this.relayProgress + delta / 1800) : 0;
       this.scene.events.emit('relayProgress', this.relayProgress, near && this.interact.isDown);
       if (this.relayProgress >= 1) {
-        this.relayLabels[this.encounter].setText(`${current.name} / ONLINE`).setColor('#56e39f');
+        const relayTag = this.relayLabels[this.encounter];
+        relayTag.glyph.setFrame('check').setTint(tc('repair'));
+        relayTag.num.setTint(tc('repair'));
         player.heal(HEAL.relay);
         player.refillRapidAmmo(50);
         player.restoreJetpackFuel(player.jetpackMaxFuel);
@@ -214,6 +217,6 @@ export class SurfaceMission {
   destroy(): void {
     for (const off of this.unsubs) off();
     this.markers.destroy();
-    this.relayLabels.forEach(label => label.destroy());
+    this.relayLabels.forEach((l) => { l.glyph.destroy(); l.num.destroy(); });
   }
 }

@@ -68,25 +68,7 @@ export class Atmosphere {
   private buildFog(): void {
     const cam = this.scene.cameras.main;
     for (const layer of this.recipe.fog) {
-      const key = `fog-${layer.seed}`;
-      if (!this.scene.textures.exists(key)) {
-        const w = 256, h = 64;
-        const n = tileableNoise(w, h, layer.seed, 4, 3);
-        const tex = this.scene.textures.createCanvas(key, w, h)!;
-        const ctx = tex.getContext();
-        const img = ctx.createImageData(w, h);
-        for (let y = 0; y < h; y++) {
-          const band = Math.sin((y / (h - 1)) * Math.PI);
-          for (let x = 0; x < w; x++) {
-            const v = Math.max(0, (n[y * w + x] - 0.42) / 0.58) * band;
-            const o = (y * w + x) * 4;
-            img.data[o] = img.data[o + 1] = img.data[o + 2] = 255;
-            img.data[o + 3] = Math.round(255 * Math.min(1, v * 1.6));
-          }
-        }
-        ctx.putImageData(img, 0, 0);
-        tex.refresh();
-      }
+      const key = ensureFogTexture(this.scene, layer.seed);
       const sprite = this.scene.add.tileSprite(0, this.floorY - layer.height, cam.width / cam.zoom + 64, layer.thickness, key)
         .setTint(pal(layer.color)).setAlpha(layer.alpha).setDepth(3.5).setTileScale(2, layer.thickness / 64);
       this.fog.push({ sprite, layer });
@@ -96,25 +78,7 @@ export class Atmosphere {
   private buildShafts(): void {
     const r = this.recipe.shafts;
     if (!r) return;
-    if (!this.scene.textures.exists('light-shaft')) {
-      const w = 48, h = 192;
-      const tex = this.scene.textures.createCanvas('light-shaft', w, h)!;
-      const ctx = tex.getContext();
-      const img = ctx.createImageData(w, h);
-      for (let y = 0; y < h; y++) {
-        const t = y / (h - 1);
-        const half = 4 + t * (w / 2 - 4);
-        for (let x = 0; x < w; x++) {
-          const edge = 1 - Math.min(1, Math.abs(x - w / 2) / half);
-          const a = Math.pow(1 - t, 1.3) * Math.min(1, edge * 2);
-          const o = (y * w + x) * 4;
-          img.data[o] = img.data[o + 1] = img.data[o + 2] = 255;
-          img.data[o + 3] = Math.round(255 * a);
-        }
-      }
-      ctx.putImageData(img, 0, 0);
-      tex.refresh();
-    }
+    ensureShaftTexture(this.scene);
     const worldW = this.scene.physics.world.bounds.width;
     for (let x = 300; x < worldW; x += r.spacing) {
       const y = r.from === 'ceiling' && this.ceilingY !== null ? this.ceilingY : this.floorY - 900;
@@ -289,3 +253,50 @@ function ensureHazeBlob(scene: Phaser.Scene): void {
 }
 
 export const HAZE_MAP = { key: 'haze-map', width: HAZE_W, height: HAZE_H };
+
+/** Tileable fog wisp band (white, alpha = density), tinted per layer. Returns the key. */
+export function ensureFogTexture(scene: Phaser.Scene, seed: number): string {
+  const key = `fog-${seed}`;
+  if (scene.textures.exists(key)) return key;
+  const w = 256, h = 64;
+  const n = tileableNoise(w, h, seed, 4, 3);
+  const tex = scene.textures.createCanvas(key, w, h)!;
+  const ctx = tex.getContext();
+  const img = ctx.createImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    const band = Math.sin((y / (h - 1)) * Math.PI);
+    for (let x = 0; x < w; x++) {
+      const v = Math.max(0, (n[y * w + x] - 0.42) / 0.58) * band;
+      const o = (y * w + x) * 4;
+      img.data[o] = img.data[o + 1] = img.data[o + 2] = 255;
+      img.data[o + 3] = Math.round(255 * Math.min(1, v * 1.6));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  tex.refresh();
+  return key;
+}
+
+/** Soft cone used for light shafts (white, alpha falloff). Returns the key. */
+export function ensureShaftTexture(scene: Phaser.Scene): string {
+  const key = 'light-shaft';
+  if (scene.textures.exists(key)) return key;
+  const w = 48, h = 192;
+  const tex = scene.textures.createCanvas(key, w, h)!;
+  const ctx = tex.getContext();
+  const img = ctx.createImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    const t = y / (h - 1);
+    const half = 4 + t * (w / 2 - 4);
+    for (let x = 0; x < w; x++) {
+      const edge = 1 - Math.min(1, Math.abs(x - w / 2) / half);
+      const a = Math.pow(1 - t, 1.3) * Math.min(1, edge * 2);
+      const o = (y * w + x) * 4;
+      img.data[o] = img.data[o + 1] = img.data[o + 2] = 255;
+      img.data[o + 3] = Math.round(255 * a);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  tex.refresh();
+  return key;
+}

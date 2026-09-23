@@ -81,7 +81,7 @@ export class HostileCombat {
       this.scene.spawnEnemyChunks(ix, iy, p.chunkTint, p.chunkCount);
     }
     if (p.showDamageText && dmg >= 1) {
-      this.scene.spawnFloatingText(hostile.x, hostile.y - 24, `-${dmg}`, '#ffffff');
+      this.scene.spawnFloatingText(hostile.x, hostile.y - 24, `-${dmg}`, 'ink');
     }
   }
 
@@ -97,7 +97,7 @@ export class HostileCombat {
     this.scene.spawnMissileBlast(missile.x, missile.y, { primary: hostile });
     if (p.impactAudio) this.scene.audio.play('explosion');
     if (p.showDamageText) {
-      this.scene.spawnFloatingText(hostile.x, hostile.y - 24, `-${p.fromMissile}`, '#ffff00');
+      this.scene.spawnFloatingText(hostile.x, hostile.y - 24, `-${p.fromMissile}`, 'warn');
     }
   }
 

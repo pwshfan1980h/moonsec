@@ -3,8 +3,11 @@ import { GAME_W, GAME_H } from '../constants';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { devParams } from '../dev/devParams';
 import { HARROW_BODY } from '../entities/Player';
+import { buildUiTextures } from '../ui/kit/uiTextures';
+import { SegBar, icon } from '../ui/kit/widgets';
+import { loadMuted } from '../systems/audioPrefs';
 
-// Dev-only: `?level=N` jumps straight to level N on boot (0-indexed, clamped).
+// Dev-only: `?level=N` skips the title and jumps straight to level N (0-indexed, clamped).
 function bootLevel(): number {
   const n = devParams().level ?? 0;
   return Phaser.Math.Clamp(n, 0, LEVEL_CONFIGS.length - 1);
@@ -16,18 +19,13 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // Loading bar
-    const bar = this.add.graphics();
-    const w = 300, h = 12, x = (GAME_W - w) / 2, y = Math.round(GAME_H * 0.48);
-    this.add.graphics().fillStyle(0x222244).fillRect(x - 2, y - 2, w + 4, h + 4);
-
-    this.load.on('progress', (v: number) => {
-      bar.clear().fillStyle(0x4488ff).fillRect(x, y, w * v, h);
-    });
-
-    this.add.text(GAME_W / 2, Math.round(GAME_H * 0.43), 'M O O N S E C  / /  L O A D I N G', {
-      fontFamily: 'VT323, "Share Tech Mono", monospace', fontSize: '22px', color: '#6de3ff',
-    }).setOrigin(0.5);
+    // Fonts, icons and panels are procedural, so the loading screen can use them.
+    buildUiTextures(this);
+    const w = 480, x = (GAME_W - w) / 2, y = Math.round(GAME_H * 0.5 / 2) * 2;
+    icon(this, GAME_W / 2, y - 64, 'armor', 4, 'accent');
+    const bar = new SegBar(this, x, y, w, 16, 12);
+    bar.set(0, 'accent');
+    this.load.on('progress', (v: number) => bar.set(v, 'accent'));
 
     // One-shot sound effects (loops handled procedurally in AudioSystem)
     const sounds = [
@@ -57,8 +55,7 @@ export class BootScene extends Phaser.Scene {
     // Collectables spritesheet (16x16 tiles, 8×6 grid)
     this.load.spritesheet('collectables', `assets/collectables.png?v=${__APP_VERSION__}`, { frameWidth: 16, frameHeight: 16 });
 
-    // Load new SVG assets for visual upgrades
-    this.load.svg('logo', `assets/logo.svg?v=${__APP_VERSION__}`, { width: 600, height: 150 });
+    // Flare sprite for particles
     this.load.svg('flare', `assets/flare.svg?v=${__APP_VERSION__}`, { width: 32, height: 32 });
   }
 
@@ -81,6 +78,16 @@ export class BootScene extends Phaser.Scene {
         this.scene.add('RigTest', RigTestScene, true);
         this.scene.stop();
       });
+      return;
+    }
+    this.sound.mute = loadMuted();
+    const dev = devParams();
+    if (dev.ui === 'map') {
+      this.scene.start('Overworld', { currentNode: 1, completedNodes: [0], totalScore: 4200 });
+      return;
+    }
+    if (dev.level === undefined || dev.ui === 'title') {
+      this.scene.start('Title');
       return;
     }
     this.scene.start('Game', { level: bootLevel(), totalScore: 0, completedNodes: [] });

@@ -1,21 +1,19 @@
 import { radarColor, type RadarKind } from '../entities/RiggedHostile';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
-import {
-  RADAR_WORLD_RADIUS,
-  RADAR_SCREEN_RADIUS,
-  RADAR_X,
-  RADAR_Y,
-  MISSILE_SEEK_RANGE,
-} from '../constants';
+import { RADAR_WORLD_RADIUS, RADAR_SCREEN_RADIUS, RADAR_X, RADAR_Y, MISSILE_SEEK_RANGE } from '../constants';
+import { tc } from './theme';
 
-interface Ping {
-  x: number;
-  y: number;
-  r: number;
-  alpha: number;
-}
+interface Ping { x: number; y: number; r: number; life: number }
 
+/** Snap to the 2px UI grid. */
+const s2 = (v: number) => Math.round(v / 2) * 2;
+
+/**
+ * Radar: terrain chords, a stepped sweep, and glyph blips by `radar.kind` (flyers are
+ * chevrons, walkers are bars with legs, heavies are hollow boxes, mines are dots, the
+ * boss is a pulsing box). Everything is drawn in 2px blocks on palette colours.
+ */
 export class MinimapRenderer {
   private gfx: Phaser.GameObjects.Graphics;
   private sweepAngle = 0;
@@ -27,200 +25,148 @@ export class MinimapRenderer {
   }
 
   draw(time: number, game: GameScene): void {
-    const gfx = this.gfx;
-    gfx.clear();
-
+    const g = this.gfx.clear();
     const player = game.player;
-    const px = player.x;
-    const py = player.y;
-    const R  = RADAR_SCREEN_RADIUS;
+    const px = player.x, py = player.y;
+    const R = RADAR_SCREEN_RADIUS;
     const scale = R / RADAR_WORLD_RADIUS;
+    const proj = (wx: number, wy: number) => ({ x: s2(RADAR_X + (wx - px) * scale), y: s2(RADAR_Y + (wy - py) * scale) });
+    const chordHW = (sy: number) => Math.sqrt(Math.max(0, R * R - (sy - RADAR_Y) ** 2));
+    const inside = (x: number, y: number) => (x - RADAR_X) ** 2 + (y - RADAR_Y) ** 2 <= R * R;
 
-    // Project a world coordinate to radar screen space
-    const proj = (wx: number, wy: number) => ({
-      x: RADAR_X + (wx - px) * scale,
-      y: RADAR_Y + (wy - py) * scale,
-    });
+    // disc + crosshair
+    g.fillStyle(tc('panel'), 1).fillCircle(RADAR_X, RADAR_Y, R);
+    g.fillStyle(tc('edgeDim'), 1);
+    g.fillRect(RADAR_X - R, RADAR_Y - 1, R * 2, 2);
+    g.fillRect(RADAR_X - 1, RADAR_Y - R, 2, R * 2);
+    for (const rr of [R / 3, (R * 2) / 3]) this.dottedRing(g, rr, 24);
 
-    // Chord half-width at a given screen Y (for clipping horizontal lines)
-    const chordHW = (screenY: number): number => {
-      const dy = screenY - RADAR_Y;
-      return Math.sqrt(Math.max(0, R * R - dy * dy));
+    // terrain chords
+    const chord = (y: number, x0: number, x1: number) => {
+      const hw = chordHW(y);
+      if (hw <= 0) return;
+      const a = Math.max(x0, RADAR_X - hw), b = Math.min(x1, RADAR_X + hw);
+      if (b > a) g.fillRect(s2(a), y - 1, s2(b - a), 2);
     };
-
-    // ── 1. Background + concentric rings ──────────────────────────
-    gfx.fillStyle(0x02111e, 0.88);
-    gfx.fillCircle(RADAR_X, RADAR_Y, R);
-
-    // Grid crosshairs
-    gfx.lineStyle(1, 0x18456e, 0.35);
-    gfx.lineBetween(RADAR_X - R, RADAR_Y, RADAR_X + R, RADAR_Y);
-    gfx.lineBetween(RADAR_X, RADAR_Y - R, RADAR_X, RADAR_Y + R);
-
-    // Concentric rings
-    gfx.lineStyle(1, 0x1e5a7a, 0.4);
-    gfx.strokeCircle(RADAR_X, RADAR_Y, R * 0.33);
-    gfx.lineStyle(1, 0x1e5a7a, 0.5);
-    gfx.strokeCircle(RADAR_X, RADAR_Y, R * 0.66);
-
-    gfx.lineStyle(1, 0x2b8cb4, 0.85);
-    gfx.strokeCircle(RADAR_X, RADAR_Y, R);
-
-    // ── 2. Ground line (clipped to circle) ────────────────────────
-    const groundProj = proj(px, game.getApproxGroundY());
-    const ghw = chordHW(groundProj.y);
-    if (ghw > 0) {
-      gfx.lineStyle(2, 0x3a7a96, 0.65);
-      gfx.lineBetween(RADAR_X - ghw, groundProj.y, RADAR_X + ghw, groundProj.y);
-    }
-
-    // ── 3. Platform blips (clipped to circle) ─────────────────────
-    const movingPlatforms = game.movingPlatforms?.getChildren()
-      .filter(child => child.active)
-      .map(child => {
-        const platform = child as Phaser.Physics.Arcade.Image;
-        return { x: platform.x, y: platform.y, w: platform.displayWidth };
-      }) ?? [];
-    for (const plat of [...game.platformData, ...movingPlatforms]) {
+    g.fillStyle(tc('edge'), 1);
+    const ground = proj(px, game.getApproxGroundY());
+    chord(ground.y, RADAR_X - R, RADAR_X + R);
+    const moving = game.movingPlatforms?.getChildren().filter((c) => c.active).map((c) => {
+      const p = c as Phaser.Physics.Arcade.Image;
+      return { x: p.x, y: p.y, w: p.displayWidth };
+    }) ?? [];
+    for (const plat of [...game.platformData, ...moving]) {
       const pp = proj(plat.x, plat.y);
-      const dy = pp.y - RADAR_Y;
-      if (Math.abs(dy) >= R) continue;
-      const phw = chordHW(pp.y);
-      if (phw <= 0) continue;
-      // Clamp bar endpoints to the circle boundary (chord centered at RADAR_X)
-      const barLeft  = Math.max(pp.x - (plat.w * scale) / 2, RADAR_X - phw);
-      const barRight = Math.min(pp.x + (plat.w * scale) / 2, RADAR_X + phw);
-      if (barRight <= barLeft) continue;
-      gfx.lineStyle(2, 0x3a7a96, 0.75);
-      gfx.lineBetween(barLeft, pp.y, barRight, pp.y);
+      if (Math.abs(pp.y - RADAR_Y) >= R) continue;
+      chord(pp.y, pp.x - (plat.w * scale) / 2, pp.x + (plat.w * scale) / 2);
     }
 
-    // ── 4. Sweep line (gradient trail) ────────────────────────────
+    // stepped sweep: a line of 2px blocks with a short trailing fan
     this.sweepAngle += 0.04;
-    for (let k = 0; k < 6; k++) {
-      const a = this.sweepAngle - k * 0.06;
-      gfx.lineStyle(1, 0x6de3ff, 0.32 - k * 0.045);
-      gfx.lineBetween(
-        RADAR_X,
-        RADAR_Y,
-        RADAR_X + Math.cos(a) * R,
-        RADAR_Y + Math.sin(a) * R,
-      );
+    for (let k = 0; k < 3; k++) {
+      const a = this.sweepAngle - k * 0.08;
+      g.fillStyle(tc(k === 0 ? 'accentDim' : 'accentDeep'), 1);
+      for (let r = 6; r < R; r += 4) g.fillRect(s2(RADAR_X + Math.cos(a) * r) - 1, s2(RADAR_Y + Math.sin(a) * r) - 1, 2, 2);
     }
 
-    // ── 5. Enemy blips ────────────────────────────────────────────
-    // Find missile lock candidate (nearest active drone within MISSILE_SEEK_RANGE of player)
-    let lockTarget: Phaser.Physics.Arcade.Sprite & { getState(): string } | null = null;
-    let lockDist = MISSILE_SEEK_RANGE;
+    // missile lock candidate: nearest hostile in seek range
+    type Blip = Phaser.Physics.Arcade.Sprite & { getState?(): string; isBoss?: boolean; radar?: { kind: RadarKind } };
+    let lock: Blip | null = null;
+    let lockD = MISSILE_SEEK_RANGE;
+    const hostiles = game.drones.getChildren() as unknown as Blip[];
+    for (const d of hostiles) {
+      if (!d.active) continue;
+      const dist = Phaser.Math.Distance.Between(px, py, d.x, d.y);
+      if (dist < lockD) { lockD = dist; lock = d; }
+    }
 
-    game.drones.getChildren().forEach((go) => {
-      const drone = go as unknown as Phaser.Physics.Arcade.Sprite & { getState(): string };
-      if (!drone.active) return;
-      const d = Phaser.Math.Distance.Between(px, py, drone.x, drone.y);
-      if (d < lockDist) { lockDist = d; lockTarget = drone; }
-    });
+    const inRange = new Set<object>();
+    for (const d of hostiles) {
+      if (!d.active || Phaser.Math.Distance.Between(px, py, d.x, d.y) > RADAR_WORLD_RADIUS) continue;
+      const p = proj(d.x, d.y);
+      if (!inside(p.x, p.y)) continue;
+      inRange.add(d);
+      if (!this.prevInRange.has(d)) this.pings.push({ x: p.x, y: p.y, r: 4, life: 1 });
+      const kind: RadarKind = d.isBoss ? 'boss' : d.radar?.kind ?? 'flyer';
+      const attacking = d.getState?.() === 'ATTACK' && Math.floor(time / 150) % 2 === 0;
+      this.blip(g, p.x, p.y, kind, attacking ? tc('ink') : radarColor(kind), time);
+      if (d === lock) this.lockBrackets(g, p.x, p.y);
+    }
+    this.prevInRange = inRange;
 
-    const currentInRange = new Set<object>();
-
-    game.drones.getChildren().forEach((go) => {
-      const drone = go as unknown as Phaser.Physics.Arcade.Sprite & { getState(): string };
-      if (!drone.active) return;
-      if (typeof drone.getState !== 'function') return;
-
-      const worldDist = Phaser.Math.Distance.Between(px, py, drone.x, drone.y);
-      if (worldDist > RADAR_WORLD_RADIUS) return;
-
-      currentInRange.add(drone);
-
-      // Ping ripple when newly entering radar range
-      if (!this.prevInRange.has(drone)) {
-        const dp = proj(drone.x, drone.y);
-        this.pings.push({ x: dp.x, y: dp.y, r: 3, alpha: 0.8 });
-      }
-
-      const dp = proj(drone.x, drone.y);
-      const screenDist = Phaser.Math.Distance.Between(dp.x, dp.y, RADAR_X, RADAR_Y);
-      if (screenDist > R) return;
-
-      const state = drone.getState();
-
-      if ((drone as unknown as { isBoss?: boolean }).isBoss) {
-        const r = 9 + Math.sin(time * 0.008) * 3;
-        gfx.lineStyle(2.5, 0xff3a4a, 0.95);
-        gfx.strokeCircle(dp.x, dp.y, r);
-        gfx.lineStyle(1.5, 0xff3a4a, 0.55);
-        gfx.strokeCircle(dp.x, dp.y, r + 8);
-        gfx.lineStyle(1, 0xff3a4a, 0.25);
-        gfx.strokeCircle(dp.x, dp.y, r + 16);
-      } else {
-        const dotR = state === 'ATTACK'
-          ? 4 + Math.sin(time * 0.012) * 2
-          : 4;
-        const radar = (drone as unknown as { radar?: { kind: RadarKind } }).radar;
-        const color = radar ? radarColor(radar.kind) : drone.texture.key === 'drone-red' ? 0xff3a4a : 0x56e39f;
-        gfx.fillStyle(color, 1);
-        gfx.fillCircle(dp.x, dp.y, dotR);
-        gfx.fillStyle(color, 0.25);
-        gfx.fillCircle(dp.x, dp.y, dotR + 2);
-      }
-
-      if (drone === lockTarget) {
-        const s = 9;
-        gfx.lineStyle(1.5, 0x6de3ff, 1);
-        gfx.strokePoints(
-          [
-            new Phaser.Math.Vector2(dp.x,     dp.y - s),
-            new Phaser.Math.Vector2(dp.x + s, dp.y),
-            new Phaser.Math.Vector2(dp.x,     dp.y + s),
-            new Phaser.Math.Vector2(dp.x - s, dp.y),
-          ],
-          true, // closeShape — draws back to first point
-        );
-      }
-    });
-
-    this.prevInRange = currentInRange;
-
-    // ── 6. Incoming drone bullet blips ────────────────────────────
-    gfx.fillStyle(0xff3a4a, 0.9);
-    game.droneBullets.getChildren().forEach((go) => {
+    // enemy rounds
+    g.fillStyle(tc('danger'), 1);
+    for (const go of game.droneBullets.getChildren()) {
       const b = go as Phaser.Physics.Arcade.Image;
-      if (!b.active) return;
-      const d = Phaser.Math.Distance.Between(px, py, b.x, b.y);
-      if (d > RADAR_WORLD_RADIUS) return;
-      const bp = proj(b.x, b.y);
-      if (Phaser.Math.Distance.Between(bp.x, bp.y, RADAR_X, RADAR_Y) > R) return;
-      gfx.fillCircle(bp.x, bp.y, 2);
-    });
+      if (!b.active) continue;
+      const p = proj(b.x, b.y);
+      if (inside(p.x, p.y)) g.fillRect(p.x - 1, p.y - 1, 2, 2);
+    }
 
-    // ── 7. Player dot + facing arrow ──────────────────────────────
-    gfx.fillStyle(0x6de3ff, 0.35);
-    gfx.fillCircle(RADAR_X, RADAR_Y, 9);
-    gfx.fillStyle(0xffffff, 1);
-    gfx.fillCircle(RADAR_X, RADAR_Y, 5);
+    // player chevron pointing where HARROW faces
+    const f = player.flipX ? -1 : 1;
+    g.fillStyle(tc('ink'), 1).fillRect(RADAR_X - 3, RADAR_Y - 3, 6, 6);
+    g.fillStyle(tc('accent'), 1);
+    g.fillRect(RADAR_X + f * 5 - (f < 0 ? 4 : 0), RADAR_Y - 1, 4, 2);
+    g.fillRect(RADAR_X + f * 9 - (f < 0 ? 2 : 0), RADAR_Y - 3, 2, 6);
 
-    const facing = game.player;
-    const arrowAngle = facing.flipX ? Math.PI : 0;
-    gfx.lineStyle(2.5, 0x6de3ff, 1);
-    gfx.lineBetween(
-      RADAR_X,
-      RADAR_Y,
-      RADAR_X + Math.cos(arrowAngle) * 14,
-      RADAR_Y + Math.sin(arrowAngle) * 14,
-    );
-
-    // ── 8. Ping ripples ───────────────────────────────────────────
-    this.pings = this.pings.filter((ping) => {
-      if (ping.alpha <= 0) return false;
-      gfx.lineStyle(1.5, 0x6de3ff, ping.alpha);
-      gfx.strokeCircle(ping.x, ping.y, ping.r);
-      ping.r     += 1.4;
-      ping.alpha -= 0.035;
+    // entry pings (square ripples)
+    this.pings = this.pings.filter((p) => {
+      if (p.life <= 0) return false;
+      const r = s2(p.r);
+      g.fillStyle(tc(p.life > 0.5 ? 'accent' : 'accentDim'), 1);
+      g.fillRect(p.x - r, p.y - r, r * 2, 2); g.fillRect(p.x - r, p.y + r - 2, r * 2, 2);
+      g.fillRect(p.x - r, p.y - r, 2, r * 2); g.fillRect(p.x + r - 2, p.y - r, 2, r * 2);
+      p.r += 1; p.life -= 0.05;
       return true;
     });
   }
 
-  destroy(): void {
-    this.gfx.destroy();
+  private dottedRing(g: Phaser.GameObjects.Graphics, r: number, n: number): void {
+    g.fillStyle(tc('edgeDim'), 1);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      g.fillRect(s2(RADAR_X + Math.cos(a) * r) - 1, s2(RADAR_Y + Math.sin(a) * r) - 1, 2, 2);
+    }
   }
+
+  private blip(g: Phaser.GameObjects.Graphics, x: number, y: number, kind: RadarKind, color: number, time: number): void {
+    g.fillStyle(color, 1);
+    switch (kind) {
+      case 'flyer': // chevron
+        g.fillRect(x - 1, y - 3, 2, 2); g.fillRect(x - 3, y - 1, 6, 2); g.fillRect(x - 5, y + 1, 4, 2); g.fillRect(x + 1, y + 1, 4, 2);
+        break;
+      case 'swarm':
+        g.fillRect(x - 1, y - 1, 2, 2);
+        break;
+      case 'walker': // bar on legs
+        g.fillRect(x - 4, y - 3, 8, 4); g.fillRect(x - 4, y + 1, 2, 2); g.fillRect(x + 2, y + 1, 2, 2);
+        break;
+      case 'heavy': // hollow box
+        g.fillRect(x - 4, y - 4, 8, 2); g.fillRect(x - 4, y + 2, 8, 2); g.fillRect(x - 4, y - 4, 2, 8); g.fillRect(x + 2, y - 4, 2, 8);
+        break;
+      case 'mine':
+        g.fillRect(x - 2, y - 2, 4, 4);
+        break;
+      case 'boss': {
+        const r = 6 + (Math.floor(time / 200) % 2) * 2;
+        g.fillRect(x - r, y - r, r * 2, 2); g.fillRect(x - r, y + r - 2, r * 2, 2);
+        g.fillRect(x - r, y - r, 2, r * 2); g.fillRect(x + r - 2, y - r, 2, r * 2);
+        g.fillRect(x - 2, y - 2, 4, 4);
+        break;
+      }
+    }
+  }
+
+  private lockBrackets(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+    g.fillStyle(tc('accent'), 1);
+    const s = 10, l = 4;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+      const cx = x + sx * s, cy = y + sy * s;
+      g.fillRect(sx < 0 ? cx : cx - l, cy - 1, l, 2);
+      g.fillRect(cx - 1, sy < 0 ? cy : cy - l, 2, l);
+    }
+  }
+
+  destroy(): void { this.gfx.destroy(); }
 }

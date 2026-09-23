@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from './constants';
 import { BootScene } from './scenes/BootScene';
+import { TitleScene } from './scenes/TitleScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
@@ -38,7 +39,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, OverworldScene, GameScene, UIScene],
+  scene: [BootScene, TitleScene, OverworldScene, GameScene, UIScene],
   pixelArt: true,
   roundPixels: true,
   render: {

@@ -53,12 +53,12 @@ describe('installPipeline', () => {
     expect(() => p.apply(DEFAULT_GRAPHICS)).not.toThrow();
   });
 
-  it('keeps UI crisp: no dither, no grid, hard alpha, no haze', () => {
+  it('keeps UI crisp: no dither, 2px grid, hard alpha, no haze', () => {
     const { scene, camera, added } = fakeScene(2);
     const p = installPipeline(scene as never, camera as never, 'ui');
     expect(added).toHaveLength(1);
     expect(p.haze).toBeUndefined();
-    expect(p.retro).toMatchObject({ block: 1, spread: 0, hardAlpha: true, quantize: true });
+    expect(p.retro).toMatchObject({ block: 2, spread: 0, hardAlpha: true, quantize: true });
   });
 
   it('follows settings changes', () => {

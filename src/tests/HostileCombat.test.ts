@@ -109,7 +109,7 @@ describe('HostileCombat', () => {
     expect(scene.spawnBulletImpact).toHaveBeenCalledWith(10, 20, 'enemy');
     expect(scene.audio.play).toHaveBeenCalledWith('hit');
     expect(scene.spawnEnemyChunks).toHaveBeenCalledWith(10, 20, 0xabcdef, 2);
-    expect(scene.spawnFloatingText).toHaveBeenCalledWith(100, 176, '-1', '#ffffff');
+    expect(scene.spawnFloatingText).toHaveBeenCalledWith(100, 176, '-1', 'ink');
   });
 
   it('silent, chunkless profiles (Mine/Swarmling) skip audio and debris', async () => {
@@ -150,6 +150,6 @@ describe('HostileCombat', () => {
     expect(hostile.takeDamage).toHaveBeenCalledWith(3);
     expect(scene.spawnMissileBlast).toHaveBeenCalledWith(10, 20, { primary: hostile });
     expect(scene.audio.play).toHaveBeenCalledWith('explosion');
-    expect(scene.spawnFloatingText).toHaveBeenCalledWith(100, 176, '-3', '#ffff00');
+    expect(scene.spawnFloatingText).toHaveBeenCalledWith(100, 176, '-3', 'warn');
   });
 });

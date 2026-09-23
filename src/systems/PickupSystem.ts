@@ -1,3 +1,5 @@
+import type { IconName } from '../ui/icons';
+import type { Role } from '../ui/theme';
 import type Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { PICKUP_LIFETIME_MS, RAPID_AMMO_PER_PICKUP } from '../constants';
@@ -147,35 +149,34 @@ export class PickupSystem {
     // Distinct pitch per type makes the feedback readable without a new sample.
     let rate = 1;
     let label = '+ITEM';
-    let color = '#ffffff';
+    let role: Role = 'ink';
+    let glyph: IconName = 'star';
     if (pickupType === 'health') {
       this.scene.player.heal(HEAL.pickup);
       rate = 1.25;
-      label = '+1 HP';
-      color = '#5cff8a';
+      label = `+${HEAL.pickup}`;
+      role = 'repair'; glyph = 'repair';
     } else if (pickupType === 'ammo') {
       this.scene.player.refillRapidAmmo(RAPID_AMMO_PER_PICKUP);
       rate = 0.85;
-      label = `+${RAPID_AMMO_PER_PICKUP} AMMO`;
-      color = '#6de3ff';
+      label = `+${RAPID_AMMO_PER_PICKUP}`;
+      role = 'accent'; glyph = 'ammo';
     } else if (pickupType === 'score') {
       const pts = (pk.getData('points') as number | undefined) ?? 100;
       this.scene.score += pts;
       this.scene.events.emit('scoreChange', this.scene.score);
       rate = 1.5;
       label = `+${pts}`;
-      color = '#ffd744';
+      role = 'warn'; glyph = 'score';
     } else {
       this.scene.player.restoreJetpackFuel(1000);
       rate = 0.95;
-      label = '+FUEL';
-      color = '#ffb347';
+      label = '+';
+      role = 'warn'; glyph = 'fuel';
     }
 
     this.scene.audio.playAt('pickup', { rate });
-    this.scene.spawnFloatingText(pk.x, pk.y - 8, label, color, {
-      fontSize: '16px', rise: 44, duration: 750, stroke: '#000814',
-    });
+    this.scene.spawnFloatingText(pk.x, pk.y - 8, label, role, { icon: glyph, rise: 44, duration: 750 });
   }
 
   private playSpawnPop(p: Phaser.Physics.Arcade.Image, tint: number | null): void {

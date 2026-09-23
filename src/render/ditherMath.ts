@@ -44,3 +44,13 @@ export function pickColor(rgb: RGB, palette: readonly RGB[], cellX: number, cell
   const p2 = s1 < 0.006 ? 0 : s1 / Math.max(s1 + s2, 1e-6);
   return p2 * spread > bayer4(cellX, cellY) + 1 / 32 ? c2 : c1;
 }
+
+/**
+ * Ordered-dither a 0..1 shade onto a ramp of palette names (CPU pixel-art shading for
+ * procedural sprites such as the title Earth and the overworld moon).
+ */
+export function rampPick<T>(ramp: readonly T[], v: number, x: number, y: number): T {
+  const t = bayer4(x, y) - 0.47;
+  const i = Math.round(Math.max(0, Math.min(1, v)) * (ramp.length - 1) + t * 0.9);
+  return ramp[Math.max(0, Math.min(ramp.length - 1, i))];
+}
