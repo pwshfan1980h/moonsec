@@ -1,0 +1,1555 @@
+<title>Moonsec Mech Rig</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=Share+Tech+Mono&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #04071a;
+    --panel: #081427;
+    --panel-2: #0b1b33;
+    --line: #173a52;
+    --line-2: #245a78;
+    --text: #d6ecf7;
+    --muted: #86a3b8;
+    --cyan: #6de3ff;
+    --cyan-dim: #2a7fa3;
+    --amber: #ffb347;
+    --green: #66ff99;
+    --red: #ff5566;
+    --display: "Chakra Petch", "Share Tech Mono", ui-monospace, monospace;
+    --mono: "Share Tech Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  html, body { background: var(--ground); color: var(--text); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.55; padding-inline: 20px; padding-block: 28px 64px; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: 0.02em; }
+  h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+  h2 { font-size: 22px; }
+  h3 { font-size: 17px; }
+  p { margin: 0; max-width: 68ch; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); }
+  .muted { color: var(--muted); }
+  header.top { display: grid; gap: 10px; }
+  header.top p { color: var(--muted); }
+
+  /* Stage */
+  .stage-shell { display: grid; gap: 12px; }
+  .stage { position: relative; border: 1px solid var(--line-2); background: #030318; outline: none; }
+  .stage:focus-visible { box-shadow: 0 0 0 2px var(--cyan); }
+  .stage canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; cursor: crosshair; touch-action: none; }
+  .hud { position: absolute; inset: 0; pointer-events: none; font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .hud .tl { position: absolute; left: 12px; top: 10px; display: grid; gap: 2px; }
+  .hud .tr { position: absolute; right: 12px; top: 10px; text-align: right; display: grid; gap: 2px; }
+  .hud .anim { color: var(--cyan); font-size: 15px; }
+  .hud .caption { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(4, 7, 26, 0.82); border: 1px solid var(--line-2); padding: 6px 12px; color: var(--text); white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+  .hud .focus-hint { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); background: rgba(4, 7, 26, 0.85); border: 1px solid var(--cyan-dim); padding: 8px 14px; color: var(--cyan); }
+  .pips { display: flex; gap: 3px; justify-content: flex-end; }
+  .pips i { width: 14px; height: 6px; background: var(--green); display: block; }
+  .pips i.off { background: #1d3340; }
+  .fuel { height: 4px; background: #13283a; width: 90px; justify-self: end; }
+  .fuel b { display: block; height: 100%; background: var(--cyan); }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line-2); }
+  .seg button { font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; background: transparent; color: var(--muted); border: 0; padding: 7px 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line-2); }
+  .seg button[aria-pressed="true"] { background: var(--cyan); color: #04121c; }
+  .seg button:focus-visible, .btn:focus-visible, .card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .btn { font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); padding: 7px 12px; cursor: pointer; }
+  .btn.primary { background: var(--cyan); color: #04121c; border-color: var(--cyan); }
+  .toolbar label { font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: inline-flex; gap: 8px; align-items: center; }
+  .toolbar select { font-family: var(--mono); font-size: 13px; background: var(--panel); color: var(--text); border: 1px solid var(--line-2); padding: 6px 8px; }
+
+  /* Dock, echoing the in-game ability cards */
+  .dock { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .card { text-align: left; background: var(--panel); border: 1px solid var(--line); padding: 8px 10px 10px; cursor: pointer; display: grid; gap: 2px; color: var(--text); font: inherit; user-select: none; -webkit-user-select: none; }
+  .card:hover { border-color: var(--line-2); }
+  .card.hot { border-color: var(--cyan); background: var(--panel-2); }
+  .card .k { font-family: var(--mono); font-size: 12px; color: #04121c; background: var(--cyan-dim); justify-self: start; padding: 1px 6px; letter-spacing: 0.06em; }
+  .card .n { font-family: var(--mono); font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .card .d { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+  .card.new .n::after { content: " · new"; color: var(--green); }
+  .card.amber .k { background: var(--amber); }
+  .card.green .k { background: var(--green); }
+  .card.red .k { background: var(--red); }
+
+  /* Concepts */
+  .concepts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .concept { border: 1px solid var(--line); background: var(--panel); padding: 18px 20px; display: grid; gap: 10px; align-content: start; }
+  .concept.pick { border-color: var(--cyan-dim); }
+  .concept .tag { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); }
+  .concept ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text); }
+  .concept ul li::marker { color: var(--cyan-dim); }
+  .concept dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; font-size: 14px; }
+  .concept dt { font-family: var(--mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; font-size: 12.5px; padding-top: 2px; }
+  .concept dd { margin: 0; }
+
+  section { display: grid; gap: 14px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); }
+  table { border-collapse: collapse; width: 100%; min-width: 860px; font-size: 14px; }
+  th { font-family: var(--mono); font-weight: 400; font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 10px 12px; background: var(--panel); border-bottom: 1px solid var(--line-2); position: sticky; top: 0; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-family: var(--mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; color: var(--cyan); }
+  td .chip { display: inline-block; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 1px 6px; border: 1px solid; margin-bottom: 4px; }
+  .chip.none { color: var(--red); border-color: #6b2a36; }
+  .chip.weak { color: var(--amber); border-color: #6b4a22; }
+  .chip.ok { color: var(--green); border-color: #245a3c; }
+  td small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sw { display: grid; gap: 3px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); letter-spacing: 0.04em; }
+  .sw i { width: 56px; height: 26px; display: block; border: 1px solid var(--line); }
+
+  .tech { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .tech > div { border-top: 1px solid var(--line-2); padding-top: 12px; display: grid; gap: 6px; align-content: start; }
+  .tech p { font-size: 14px; color: var(--text); }
+  code { font-family: var(--mono); font-size: 13.5px; color: var(--cyan); }
+
+  @media (max-width: 640px) {
+    body { font-size: 14px; }
+    .hud { font-size: 11px; }
+    .hud .anim { font-size: 12px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Moonsec · player mech redesign · rig mockup</div>
+    <h1>A mech that plants its feet and tracks the cursor</h1>
+    <p>Both concepts below are built from separate pixel-art parts on a runtime skeleton: IK legs that step on the ground, guns that follow the mouse with weight, spring-driven recoil and jump jets. Everything is drawn on a native-resolution pixel grid, the same way it would run in Phaser.</p>
+  </header>
+
+  <div class="stage-shell">
+    <div class="toolbar" role="group" aria-label="Mockup controls">
+      <div class="seg" role="group" aria-label="Concept">
+        <button id="c-harrow" aria-pressed="true">Harrow · biped</button>
+        <button id="c-bastion" aria-pressed="false">Bastion · quad</button>
+      </div>
+      <button class="btn primary" id="demo">Play demo reel</button>
+      <label for="aimfeel">Aim feel
+        <select id="aimfeel">
+          <option value="weighted" selected>Weighted</option>
+          <option value="snappy">Snappy</option>
+          <option value="instant">Instant</option>
+        </select>
+      </label>
+      <label for="zoom">View
+        <select id="zoom">
+          <option value="140" selected>Close-up</option>
+          <option value="200">Mid</option>
+          <option value="game">In-game scale (2×)</option>
+        </select>
+      </label>
+      <label for="knee">Knees
+        <select id="knee">
+          <option value="reverse" selected>Reverse joint</option>
+          <option value="forward">Forward joint</option>
+        </select>
+      </label>
+      <div class="seg" role="group" aria-label="Debug">
+        <button id="slow" aria-pressed="false">Slow-mo</button>
+        <button id="bones" aria-pressed="false">Bones</button>
+      </div>
+    </div>
+
+    <div class="stage" id="stage" tabindex="0" aria-label="Mech stage. Click to take control; keyboard and mouse pilot the mech.">
+      <canvas id="cv" width="249" height="140"></canvas>
+      <div class="hud">
+        <div class="tl"><span class="muted">Animation</span><span class="anim" id="animLabel">idle</span><span class="muted" id="aimLabel">aim 0°</span></div>
+        <div class="tr"><span id="mechName">HARROW · MS-2</span><div class="pips" id="pips"></div><div class="fuel"><b id="fuelBar" style="width:100%"></b></div></div>
+        <div class="caption" id="caption" hidden></div>
+        <div class="focus-hint" id="focusHint">Click the stage to pilot · or play the demo reel</div>
+      </div>
+    </div>
+
+    <div class="dock" id="dock" aria-label="Actions">
+      <button class="card" data-act="walk"><span class="k">A / D</span><span class="n">Walk</span><span class="d">IK footfalls, hip bob, backpedal while aiming</span></button>
+      <button class="card" data-act="dash"><span class="k">Shift</span><span class="n">Surge dash</span><span class="d">Lean, skate, jets, afterimages</span></button>
+      <button class="card" data-act="jump"><span class="k">Space</span><span class="n">Jump jets</span><span class="d">Crouch, launch, hold to thrust</span></button>
+      <button class="card amber" data-act="lmb"><span class="k">LMB</span><span class="n">Cannon</span><span class="d">Barrel recoil, arm kick, shell eject</span></button>
+      <button class="card" data-act="rmb"><span class="k">RMB</span><span class="n">Gatling</span><span class="d">Hold: spin-up, heat glow, spin-down</span></button>
+      <button class="card amber" data-act="e"><span class="k">E</span><span class="n">Missile pod</span><span class="d">Hatch opens, launch, homes on drone</span></button>
+      <button class="card green new" data-act="q"><span class="k">Q</span><span class="n">Nanite repair</span><span class="d">Kneel, panels open, swarm, scanline</span></button>
+      <button class="card new" data-act="f"><span class="k">Hold F</span><span class="n">Relay uplink</span><span class="d">Antenna raises, data beam to relay</span></button>
+      <button class="card red" data-act="hit"><span class="k">T</span><span class="n">Take hit</span><span class="d">Flash, knockback, sparks, chips</span></button>
+      <button class="card" data-act="emp"><span class="k">Y</span><span class="n">EMP stun</span><span class="d">Lights out, arcs, sag, reboot</span></button>
+      <button class="card red" data-act="kill"><span class="k">K</span><span class="n">Destroyed</span><span class="d">Buckle, cook-off, smoking wreck</span></button>
+      <button class="card new" data-act="reset"><span class="k">R</span><span class="n">Drop-in</span><span class="d">Respawn on jets, landing slam</span></button>
+      <button class="card green new" data-act="upgrade"><span class="k">U</span><span class="n">Upgrade pulse</span><span class="d">Pickup / field upgrade flourish</span></button>
+    </div>
+  </div>
+
+  <section aria-labelledby="concepts-h">
+    <div class="eyebrow">Two directions</div>
+    <h2 id="concepts-h">Pick a chassis</h2>
+    <div class="concepts">
+      <article class="concept pick">
+        <span class="tag">Recommended · Concept A</span>
+        <h3>HARROW — reverse-joint biped</h3>
+        <p class="muted">BattleTech-style assault walker: a forward cockpit nose, shoulder missile box, a heavy cannon on the near arm and a gatling on the far arm. Jump jets on the back and both calves.</p>
+        <ul>
+          <li>Two independent gun arms, both track the cursor inside a firing arc</li>
+          <li>Reverse knees read as "mech" instantly and keep the silhouette apart from the round drones</li>
+          <li>Jump jets have three nozzles, so thrust reads clearly from any pose</li>
+        </ul>
+        <dl>
+          <dt>Parts</dt><dd>11 sprites (torso, 2 arms, 2 barrel sets, pod, lid, plate, thigh, shin, foot)</dd>
+          <dt>Size</dt><dd>~52 px tall native, 2× in game (~104 px)</dd>
+          <dt>Anim cost</dt><dd>Medium: two legs, so balance and footing read more obviously</dd>
+        </dl>
+      </article>
+      <article class="concept">
+        <span class="tag">Concept B</span>
+        <h3>BASTION — quad walker tank</h3>
+        <p class="muted">A low armoured hull on four spider legs, a domed turret with a long cannon, a chin gatling and a rear launcher. The jets are belly vents for thruster hops.</p>
+        <ul>
+          <li>The turret gives the clearest aim read: one big barrel following the mouse</li>
+          <li>Four legs are more forgiving because a trot gait always keeps two feet planted</li>
+          <li>Wider and lower, which suits the tank fantasy but hides more of the floor</li>
+        </ul>
+        <dl>
+          <dt>Parts</dt><dd>10 sprites (hull, dome, mantlet, barrel, chin gun, barrels, pod, lid, plate, leg ×3)</dd>
+          <dt>Size</dt><dd>~34 px tall × 46 px wide native</dd>
+          <dt>Anim cost</dt><dd>Lower: the same rig code, and less hand-tuning of balance</dd>
+        </dl>
+      </article>
+    </div>
+    <div class="swatches" aria-label="Mech palette">
+      <div class="sw"><i style="background:#0e1019"></i>outline</div>
+      <div class="sw"><i style="background:#1b1e2c"></i>deep</div>
+      <div class="sw"><i style="background:#282c3f"></i>shadow</div>
+      <div class="sw"><i style="background:#3b4159"></i>hull</div>
+      <div class="sw"><i style="background:#57607d"></i>light</div>
+      <div class="sw"><i style="background:#8690b0"></i>edge</div>
+      <div class="sw"><i style="background:#c3cbe2"></i>spec</div>
+      <div class="sw"><i style="background:#6de3ff"></i>sensor</div>
+      <div class="sw"><i style="background:#ffb347"></i>hazard</div>
+      <div class="sw"><i style="background:#66ff99"></i>nanite</div>
+    </div>
+    <p class="muted">The hull uses the tileset's slate ramp with its top-lit bevels, and a 1 px outline one step darker than the shadow instead of black. Cyan marks the player (visor, sensor lights, HUD); red is left to hostiles. Amber appears only on hazard trim and ordnance.</p>
+  </section>
+
+  <section aria-labelledby="anim-h">
+    <div class="eyebrow">Animation catalog</div>
+    <h2 id="anim-h">Every action, today vs. proposed</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Action</th><th>Today</th><th>Proposed animation</th><th>Beats &amp; timing</th><th>FX / audio hooks</th></tr></thead>
+        <tbody>
+          <tr><td>Idle</td><td><span class="chip weak">4-frame loop</span><small>Near-identical frames</small></td><td>Hip breathing ±1 px, visor glint travels, guns hold aim, periodic vent steam</td><td>0.8 Hz breathe; steam every 3–4 s</td><td>Low servo hum loop</td></tr>
+          <tr><td>Walk</td><td><span class="chip weak">7 rigid frames</span><small>Feet slide against ground</small></td><td>Procedural gait: feet plant and never slide, hips drop on each footfall, torso leans into travel</td><td>Stride 18 px, cycle 36 px of travel (biped); trot for quad</td><td>Footfall dust + 0.5 px shake; existing <code>footstep</code> per plant</td></tr>
+          <tr><td>Backpedal</td><td><span class="chip none">None</span><small>Mech always faces movement</small></td><td>Facing follows the cursor, so walking away from it runs the gait in reverse with a backward lean</td><td>Same cycle, reversed phase</td><td>—</td></tr>
+          <tr><td>Aim tracking</td><td><span class="chip none">None</span><small>Bullets leave fixed offsets</small></td><td>Each gun arm rotates toward the cursor inside a firing arc; the torso pitches 18% of the aim angle</td><td>Critically damped spring, ω 16, max 9 rad/s</td><td>Muzzle sockets feed bullet spawn points</td></tr>
+          <tr><td>Surge dash</td><td><span class="chip weak">Ghost trail only</span><small><code>dash</code> tag unused</small></td><td>One-frame crouch, hard lean, feet skate apart with sparks, back jet fires horizontally, afterimages from the whole rig</td><td>40 ms wind-up, 300 ms skate, skid stop</td><td>Keep <code>surge</code> SFX and shockwave; add skid scrape</td></tr>
+          <tr><td>Jump / takeoff</td><td><span class="chip weak">2 frames</span></td><td>Anticipation crouch, legs drive the launch, burst from all nozzles</td><td>80 ms crouch → launch</td><td><code>jump</code> + ignition puff</td></tr>
+          <tr><td>Jump jets</td><td><span class="chip weak">Particles only</span><small>Uses jump loop</small></td><td>Legs tuck while rising and reach while falling; flame cores on back and calf nozzles; heat shimmer</td><td>Flame length flickers with thrust</td><td>Existing jetpack loop; orange core, cyan fringe</td></tr>
+          <tr><td>Fuel out</td><td><span class="chip none">None</span></td><td>Jets sputter: intermittent puffs, smoke, legs flail slightly</td><td>3–4 sputters over 400 ms</td><td>Cough/choke SFX</td></tr>
+          <tr><td>Landing</td><td><span class="chip weak">Shake only</span><small><code>jump_land</code> unused</small></td><td>Hip spring compresses in proportion to fall speed; a heavy landing drops to a kneel with a dust ring</td><td>Spring k 260; heavy if fall &gt; 200 px/s native</td><td>Existing landing-soft / heavy / slam</td></tr>
+          <tr><td>Cannon (LMB)</td><td><span class="chip none">None</span><small>Muzzle flash only</small></td><td>Barrel slides back 4 px, arm kicks up, torso rocks back, shell ejects and bounces</td><td>Recoil returns in ~180 ms</td><td>Existing hit-stop + shake</td></tr>
+          <tr><td>Gatling (RMB)</td><td><span class="chip none">None</span></td><td>Barrels spin up before firing, muzzle flicker, tips glow with heat, spin down on release</td><td>~250 ms spin-up; heat builds over 3 s</td><td>Spin whine layer under <code>rapid</code></td></tr>
+          <tr><td>Homing missile</td><td><span class="chip none">None</span></td><td>Pod hatch flips open, missile pops up then homes, hatch closes; pod LEDs count reload</td><td>Open 120 ms, launch at 150 ms, close at 700 ms</td><td>Backblast puff; hatch clunk</td></tr>
+          <tr><td>Nanite repair</td><td><span class="chip none">Particles only</span></td><td>Braces into a kneel, armour plate opens on glowing internals, a nanite swarm orbits, weld sparks, a green scanline sweeps the hull, then a sealing pulse</td><td>4 s channel; plate 200 ms; scan every 1.2 s</td><td>Existing <code>nanite-heal</code> / <code>nanite-tick</code></td></tr>
+          <tr><td>Relay uplink</td><td><span class="chip none">None</span></td><td>Plants its feet, raises an antenna mast from the pod, pulses a data beam into the relay, confirm burst on completion</td><td>Mast 250 ms; hold for the channel</td><td>Data chirps; confirm tone</td></tr>
+          <tr><td>Hurt</td><td><span class="chip weak">Tint + 2 frames</span></td><td>1-frame white flash, torso snaps away from the hit, armour chips and sparks, stagger step</td><td>60 ms flash, 150 ms red</td><td>Existing <code>hurt</code></td></tr>
+          <tr><td>Damage states</td><td><span class="chip none">None</span></td><td>At 2 armour: smoke from the back. At 1: sparks, visor flicker, heavier idle</td><td>Continuous</td><td>Crackle loop at critical</td></tr>
+          <tr><td>EMP stun</td><td><span class="chip weak">Reuses death</span></td><td>Lights die, guns droop, hips sag, arcs crawl over the parts, then a reboot flicker and guns snap back up</td><td>Stun duration + 500 ms reboot</td><td>Existing deep crackle; reboot chirp</td></tr>
+          <tr><td>Death</td><td><span class="chip weak">6 frames</span></td><td>Legs buckle, torso slumps, internal cook-off explosions, then a darkened smoking wreck stays on the field</td><td>1.2 s sequence, wreck persists</td><td>Existing <code>death</code> + <code>explosion</code></td></tr>
+          <tr><td>Drop-in</td><td><span class="chip none">None</span></td><td>Mission start / respawn: descends on jets, landing slam, systems-online visor sweep</td><td>~1 s</td><td>Slam + UI confirm</td></tr>
+          <tr><td>Upgrade</td><td><span class="chip weak"><code>power_up</code> unused</span></td><td>Outline pulse and a pod LED sweep when a pickup or field upgrade lands</td><td>400 ms</td><td>Existing <code>pickup</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="tech-h">
+    <div class="eyebrow">How it would ship</div>
+    <h2 id="tech-h">Rig, not sprite sheet</h2>
+    <div class="tech">
+      <div><h3>Parts authored in Aseprite</h3><p>One <code>.aseprite</code> file per mech: one layer per part, one slice per pivot and socket (hip, knee, muzzle, nozzle). The CLI exports an atlas plus JSON, and the rig reads its pivots from the slices, so art changes need no code edits.</p></div>
+      <div><h3>Solved at runtime</h3><p>A <code>MechRig</code> owns the parts. A gait controller places the feet, two-bone IK solves the knees, aim trackers turn the guns, and springs handle recoil, landing and hits. Each action is a small state blend rather than a frame range.</p></div>
+      <div><h3>One pixel grid</h3><p>The rig renders into a native-resolution texture that is then drawn at 2×. Rotated parts snap to the same pixel grid as the rest of the game, with no mixed pixel sizes.</p></div>
+      <div><h3>Sockets drive gameplay</h3><p>Bullets, missiles and jet emitters spawn from the rig's live sockets instead of hard-coded offsets like <code>y - 78</code>, so shots come out of the barrel you can see.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+'use strict';
+const GROUND_SRC = 'data:image/png;base64,__GROUND__';
+const VIPER_SRC = 'data:image/png;base64,__VIPER__';
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ───────────────────────── palette ─────────────────────────
+const BASE = { o:'#0e1019', d0:'#1b1e2c', d1:'#282c3f', m:'#3b4159', l:'#57607d', h:'#8690b0', w:'#c3cbe2',
+  c:'#6de3ff', c2:'#dffaff', cd:'#2a7fa3', a:'#ffb347', ad:'#9a5f22', g:'#66ff99' };
+function palette(far, dark) {
+  const p = { ...BASE };
+  if (far) Object.assign(p, { w:BASE.h, h:BASE.l, l:BASE.m, m:BASE.d1, d1:BASE.d0, d0:'#141722', a:BASE.ad, c:BASE.cd, c2:BASE.c, cd:'#1d4a63' });
+  if (dark) Object.assign(p, { c:'#1f3342', c2:'#2b4658', cd:'#18262f' });
+  return p;
+}
+const PALS = { n: palette(false,false), f: palette(true,false), nd: palette(false,true), fd: palette(true,true) };
+
+// ───────────────────────── part builder ─────────────────────────
+function makePart(w, h, px, py, draw) {
+  const part = { w, h, px, py };
+  for (const key of Object.keys(PALS)) {
+    const pal = PALS[key];
+    const cv = document.createElement('canvas');
+    cv.width = w + 2; cv.height = h + 2;
+    const g = cv.getContext('2d');
+    const col = (k) => pal[k] || k;
+    const R = (x, y, ww, hh, k) => { g.fillStyle = col(k); g.fillRect(x + 1, y + 1, ww, hh); };
+    const P = (pts, k) => {
+      g.fillStyle = col(k);
+      let minY = Infinity, maxY = -Infinity;
+      for (const [, y] of pts) { minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+      for (let y = Math.floor(minY); y < Math.ceil(maxY); y++) {
+        const yc = y + 0.5, xs = [];
+        for (let i = 0; i < pts.length; i++) {
+          const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+          if ((y1 <= yc && y2 > yc) || (y2 <= yc && y1 > yc)) xs.push(x1 + (yc - y1) * (x2 - x1) / (y2 - y1));
+        }
+        xs.sort((a, b) => a - b);
+        for (let i = 0; i + 1 < xs.length; i += 2) {
+          const a = Math.ceil(xs[i] - 0.5), b = Math.floor(xs[i + 1] - 0.5);
+          if (b >= a) g.fillRect(a + 1, y + 1, b - a + 1, 1);
+        }
+      }
+    };
+    const D = (cx, cy, r, k) => {
+      g.fillStyle = col(k);
+      for (let y = Math.floor(cy - r); y <= Math.ceil(cy + r); y++)
+        for (let x = Math.floor(cx - r); x <= Math.ceil(cx + r); x++)
+          if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r + 0.3) g.fillRect(x + 1, y + 1, 1, 1);
+    };
+    draw({ R, P, D, px: (x, y, k) => R(x, y, 1, 1, k) });
+    // 1 px outline, one step darker than the shadow ramp
+    const img = g.getImageData(0, 0, cv.width, cv.height), d = img.data, W = cv.width, H = cv.height;
+    const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] > 0;
+    const out = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+      if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) out.push([x, y]);
+    g.fillStyle = pal.o;
+    for (const [x, y] of out) g.fillRect(x, y, 1, 1);
+    part[key] = cv;
+  }
+  return part;
+}
+
+// ───────────────────────── HARROW parts ─────────────────────────
+const H = {};
+H.torso = makePart(36, 23, 16, 21, d => {
+  d.R(3, 6, 11, 13, 'd1'); d.R(3, 6, 11, 1, 'm'); d.R(4, 8, 1, 9, 'd0');
+  d.R(6, 9, 6, 1, 'd0'); d.R(6, 11, 6, 1, 'd0'); d.R(6, 13, 6, 1, 'd0');
+  d.R(0, 13, 3, 5, 'd0'); d.R(1, 14, 2, 3, 'o'); d.R(3, 12, 2, 7, 'm');
+  d.P([[9,4],[25,4],[29,8],[29,19],[24,21],[11,21],[8,17]], 'm');
+  d.R(10, 4, 15, 2, 'l'); d.R(11, 4, 13, 1, 'h');
+  d.R(9, 17, 16, 1, 'd1'); d.R(12, 19, 12, 2, 'd1');
+  d.R(18, 6, 1, 11, 'd1'); d.R(19, 6, 1, 11, 'l');
+  d.R(21, 14, 4, 1, 'a'); d.R(21, 16, 4, 1, 'ad');
+  d.P([[25,5],[33,8],[35,11],[34,14],[30,18],[25,18]], 'l');
+  d.R(25, 5, 6, 1, 'h'); d.P([[25,15],[33,15],[30,18],[25,18]], 'm');
+  d.P([[26,7],[33,8.5],[34.5,12],[26,12]], 'c'); d.R(27, 8, 3, 1, 'c2'); d.R(27, 12, 7, 1, 'cd');
+  d.px(32, 16, 'c');
+});
+H.thigh = makePart(19, 10, 4, 5, d => {
+  d.P([[0,1],[13,2],[18,3.5],[18,6.5],[13,8],[0,9]], 'm');
+  d.R(2, 2, 11, 2, 'l'); d.R(3, 2, 9, 1, 'h'); d.R(2, 7, 11, 1, 'd1'); d.R(14, 4, 3, 2, 'd1');
+  d.D(4, 5, 3.4, 'l'); d.D(4, 5, 1.5, 'h'); d.px(4, 5, 'd1');
+});
+H.shin = makePart(23, 8, 2, 4, d => {
+  d.D(2, 4, 3, 'm'); d.R(2, 1, 16, 6, 'm'); d.R(2, 1, 16, 1, 'l');
+  d.R(4, 3, 11, 1, 'h'); d.R(2, 6, 16, 1, 'd1'); d.R(17, 2, 4, 4, 'd1');
+  d.D(19, 4, 2.2, 'l'); d.R(7, 6, 5, 2, 'd0'); d.R(8, 7, 3, 1, 'o');
+});
+H.foot = makePart(15, 6, 6, 1, d => {
+  d.P([[2,0],[10,0],[14,3],[14,5],[0,5],[0,2]], 'm');
+  d.R(3, 1, 7, 1, 'l'); d.R(0, 4, 15, 1, 'd1'); d.R(11, 4, 3, 1, 'd0'); d.D(6, 1, 1.8, 'l');
+});
+H.cannon = makePart(25, 11, 4, 5, d => {
+  d.R(8, 2, 15, 7, 'm'); d.R(8, 2, 15, 1, 'l'); d.R(8, 8, 15, 1, 'd1');
+  d.R(12, 4, 1, 3, 'd0'); d.R(14, 4, 1, 3, 'd0'); d.R(16, 4, 1, 3, 'd0'); d.px(21, 4, 'c');
+  d.P([[0,0],[8,0],[10,3],[9,10],[1,10],[0,7]], 'l');
+  d.R(1, 1, 7, 1, 'h'); d.R(2, 4, 6, 1, 'a'); d.R(2, 6, 6, 1, 'ad'); d.R(1, 9, 8, 1, 'm');
+});
+H.barrel = makePart(24, 5, 0, 2, d => {
+  d.R(0, 1, 20, 3, 'd1'); d.R(0, 1, 20, 1, 'l'); d.R(19, 0, 4, 5, 'm'); d.R(19, 0, 4, 1, 'h');
+  d.R(6, 2, 1, 1, 'd0'); d.R(12, 2, 1, 1, 'd0'); d.px(22, 2, 'o');
+});
+H.gatling = makePart(20, 11, 4, 5, d => {
+  d.R(8, 2, 11, 7, 'l'); d.R(8, 2, 11, 1, 'h'); d.R(8, 8, 11, 1, 'd1'); d.R(10, 4, 6, 1, 'm');
+  d.R(0, 1, 9, 9, 'm'); d.R(0, 1, 9, 1, 'l'); d.R(2, 9, 5, 2, 'd1');
+});
+const makeBarrels = (len, a, b, c) => makePart(len, 7, 0, 3, d => {
+  d.R(0, 1, len - 1, 1, a); d.R(0, 3, len - 1, 1, b); d.R(0, 5, len - 1, 1, c);
+  d.R(0, 2, len - 1, 1, 'd0'); d.R(0, 4, len - 1, 1, 'd0');
+  d.R(Math.floor(len * 0.4), 0, 2, 7, 'm'); d.R(len - 3, 0, 2, 7, 'm');
+});
+H.barrelsA = makeBarrels(15, 'l', 'm', 'd1');
+H.barrelsB = makeBarrels(15, 'm', 'l', 'm');
+H.pod = makePart(14, 9, 0, 8, d => {
+  d.R(0, 1, 13, 8, 'm'); d.R(0, 1, 13, 1, 'l'); d.R(0, 8, 13, 1, 'd1');
+  d.R(2, 0, 2, 1, 'a'); d.R(6, 0, 2, 1, 'a'); d.R(10, 0, 2, 1, 'a'); d.R(1, 6, 11, 1, 'd1');
+});
+H.lid = makePart(14, 3, 0, 2, d => { d.R(0, 0, 14, 3, 'l'); d.R(0, 0, 14, 1, 'h'); d.R(0, 2, 14, 1, 'm'); d.R(11, 1, 2, 1, 'a'); });
+H.plate = makePart(8, 7, 0, 0, d => { d.R(0, 0, 8, 7, 'l'); d.R(0, 0, 8, 1, 'h'); d.R(0, 6, 8, 1, 'm'); d.px(2, 3, 'd1'); d.px(5, 3, 'd1'); });
+
+// ───────────────────────── BASTION parts ─────────────────────────
+const B = {};
+B.hull = makePart(46, 19, 23, 16, d => {
+  d.P([[2,7],[9,2],[35,2],[43,7],[44,12],[40,17],[6,17],[1,12]], 'm');
+  d.R(9, 2, 26, 2, 'l'); d.R(10, 2, 24, 1, 'h');
+  d.P([[35,2],[43,7],[44,9],[35,5]], 'l');
+  d.R(2, 12, 42, 5, 'd1'); d.R(3, 12, 40, 1, 'm');
+  for (let i = 0; i < 7; i++) d.px(6 + i * 6, 14, 'h');
+  for (let x = 9; x < 21; x++) for (let y = 8; y < 10; y++) d.px(x, y, ((x + y) % 4) < 2 ? 'a' : 'd0');
+  d.R(38, 8, 4, 2, 'c'); d.px(39, 8, 'c2');
+  d.R(3, 7, 1, 4, 'd0'); d.R(5, 7, 1, 4, 'd0'); d.R(24, 5, 1, 7, 'd1'); d.R(25, 5, 1, 7, 'l');
+});
+B.dome = makePart(20, 9, 10, 8, d => {
+  d.P([[1,9],[3,3],[8,1],[14,1],[18,4],[19,9]], 'l');
+  d.R(5, 2, 9, 1, 'h'); d.R(1, 7, 19, 2, 'm'); d.R(13, 4, 4, 2, 'c'); d.px(14, 4, 'c2');
+});
+B.mantlet = makePart(11, 8, 3, 4, d => {
+  d.R(0, 0, 10, 8, 'm'); d.R(0, 0, 10, 1, 'l'); d.R(0, 7, 10, 1, 'd1'); d.px(7, 2, 'c'); d.R(2, 3, 1, 3, 'd0');
+});
+B.barrel = makePart(27, 5, 0, 2, d => {
+  d.R(0, 1, 22, 3, 'd1'); d.R(0, 1, 22, 1, 'l'); d.R(22, 0, 4, 5, 'm'); d.R(22, 0, 4, 1, 'h');
+  d.R(7, 2, 1, 1, 'd0'); d.R(14, 2, 1, 1, 'd0'); d.px(25, 2, 'o');
+});
+B.chin = makePart(9, 7, 3, 3, d => { d.R(0, 0, 8, 7, 'l'); d.R(0, 0, 8, 1, 'h'); d.R(0, 6, 8, 1, 'd1'); d.px(2, 3, 'c'); });
+B.barrelsA = makeBarrels(11, 'l', 'm', 'd1');
+B.barrelsB = makeBarrels(11, 'm', 'l', 'm');
+B.thigh = makePart(22, 7, 3, 3, d => {
+  d.P([[0,0],[16,1],[21,2.5],[21,4.5],[16,6],[0,7]], 'm');
+  d.R(1, 1, 15, 1, 'l'); d.R(1, 5, 15, 1, 'd1'); d.R(17, 3, 3, 1, 'd1'); d.D(3, 3, 3, 'l'); d.D(3, 3, 1.4, 'h');
+});
+B.shin = makePart(24, 6, 2, 3, d => {
+  d.P([[0,0],[17,1],[23,3],[17,5],[0,6]], 'm');
+  d.R(1, 0, 15, 1, 'l'); d.R(1, 5, 15, 1, 'd1'); d.D(2, 3, 2.5, 'l'); d.R(4, 2, 10, 1, 'h');
+});
+B.foot = makePart(8, 4, 4, 1, d => { d.P([[1,0],[7,0],[8,3],[0,3]], 'd1'); d.R(1, 0, 6, 1, 'm'); });
+B.pod = makePart(13, 8, 0, 7, d => {
+  d.R(0, 1, 12, 7, 'm'); d.R(0, 1, 12, 1, 'l'); d.R(0, 7, 12, 1, 'd1');
+  d.R(2, 0, 2, 1, 'a'); d.R(6, 0, 2, 1, 'a'); d.R(1, 5, 10, 1, 'd1');
+});
+B.lid = makePart(13, 3, 0, 2, d => { d.R(0, 0, 13, 3, 'l'); d.R(0, 0, 13, 1, 'h'); d.R(0, 2, 13, 1, 'm'); });
+B.plate = makePart(9, 5, 0, 0, d => { d.R(0, 0, 9, 5, 'l'); d.R(0, 0, 9, 1, 'h'); d.R(0, 4, 9, 1, 'm'); d.px(4, 2, 'd1'); });
+
+// ───────────────────────── math helpers ─────────────────────────
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const approach = (v, t, r) => v < t ? Math.min(t, v + r) : Math.max(t, v - r);
+const frac = (v) => v - Math.floor(v);
+const smooth = (t) => t * t * (3 - 2 * t);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+
+function spring(k, c) { return { x: 0, v: 0, k, c }; }
+function stepSpring(s, dt) { s.v += (-s.k * s.x - s.c * s.v) * dt; s.x += s.v * dt; }
+
+// place a part: pivot at (x,y), rotated a; sockets are part-local pixel coords
+function pl(part, x, y, a, v = 'n', extra) { return { part, x, y, a, v, ...extra }; }
+function sock(p, sx, sy) {
+  const dx = sx - p.part.px, dy = sy - p.part.py, c = Math.cos(p.a), s = Math.sin(p.a);
+  return [p.x + dx * c - dy * s, p.y + dx * s + dy * c];
+}
+function ik(hx, hy, tx, ty, L1, L2, bend) {
+  let dx = tx - hx, dy = ty - hy, d = Math.hypot(dx, dy);
+  const maxd = L1 + L2 - 0.05;
+  if (d > maxd) { dx *= maxd / d; dy *= maxd / d; d = maxd; }
+  d = Math.max(d, Math.abs(L1 - L2) + 0.5);
+  const base = Math.atan2(dy, dx);
+  const a1 = Math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1));
+  const ta = base + bend * a1;
+  const kx = hx + Math.cos(ta) * L1, ky = hy + Math.sin(ta) * L1;
+  return { ta, sa: Math.atan2(hy + dy - ky, hx + dx - kx), kx, ky, ax: hx + dx, ay: hy + dy };
+}
+
+// ───────────────────────── concepts ─────────────────────────
+const CONCEPTS = {
+  harrow: {
+    name: 'HARROW · MS-2', parts: H, hipH: 30, cycle: 36, lift: 6, bob: 2,
+    aimMain: [-1.35, 1.05], aimRapid: [-1.3, 1.1],
+    legs: [ { key: 'far', rest: -3, off: 0.5, L1: 15, L2: 17, far: true }, { key: 'near', rest: 3, off: 0, L1: 15, L2: 17, far: false } ],
+    crouch: { repair: 9, relay: 3, emp: 7, dead: 17, jump: 5, heavy: 9 },
+  },
+  bastion: {
+    name: 'BASTION · QT-4', parts: B, hipH: 15, cycle: 28, lift: 4, bob: 1,
+    aimMain: [-1.45, 0.45], aimRapid: [-0.7, 1.2],
+    legs: [
+      { key: 'farBack', rest: -24, off: 0, L1: 18, L2: 20, far: true, front: false },
+      { key: 'farFront', rest: 24, off: 0.5, L1: 18, L2: 20, far: true, front: true },
+      { key: 'nearBack', rest: -26, off: 0.5, L1: 18, L2: 20, far: false, front: false },
+      { key: 'nearFront', rest: 26, off: 0, L1: 18, L2: 20, far: false, front: true },
+    ],
+    crouch: { repair: 9, relay: 2, emp: 6, dead: 12, jump: 5, heavy: 7 },
+  },
+};
+
+// ───────────────────────── world ─────────────────────────
+const WORLD = { minX: 24, maxX: 640, relayX: 72, droneX: 470, plat: { x0: 352, x1: 432, y: -40 } };
+const GRAV = 300, JUMP_V = -255, JET_A = -460, WALK = 66, DASH_V = 400, DASH_T = 0.3, FUEL = 1.1;
+
+let concept = CONCEPTS.harrow;
+let kneeBend = 1; // +1 reverse joint (knee back), -1 forward
+const M = {};
+function resetMech(dropIn) {
+  Object.assign(M, {
+    x: 150, y: dropIn ? -170 : 0, vx: 0, vy: 0, grounded: !dropIn, facing: 1,
+    hp: 5, maxHp: 5, fuel: FUEL, state: dropIn ? 'spawn' : 'normal', stateT: 0,
+    dist: 0, gaitW: 0, airW: dropIn ? 1 : 0, crouch: 0, feet: null, prevLift: [],
+    hipS: spring(260, 16), leanS: spring(120, 12), kickS: spring(220, 18), recoilS: spring(300, 22), recoil2S: spring(500, 30), bodyXS: spring(140, 14),
+    aimA: { a: -0.1, v: 0 }, aimB: { a: -0.1, v: 0 },
+    dashT: 0, dashDir: 1, dashCd: 0, anticip: 0, jumpHeld: false, landT: 0, heavyLand: false,
+    cannonCd: 0, spin: 0, spinPhase: 0, rapidCd: 0, heat: 0, missileCd: 0, hatch: 0, hatchT: -1,
+    repairT: 0, repairFrom: 0, plateOpen: 0, relayP: 0, antenna: 0, empT: 0, deathT: 0, booms: 0,
+    flash: 0, tint: 0, glow: 0, glowCol: '#66ff99', idleT: 0, ventT: 2, smokeT: 0, sputter: 0, lightsOff: false,
+    ghostT: 0, launchBurst: 0, lastPose: null,
+  });
+}
+resetMech(true);
+
+const drone = { x: WORLD.droneX, y: -74, t: 0, hp: 8, alive: true, flash: 0, respawn: 0 };
+const relay = { x: WORLD.relayX, done: 0, pulse: 0 };
+const parts = [];    // particles
+const shots = [];    // projectiles
+const ghosts = [];
+const arcs = [];
+let shake = 0, camX = 0, camY = 0, time = 0, bare = false;
+
+// ───────────────────────── canvas ─────────────────────────
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const rigCv = document.createElement('canvas'), rig = rigCv.getContext('2d');
+const tintCv = document.createElement('canvas'), tint = tintCv.getContext('2d');
+let VW = 249, VH = 140, GY = 114;
+const stageEl = document.getElementById('stage');
+let zoomMode = '140';
+function resize() {
+  const r = stageEl.getBoundingClientRect();
+  const cssW = Math.max(300, r.width), cssH = Math.round(cssW * 9 / 16);
+  VH = zoomMode === 'game' ? Math.round(cssH / 2) : parseInt(zoomMode, 10);
+  VW = Math.round(VH * cssW / cssH);
+  for (const c of [cv, rigCv, tintCv]) { c.width = VW; c.height = VH; }
+  for (const c of [ctx, rig, tint]) c.imageSmoothingEnabled = false;
+  GY = VH - 26;
+  camY = Math.max(GY, camY);
+}
+new ResizeObserver(resize).observe(stageEl);
+resize();
+
+const groundImg = new Image(); groundImg.src = GROUND_SRC;
+const viperImg = new Image(); viperImg.src = VIPER_SRC;
+let viperWhite = null;
+viperImg.onload = () => {
+  viperWhite = document.createElement('canvas'); viperWhite.width = 34; viperWhite.height = 24;
+  const g = viperWhite.getContext('2d'); g.drawImage(viperImg, 0, 0, 34, 24, 0, 0, 34, 24);
+  g.globalCompositeOperation = 'source-atop'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, 34, 24);
+};
+
+// stars / backdrop
+const stars = Array.from({ length: 140 }, () => ({ x: Math.random() * 1400, y: Math.random() * 360 - 300, b: Math.random() }));
+
+// ───────────────────────── input ─────────────────────────
+const keys = new Set();
+const I = { left: false, right: false, jump: false, dash: false, lmb: false, rmb: false, e: false, q: false, f: false, mx: 480, my: -70, mouseIn: false };
+const pressed = new Set(); // one-shot triggers this frame
+let focused = false;
+const focusHint = document.getElementById('focusHint');
+stageEl.addEventListener('focus', () => { focused = true; focusHint.hidden = true; });
+stageEl.addEventListener('blur', () => { focused = false; keys.clear(); I.lmb = I.rmb = false; if (!demo) focusHint.hidden = false; });
+const KEYMAP = { KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', Space: 'jump', ShiftLeft: 'dash', ShiftRight: 'dash', KeyE: 'e', KeyQ: 'q', KeyF: 'f', KeyT: 'hit', KeyY: 'emp', KeyK: 'kill', KeyR: 'reset', KeyU: 'upgrade' };
+stageEl.addEventListener('keydown', (ev) => {
+  const k = KEYMAP[ev.code]; if (!k) return;
+  ev.preventDefault();
+  if (demo) stopDemo();
+  if (!keys.has(k)) pressed.add(k);
+  keys.add(k);
+});
+stageEl.addEventListener('keyup', (ev) => { const k = KEYMAP[ev.code]; if (k) { keys.delete(k); ev.preventDefault(); } });
+function toWorld(ev) {
+  const r = cv.getBoundingClientRect();
+  return [camX + (ev.clientX - r.left) * VW / r.width, (ev.clientY - r.top) * VH / r.height - camY];
+}
+cv.addEventListener('pointermove', (ev) => { if (demo) return; [I.mx, I.my] = toWorld(ev); I.mouseIn = true; });
+cv.addEventListener('pointerleave', () => { I.mouseIn = false; });
+cv.addEventListener('pointerdown', (ev) => {
+  stageEl.focus();
+  if (demo) stopDemo();
+  [I.mx, I.my] = toWorld(ev); I.mouseIn = true;
+  if (ev.button === 0) { pressed.add('lmb'); I.lmb = true; }
+  if (ev.button === 2) I.rmb = true;
+});
+window.addEventListener('pointerup', (ev) => { if (ev.button === 0) I.lmb = false; if (ev.button === 2) I.rmb = false; });
+cv.addEventListener('contextmenu', (ev) => ev.preventDefault());
+
+// dock buttons
+const HOLD = { walk: 'right', jump: 'jump', rmb: 'rmb', f: 'f' };
+document.querySelectorAll('#dock .card').forEach((btn) => {
+  const act = btn.dataset.act;
+  const down = (ev) => {
+    ev.preventDefault();
+    if (demo) stopDemo();
+    btn.classList.add('hot');
+    if (act === 'walk') { dockHold.add(M.facing > 0 ? 'right' : 'left'); return; }
+    if (HOLD[act]) dockHold.add(HOLD[act]);
+    if (act === 'lmb') pressed.add('lmb');
+    if (act === 'jump') pressed.add('jump');
+    if (['dash', 'e', 'q', 'hit', 'emp', 'kill', 'reset', 'upgrade'].includes(act)) pressed.add(act);
+    if (act === 'dash') M.dashDir = M.facing;
+  };
+  const up = () => { btn.classList.remove('hot'); dockHold.clear(); };
+  btn.addEventListener('pointerdown', down);
+  btn.addEventListener('pointerup', up);
+  btn.addEventListener('pointerleave', up);
+  btn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') down(ev); });
+  btn.addEventListener('keyup', up);
+});
+const dockHold = new Set();
+
+// toolbar
+const setPressed = (el, on) => el.setAttribute('aria-pressed', on ? 'true' : 'false');
+const cH = document.getElementById('c-harrow'), cB = document.getElementById('c-bastion');
+function setConcept(id) {
+  concept = CONCEPTS[id]; M.feet = null;
+  setPressed(cH, id === 'harrow'); setPressed(cB, id === 'bastion');
+  document.getElementById('knee').disabled = id !== 'harrow';
+  document.getElementById('mechName').textContent = concept.name;
+}
+cH.addEventListener('click', () => setConcept('harrow'));
+cB.addEventListener('click', () => setConcept('bastion'));
+let aimFeel = 'weighted', slow = false, showBones = false;
+document.getElementById('aimfeel').addEventListener('change', (e) => { aimFeel = e.target.value; });
+document.getElementById('zoom').addEventListener('change', (e) => { zoomMode = e.target.value; resize(); });
+document.getElementById('knee').addEventListener('change', (e) => { kneeBend = e.target.value === 'reverse' ? 1 : -1; });
+const slowBtn = document.getElementById('slow'), bonesBtn = document.getElementById('bones');
+slowBtn.addEventListener('click', () => { slow = !slow; setPressed(slowBtn, slow); });
+bonesBtn.addEventListener('click', () => { showBones = !showBones; setPressed(bonesBtn, showBones); });
+
+// ───────────────────────── demo reel ─────────────────────────
+const captionEl = document.getElementById('caption');
+const demoBtn = document.getElementById('demo');
+let demo = null;
+const DEMO = [
+  { d: 2.2, c: 'Drop-in: descends on jets, landing slam', start: () => { resetMech(true); M.x = 150; }, aim: () => [M.x + 60, M.y - 40] },
+  { d: 2.6, c: 'Idle: breathing, vents, guns track the cursor', aim: (t) => [M.x + Math.cos(t * 2.2) * 70, M.y - 36 + Math.sin(t * 2.2) * 34] },
+  { d: 2.4, c: 'Walk: feet plant, hips drop on every footfall', hold: ['right'], aim: () => [drone.x, drone.y] },
+  { d: 2.2, c: 'Backpedal: facing stays on the target', hold: ['left'], aim: () => [drone.x, drone.y] },
+  { d: 1.4, c: 'Turn: facing follows the cursor', aim: (t) => t < 0.7 ? [M.x - 80, M.y - 30] : [M.x + 80, M.y - 50] },
+  { d: 2.0, c: 'Cannon: barrel recoil, arm kick, shell eject', aim: () => [drone.x, drone.y], tap: [0.1, 0.7, 1.3], tapKey: 'lmb' },
+  { d: 2.4, c: 'Gatling: spin-up, heat, spin-down', hold: ['rmb'], holdUntil: 1.7, aim: (t) => [drone.x, drone.y + Math.sin(t * 3) * 8] },
+  { d: 1.8, c: 'Missile pod: hatch, launch, homing', tap: [0.1], tapKey: 'e', aim: () => [drone.x, drone.y] },
+  { d: 3.0, c: 'Jump jets: crouch, launch, thrust, heavy landing', tap: [0.05], tapKey: 'jump', hold: ['jump'], holdUntil: 1.5, aim: () => [drone.x, drone.y] },
+  { d: 1.4, c: 'Surge dash: lean, skate, afterimages', tap: [0.2], tapKey: 'dash', aim: () => [drone.x, drone.y], start: () => { M.dashDir = -1; } },
+  { d: 1.6, c: 'Hit: flash, knockback, sparks and armour chips', tap: [0.2, 0.9], tapKey: 'hit', aim: () => [drone.x, drone.y] },
+  { d: 4.6, c: 'Nanite repair: kneel, panel opens, swarm and scanline', tap: [0.1], tapKey: 'q', aim: () => [drone.x, drone.y] },
+  { d: 3.2, c: 'Relay uplink: antenna up, data beam into the relay', hold: ['f'], holdUntil: 3.0, start: () => { M.x = WORLD.relayX + 38; relay.done = 0; }, aim: () => [WORLD.relayX - 20, -40] },
+  { d: 3.0, c: 'EMP: lights out, arcs, sag, then reboot', tap: [0.1], tapKey: 'emp', aim: () => [drone.x, drone.y] },
+  { d: 3.6, c: 'Destroyed: legs buckle, cook-off, smoking wreck', tap: [0.1], tapKey: 'kill', aim: () => [drone.x, drone.y] },
+];
+function startDemo() {
+  demo = { i: -1, t: 0, taps: 0 };
+  nextDemoStep();
+  demoBtn.textContent = 'Stop demo';
+  focusHint.hidden = true; captionEl.hidden = false;
+}
+function nextDemoStep() {
+  demo.i++; demo.t = 0; demo.taps = 0;
+  if (demo.i >= DEMO.length) { demo.i = 0; }
+  const s = DEMO[demo.i];
+  if (s.start) s.start();
+  captionEl.textContent = s.c;
+}
+function stopDemo() {
+  demo = null; demoBtn.textContent = 'Play demo reel'; captionEl.hidden = true;
+  for (const k of ['left', 'right', 'jump', 'rmb', 'f']) I[k] = false;
+  if (M.state === 'dead') { resetMech(true); }
+}
+demoBtn.addEventListener('click', () => { if (demo) stopDemo(); else startDemo(); });
+function runDemo(dt) {
+  const s = DEMO[demo.i];
+  demo.t += dt;
+  for (const k of ['left', 'right', 'jump', 'rmb', 'f']) I[k] = false;
+  if (s.hold && demo.t < (s.holdUntil ?? s.d)) for (const k of s.hold) I[k] = true;
+  if (s.tap) while (demo.taps < s.tap.length && demo.t >= s.tap[demo.taps]) { pressed.add(s.tapKey); demo.taps++; }
+  [I.mx, I.my] = s.aim(demo.t);
+  if (demo.t >= s.d) nextDemoStep();
+}
+
+// ───────────────────────── particles ─────────────────────────
+const RAMP = {
+  jet: ['#ffffff', '#ffe9a8', '#ffb347', '#ff7a2a', '#6de3ff', '#2a6fb0'],
+  fire: ['#ffffff', '#fff1b0', '#ffb347', '#ff6a1a', '#a8321a', '#3a2230'],
+  cyan: ['#ffffff', '#dffaff', '#6de3ff', '#2a7fa3', '#173a52'],
+  nano: ['#ffffff', '#c8ffe0', '#66ff99', '#2fc47a', '#1b5e4a'],
+  smoke: ['#8a90a6', '#6b7188', '#4d5268', '#33374a'],
+  dust: ['#9a9cb4', '#787b94', '#565971', '#3b3d52'],
+  spark: ['#ffffff', '#fff1b0', '#ffb347', '#ff7a2a'],
+  chip: ['#8690b0', '#57607d', '#3b4159'],
+  red: ['#ffffff', '#ffb0b8', '#ff5566', '#8a2030'],
+};
+function emit(x, y, o) {
+  if (parts.length > 900) return;
+  const ang = o.ang ?? rnd(0, Math.PI * 2), sp = o.sp ?? 40;
+  const spd = Array.isArray(sp) ? rnd(sp[0], sp[1]) : sp;
+  const life = Array.isArray(o.life) ? rnd(o.life[0], o.life[1]) : (o.life ?? 0.4);
+  parts.push({ x, y, vx: Math.cos(ang) * spd + (o.vx || 0), vy: Math.sin(ang) * spd + (o.vy || 0), t: 0, life,
+    ramp: RAMP[o.ramp || 'fire'], size: o.size || 1, g: o.g || 0, drag: o.drag ?? 1.5, front: !!o.front, fade: !!o.fade, bounce: !!o.bounce, orbit: o.orbit });
+}
+function burst(x, y, n, o) { for (let i = 0; i < n; i++) emit(x, y, { ...o, ang: o.spread ? (o.dir ?? 0) + rnd(-o.spread, o.spread) : undefined }); }
+function floorAt(x, prevY, newY) {
+  const p = WORLD.plat;
+  if (x > p.x0 && x < p.x1 && prevY <= p.y + 0.5 && newY >= p.y) return p.y;
+  return newY >= 0 ? 0 : null;
+}
+
+// ───────────────────────── update ─────────────────────────
+function localToWorld(lx, ly) { return [M.x + lx * M.facing, M.y + ly]; }
+function worldAngle(a) { return M.facing > 0 ? a : Math.PI - a; }
+
+function hurt(dir) {
+  if (M.state === 'dead' || M.state === 'spawn') return;
+  M.flash = 0.06; M.tint = 0.2;
+  M.hp = Math.max(0, M.hp - 1);
+  M.vx = -dir * 110; if (M.grounded) M.vy = -60;
+  M.leanS.v += -dir * M.facing * 5; M.hipS.v += 60; M.kickS.v -= 6; M.bodyXS.v += -dir * M.facing * 40;
+  const [tx, ty] = localToWorld(8, -concept.hipH - 10);
+  burst(tx + dir * 6, ty, 14, { ramp: 'spark', sp: [40, 120], life: [0.12, 0.3], g: 200, front: true, dir: dir > 0 ? Math.PI : 0, spread: 1.2 });
+  burst(tx, ty, 4, { ramp: 'chip', sp: [40, 90], life: [0.6, 1.0], g: 320, size: 2, front: true, bounce: true });
+  burst(tx + dir * 6, ty, 6, { ramp: 'red', sp: [10, 40], life: [0.1, 0.2], front: true });
+  shake = Math.max(shake, 2.2);
+  if (M.state === 'repair') { M.state = 'normal'; M.plateOpen = Math.min(M.plateOpen, 1); }
+  if (M.hp <= 0) kill();
+}
+function kill() {
+  if (M.state === 'dead') return;
+  M.state = 'dead'; M.deathT = 0; M.booms = 0; M.hp = 0; M.dashT = 0;
+}
+function explodeAt(x, y, big) {
+  burst(x, y, big ? 40 : 16, { ramp: 'fire', sp: big ? [30, 160] : [20, 90], life: [0.2, big ? 0.7 : 0.45], front: true, size: big ? 2 : 1, drag: 3 });
+  burst(x, y, big ? 14 : 5, { ramp: 'smoke', sp: [10, 40], life: [0.8, 1.6], fade: true, size: 2, g: -20, drag: 2 });
+  if (big) burst(x, y, 8, { ramp: 'chip', sp: [60, 160], life: [0.8, 1.4], g: 320, size: 2, front: true, bounce: true });
+  shake = Math.max(shake, big ? 5 : 2.5);
+}
+
+function update(dt) {
+  time += dt;
+  if (demo) runDemo(dt);
+  const kb = (k) => keys.has(k) || dockHold.has(k);
+  const left = I.left || kb('left'), right = I.right || kb('right');
+  const jumpHeld = I.jump || kb('jump'), rmb = I.rmb || kb('rmb'), fHeld = I.f || kb('f');
+  if (!I.mouseIn && !demo) { I.mx = drone.alive ? drone.x : M.x + M.facing * 80; I.my = drone.alive ? drone.y : M.y - 40; }
+
+  const alive = M.state !== 'dead';
+  const controllable = M.state === 'normal' || M.state === 'repair' || M.state === 'relay';
+
+  // one-shot actions
+  if (pressed.has('reset')) resetMech(true);
+  if (pressed.has('kill')) kill();
+  if (pressed.has('hit')) hurt(drone.x > M.x ? 1 : -1);
+  if (pressed.has('emp') && alive && M.state !== 'spawn') { M.state = 'emp'; M.stateT = 0; M.empT = 2.2; M.dashT = 0; shake = Math.max(shake, 1.5); }
+  if (pressed.has('upgrade') && alive) { M.glow = 0.5; M.glowCol = '#66ff99'; burst(...localToWorld(0, -concept.hipH), 18, { ramp: 'nano', sp: [20, 60], life: [0.3, 0.6], front: true }); }
+  if (pressed.has('q') && controllable && M.state !== 'repair' && M.hp > 0) {
+    M.state = 'repair'; M.repairT = 0; M.repairFrom = M.hp;
+  }
+
+  // facing follows cursor (hysteresis)
+  if (controllable && M.dashT <= 0) {
+    const dx = I.mx - M.x;
+    if (dx > 6) M.facing = 1; else if (dx < -6) M.facing = -1;
+  }
+
+  // ── movement ──
+  let moveDir = controllable ? (right ? 1 : 0) - (left ? 1 : 0) : 0;
+  if (M.state === 'relay') moveDir = 0;
+  M.dashCd -= dt;
+  if (pressed.has('dash') && controllable && M.dashCd <= 0) {
+    M.dashDir = moveDir || (demo ? M.dashDir : M.facing); M.dashT = DASH_T + 0.04; M.dashCd = DASH_T + 0.6; M.ghostT = 0;
+    M.hipS.v += 40; shake = Math.max(shake, 1);
+  }
+  if (M.dashT > 0) {
+    M.dashT -= dt;
+    const windUp = M.dashT > DASH_T;
+    M.vx = windUp ? M.vx * 0.5 : M.dashDir * DASH_V;
+    if (M.dashT <= 0) { M.vx = M.dashDir * 60; M.hipS.v += 70; M.leanS.v -= M.dashDir * M.facing * 3; burst(M.x + M.dashDir * 8, M.y, 8, { ramp: 'dust', sp: [20, 60], life: [0.3, 0.6], g: -10, size: 2, fade: true }); }
+  } else {
+    const target = moveDir * WALK * (M.state === 'repair' ? 0.55 : 1);
+    const acc = M.grounded ? 520 : 260;
+    M.vx = approach(M.vx, target, acc * dt);
+    if (M.state === 'emp' || M.state === 'dead') M.vx = approach(M.vx, 0, 400 * dt);
+  }
+
+  // jump & jets
+  if (pressed.has('jump') && controllable && M.grounded && M.anticip <= 0 && M.state !== 'relay') { M.anticip = 0.08; if (M.state === 'repair') M.state = 'normal'; }
+  if (M.anticip > 0) {
+    M.anticip -= dt;
+    if (M.anticip <= 0) {
+      M.vy = JUMP_V; M.grounded = false; M.launchBurst = 0.14; M.hipS.v -= 60;
+      burst(M.x, M.y, 10, { ramp: 'dust', sp: [30, 80], life: [0.3, 0.6], g: -10, size: 2, fade: true, dir: -Math.PI / 2, spread: 1.4 });
+    }
+  }
+  const canThrust = controllable && !M.grounded && jumpHeld && M.anticip <= 0;
+  M.thrusting = canThrust && M.fuel > 0;
+  if (M.thrusting) { M.fuel = Math.max(0, M.fuel - dt); M.vy += JET_A * dt; M.vy = Math.max(M.vy, -210); if (M.fuel <= 0) M.sputter = 0.45; }
+  if (M.grounded) M.fuel = Math.min(FUEL, M.fuel + dt * 0.8);
+  if (M.sputter > 0) M.sputter -= dt;
+  if (M.state === 'spawn') { M.vy = Math.min(M.vy + GRAV * dt, 120); M.thrusting = M.y < -30; if (M.thrusting) M.vy = Math.min(M.vy, 95); }
+
+  if (!M.grounded) M.vy += GRAV * dt;
+  const prevY = M.y;
+  M.x = clamp(M.x + M.vx * dt, WORLD.minX, WORLD.maxX);
+  if (!M.grounded) {
+    const ny = M.y + M.vy * dt;
+    const f = M.vy >= 0 ? floorAt(M.x, prevY, ny) : null;
+    if (f !== null) {
+      M.y = f; M.grounded = true;
+      const impact = M.vy; M.vy = 0;
+      M.heavyLand = impact > 200 || M.state === 'spawn';
+      M.hipS.v += Math.min(260, impact * 0.9);
+      M.landT = M.heavyLand ? 0.35 : 0.12;
+      const n = M.heavyLand ? 22 : 8;
+      burst(M.x, M.y - 1, n, { ramp: 'dust', sp: M.heavyLand ? [40, 120] : [20, 60], life: [0.3, 0.8], g: -8, size: 2, fade: true, dir: -Math.PI / 2, spread: 1.5, drag: 3 });
+      shake = Math.max(shake, M.heavyLand ? 3.5 : 0.8);
+      if (M.state === 'spawn') { M.state = 'normal'; M.glow = 0.45; M.glowCol = '#6de3ff'; }
+    } else M.y = ny;
+  } else {
+    // walked off platform?
+    if (M.y < 0) { const p = WORLD.plat; if (M.x <= p.x0 || M.x >= p.x1) { M.grounded = false; M.vy = 0; } }
+  }
+  if (M.landT > 0) M.landT -= dt;
+
+  // ── state machines ──
+  M.stateT += dt;
+  if (M.state === 'repair') {
+    M.repairT += dt;
+    const p = clamp(M.repairT / 4, 0, 1);
+    M.hp = Math.min(M.maxHp, M.repairFrom + p);
+    if (Math.random() < dt * 5) { // weld spark
+      const [wx, wy] = localToWorld(rnd(-10, 14), -concept.hipH + rnd(-14, 4));
+      burst(wx, wy, 6, { ramp: 'nano', sp: [20, 70], life: [0.1, 0.3], front: true });
+    }
+    for (let i = 0; i < 2; i++) {
+      const [cx, cy] = localToWorld(0, -concept.hipH - 4);
+      emit(cx, cy, { ramp: 'nano', life: [0.5, 1.0], front: Math.random() < 0.5, orbit: { cx: M.x, cy, r: rnd(12, 24), a: rnd(0, 6.28), w: rnd(4, 7) * (Math.random() < 0.5 ? -1 : 1), squash: 0.45 } });
+    }
+    if (p >= 1) { M.state = 'normal'; M.glow = 0.5; M.glowCol = '#66ff99'; M.hipS.v -= 50; }
+  }
+  M.plateOpen = approach(M.plateOpen, M.state === 'repair' ? 1 : 0, dt * 5);
+
+  const nearRelay = Math.abs(M.x - relay.x) < 90;
+  if (fHeld && M.grounded && nearRelay && (M.state === 'normal') && relay.done < 1) { M.state = 'relay'; M.relayP = relay.done; }
+  if (M.state === 'relay') {
+    if (!fHeld || !nearRelay) M.state = 'normal';
+    else { relay.done = Math.min(1, relay.done + dt / 2.6); if (relay.done >= 1) { M.state = 'normal'; relay.pulse = 1; burst(relay.x, -44, 30, { ramp: 'cyan', sp: [30, 100], life: [0.3, 0.7], front: true }); shake = Math.max(shake, 1.5); } }
+  }
+  M.antenna = approach(M.antenna, M.state === 'relay' ? 1 : 0, dt * 4);
+  if (relay.pulse > 0) relay.pulse -= dt;
+
+  if (M.state === 'emp') {
+    M.empT -= dt;
+    M.lightsOff = M.empT > 0.5 || (M.empT > 0 && Math.random() < 0.5);
+    if (M.empT > 0.5 && Math.random() < dt * 14) arcs.push({ t: 0.08, seed: Math.random() });
+    if (M.empT <= 0) { M.state = 'normal'; M.lightsOff = false; M.kickS.v -= 8; M.hipS.v -= 40; }
+  } else if (M.state === 'dead') {
+    M.deathT += dt; M.lightsOff = true;
+    const sched = [0.15, 0.45, 0.7, 1.05];
+    while (M.booms < sched.length && M.deathT >= sched[M.booms]) {
+      const big = M.booms === sched.length - 1;
+      const [ex, ey] = localToWorld(rnd(-8, 12), -concept.hipH + rnd(-12, 6) + (big ? 8 : 0));
+      explodeAt(ex, ey, big); M.booms++;
+    }
+    if (M.deathT > 1.1 && Math.random() < dt * 8) emit(...localToWorld(rnd(-6, 6), -14), { ramp: 'smoke', ang: -Math.PI / 2 + rnd(-0.3, 0.3), sp: [10, 25], life: [1.2, 2.2], fade: true, size: 2, g: -6, drag: 0.5 });
+  } else {
+    M.lightsOff = M.hp <= 1 && Math.random() < 0.06;
+  }
+
+  // ── weapons ──
+  const canFire = controllable && M.state !== 'relay';
+  M.cannonCd -= dt; M.missileCd -= dt; M.rapidCd -= dt;
+  const pose = M.lastPose;
+  if (pressed.has('lmb') && canFire && M.cannonCd <= 0 && pose) {
+    M.cannonCd = 0.42;
+    const mz = pose.muzzleMain;
+    const [wx, wy] = localToWorld(mz.x, mz.y), wa = worldAngle(mz.a) + rnd(-0.03, 0.03);
+    shots.push({ type: 'cannon', x: wx, y: wy, vx: Math.cos(wa) * 560, vy: Math.sin(wa) * 560, life: 1.2 });
+    M.recoilS.v -= 180; M.kickS.v -= 7; M.leanS.v -= 1.6; M.hipS.v += 25; shake = Math.max(shake, 1.6);
+    M.muzzleMain = 0.06;
+    burst(wx, wy, 6, { ramp: 'smoke', sp: [6, 20], life: [0.4, 0.8], fade: true, size: 2, g: -12, dir: wa, spread: 0.6 });
+    const [ex, ey] = localToWorld(pose.eject.x, pose.eject.y);
+    emit(ex, ey, { ramp: 'spark', ang: -Math.PI / 2 - M.facing * 0.6, sp: [60, 90], life: [0.9, 1.2], g: 420, size: 1, front: true, bounce: true, drag: 0.3 });
+  }
+  if (rmb && canFire) M.spin = Math.min(1, M.spin + dt * 4); else M.spin = Math.max(0, M.spin - dt * 1.6);
+  M.spinPhase += M.spin * dt * 40;
+  if (rmb && canFire && M.spin > 0.85 && M.rapidCd <= 0 && pose) {
+    M.rapidCd = 0.07;
+    const mz = pose.muzzleRapid;
+    const [wx, wy] = localToWorld(mz.x, mz.y), wa = worldAngle(mz.a) + rnd(-0.05, 0.05);
+    shots.push({ type: 'rapid', x: wx, y: wy, vx: Math.cos(wa) * 220, vy: Math.sin(wa) * 220, life: 1.6 });
+    M.recoil2S.v -= 50; M.kickS.v -= 0.6; M.muzzleRapid = 0.035; M.heat = Math.min(1, M.heat + 0.025);
+  } else M.heat = Math.max(0, M.heat - dt * 0.35);
+  if (M.heat > 0.5 && Math.random() < dt * 6 * M.heat && pose) emit(...localToWorld(pose.muzzleRapid.x, pose.muzzleRapid.y), { ramp: 'smoke', ang: -Math.PI / 2, sp: [6, 14], life: [0.5, 0.9], fade: true, g: -10 });
+
+  if (pressed.has('e') && canFire && M.missileCd <= 0) { M.missileCd = 1.6; M.hatchT = 0; }
+  if (M.hatchT >= 0) {
+    M.hatchT += dt;
+    if (M.hatchT >= 0.15 && M.hatchT - dt < 0.15 && pose) {
+      const [wx, wy] = localToWorld(pose.podTube.x, pose.podTube.y);
+      shots.push({ type: 'missile', x: wx, y: wy, vx: -M.facing * 20, vy: -150, life: 3, age: 0 });
+      burst(wx, wy, 10, { ramp: 'smoke', sp: [10, 40], life: [0.4, 0.9], fade: true, size: 2, dir: Math.PI / 2, spread: 1.2 });
+      M.hipS.v += 30;
+    }
+    if (M.hatchT > 0.75) M.hatchT = -1;
+  }
+  M.hatch = approach(M.hatch, M.hatchT >= 0 && M.hatchT < 0.6 ? 1 : 0, dt * 9);
+  M.muzzleMain = Math.max(0, (M.muzzleMain || 0) - dt);
+  M.muzzleRapid = Math.max(0, (M.muzzleRapid || 0) - dt);
+
+  // ── crouch target ──
+  const C = concept.crouch;
+  let crouchT = 0;
+  if (M.state === 'repair') crouchT = Math.abs(M.vx) < 8 ? C.repair : 3;
+  else if (M.state === 'relay') crouchT = C.relay;
+  else if (M.state === 'emp') crouchT = M.empT > 0.5 ? C.emp : 0;
+  else if (M.state === 'dead') crouchT = C.dead;
+  if (M.anticip > 0) crouchT = C.jump;
+  if (M.landT > 0 && M.heavyLand) crouchT = Math.max(crouchT, C.heavy);
+  if (M.dashT > 0) crouchT = Math.max(crouchT, 3);
+  M.crouch = approach(M.crouch, crouchT, dt * (M.state === 'dead' ? 30 : 60));
+
+  // ── springs ──
+  for (const s of [M.hipS, M.leanS, M.kickS, M.recoilS, M.recoil2S, M.bodyXS]) stepSpring(s, dt);
+  M.recoilS.x = Math.max(M.recoilS.x, -5);
+
+  // ── gait ──
+  updateGait(dt);
+
+  // ── aim ──
+  aimTrack(M.aimA, pose ? pose.shMain : { x: 5, y: -40 }, concept.aimMain, dt);
+  aimTrack(M.aimB, pose ? pose.shRapid : { x: 0, y: -40 }, concept.aimRapid, dt * 0.85);
+
+  // idle extras
+  if (alive && M.grounded && Math.abs(M.vx) < 4 && M.state === 'normal') {
+    M.idleT += dt; M.ventT -= dt;
+    if (M.ventT <= 0 && pose) {
+      M.ventT = rnd(3, 4.5);
+      const [vx, vy] = localToWorld(pose.vent.x, pose.vent.y);
+      for (let i = 0; i < 8; i++) emit(vx, vy, { ramp: 'smoke', ang: -Math.PI / 2 - M.facing * rnd(0.2, 0.8), sp: [8, 22], life: [0.6, 1.1], fade: true, g: -10, size: 1 + (i % 2) });
+    }
+  } else M.idleT = 0;
+  // damage-state smoke
+  if (alive && M.hp <= 2 && pose) {
+    M.smokeT -= dt;
+    if (M.smokeT <= 0) {
+      M.smokeT = M.hp <= 1 ? 0.12 : 0.25;
+      const [sx, sy] = localToWorld(pose.vent.x, pose.vent.y);
+      emit(sx, sy, { ramp: 'smoke', ang: -Math.PI / 2 + rnd(-0.3, 0.3), sp: [8, 20], life: [0.8, 1.4], fade: true, size: 2, g: -10, drag: 0.6 });
+      if (M.hp <= 1 && Math.random() < 0.3) burst(sx + rnd(4, 14) * M.facing, sy + rnd(0, 10), 5, { ramp: 'spark', sp: [30, 80], life: [0.1, 0.25], g: 250, front: true });
+    }
+  }
+
+  // timers
+  M.flash = Math.max(0, M.flash - dt); M.tint = Math.max(0, M.tint - dt); M.glow = Math.max(0, M.glow - dt);
+  if (M.launchBurst > 0) M.launchBurst -= dt;
+
+  // pose + jets
+  M.lastPose = solvePose();
+  emitJets(M.lastPose, dt);
+
+  // surge ghosts are snapshotted during render
+  // drone
+  drone.t += dt; drone.flash = Math.max(0, drone.flash - dt);
+  if (drone.alive) { drone.y = -74 + Math.sin(drone.t * 1.6) * 6; drone.x = WORLD.droneX + Math.sin(drone.t * 0.7) * 14; }
+  else { drone.respawn -= dt; if (drone.respawn <= 0) { drone.alive = true; drone.hp = 8; burst(drone.x, drone.y, 14, { ramp: 'cyan', sp: [20, 60], life: [0.2, 0.5], front: true }); } }
+  if (drone.alive && Math.random() < dt * 3) emit(drone.x - 2, drone.y + 8, { ramp: 'cyan', ang: Math.PI / 2 + rnd(-0.3, 0.3), sp: [15, 30], life: [0.15, 0.3] });
+
+  updateShots(dt);
+  updateParticles(dt);
+  for (const g of ghosts) g.t -= dt;
+  while (ghosts.length && ghosts[0].t <= 0) ghosts.shift();
+  for (const a of arcs) a.t -= dt;
+  while (arcs.length && arcs[0].t <= 0) arcs.shift();
+  shake = Math.max(0, shake - dt * 12);
+
+  // camera
+  const tx = clamp(M.x - VW * 0.42, 0, WORLD.maxX + 60 - VW);
+  camX = lerp(camX, Math.max(0, tx), 1 - Math.exp(-dt * 6));
+  const ty = Math.max(GY, -M.y + 78);
+  camY = lerp(camY, ty, 1 - Math.exp(-dt * 5));
+  pressed.clear();
+}
+
+function aimTrack(tr, sh, range, dt) {
+  const lx = (I.mx - M.x) * M.facing, ly = I.my - M.y;
+  let desired = Math.atan2(ly - sh.y, lx - sh.x);
+  desired = clamp(desired, range[0], range[1]);
+  const st = M.state;
+  let droop = 0;
+  if (st === 'repair') droop = 0.7 * M.plateOpen;
+  if (st === 'relay') droop = 0.55;
+  if (st === 'emp' && M.empT > 0.5) droop = 1;
+  if (st === 'dead') droop = 1;
+  if (droop > 0) desired = lerp(desired, concept === CONCEPTS.bastion ? 0.25 : 0.95, droop);
+  if (aimFeel === 'instant') { tr.a = desired; tr.v = 0; return; }
+  const w = aimFeel === 'snappy' ? 30 : 16, maxV = aimFeel === 'snappy' ? 20 : 9;
+  tr.v += (w * w * (desired - tr.a) - 2 * w * tr.v) * dt;
+  tr.v = clamp(tr.v, -maxV, maxV);
+  if (st === 'emp' && M.empT > 0.5) tr.v = clamp(tr.v, -2, 2);
+  tr.a += tr.v * dt;
+}
+
+function updateGait(dt) {
+  const legs = concept.legs;
+  if (!M.feet || M.feet.length !== legs.length) {
+    M.feet = legs.map(l => ({ x: l.rest, y: 0, lift: 0 })); M.prevLift = legs.map(() => 0);
+  }
+  const moving = M.grounded && M.dashT <= 0 && Math.abs(M.vx) > 6 && M.state !== 'dead';
+  M.gaitW = approach(M.gaitW, moving ? 1 : 0, dt * (moving ? 6 : 5));
+  M.airW = approach(M.airW, M.grounded ? 0 : 1, dt * (M.grounded ? 14 : 7));
+  if (M.grounded && M.dashT <= 0) M.dist += M.vx * dt;
+  const Cy = concept.cycle, S = Cy / 2;
+  const hipLocalY = -concept.hipH + M.crouch;
+  const deadSpread = M.state === 'dead' ? 1.5 : (M.state === 'repair' && Math.abs(M.vx) < 8 ? 1.25 : (M.state === 'relay' ? 1.3 : 1));
+  legs.forEach((l, i) => {
+    const p = frac(M.dist / Cy + l.off);
+    let rel, lift;
+    if (p < 0.5) { rel = S / 2 - (p / 0.5) * S; lift = 0; }
+    else { const q = (p - 0.5) / 0.5; rel = -S / 2 + smooth(q) * S; lift = Math.sin(Math.PI * q) * concept.lift; }
+    let gx = l.rest * deadSpread + rel * M.facing * M.gaitW;
+    let gy = -lift * M.gaitW;
+    if (M.dashT > 0) { // skate: feet split along dash direction
+      const lead = (i % 2 === 0 ? -1 : 1) * (concept === CONCEPTS.harrow ? 7 : 3);
+      gx = l.rest + lead * M.dashDir * M.facing; gy = 0;
+    }
+    // airborne pose: tuck while rising, reach while falling
+    const reach = clamp((M.vy + 40) / 160, 0, 1);
+    const tuckY = hipLocalY + (l.L1 + l.L2) * lerp(0.62, 0.95, reach);
+    const ax = l.rest * lerp(0.7, 1.05, reach) + (concept === CONCEPTS.harrow ? Math.sin(time * 9 + i) * 1.2 * (M.sputter > 0 ? 3 : 0.4) : 0);
+    const f = M.feet[i];
+    f.x = lerp(gx, ax, M.airW);
+    f.y = lerp(gy, Math.min(tuckY, 0), M.airW);
+    f.lift = lift * M.gaitW;
+    // footfall
+    if (M.gaitW > 0.5 && M.prevLift[i] > 0.5 && f.lift <= 0.01) {
+      const [wx, wy] = localToWorld(f.x, 0);
+      for (let k = 0; k < 4; k++) emit(wx + rnd(-3, 3), wy - 1, { ramp: 'dust', ang: -Math.PI / 2 + rnd(-1.3, 1.3), sp: [8, 26], life: [0.25, 0.5], size: 1 + (k % 2), fade: true, drag: 3 });
+      shake = Math.max(shake, concept === CONCEPTS.harrow ? 0.6 : 0.3);
+    }
+    M.prevLift[i] = f.lift;
+  });
+  // dash sparks from feet
+  if (M.dashT > 0 && M.dashT < DASH_T && M.grounded) {
+    const f = M.feet[(Math.random() * M.feet.length) | 0];
+    const [wx, wy] = localToWorld(f.x, 0);
+    emit(wx, wy - 1, { ramp: 'spark', ang: M.dashDir > 0 ? Math.PI + rnd(0.1, 0.6) : -rnd(0.1, 0.6), sp: [40, 110], life: [0.1, 0.25], g: 200, front: true });
+  }
+}
+
+// ───────────────────────── pose solving ─────────────────────────
+function solvePose() {
+  const P = concept.parts, isH = concept === CONCEPTS.harrow;
+  const lights = M.lightsOff ? 'd' : '';
+  const vN = 'n' + lights, vF = 'f' + lights;
+  const gaitPhase = M.dist / concept.cycle;
+  const bob = concept.bob * M.gaitW * (0.5 + 0.5 * Math.cos(gaitPhase * Math.PI * 4));
+  const breathe = (M.state === 'normal' && M.gaitW < 0.3 && M.grounded) ? Math.round(Math.sin(time * 5) * 0.5 + 0.5) : 0;
+  const hipY = -concept.hipH + M.crouch + M.hipS.x + bob + breathe;
+  const hipX = M.bodyXS.x * 0.1;
+  let lean = M.leanS.x * 0.06 + clamp(M.vx * M.facing / WALK, -1.5, 1.5) * 0.06;
+  if (M.dashT > 0 && M.dashT < DASH_T) lean += 0.3 * M.dashDir * M.facing;
+  if (M.state === 'dead') lean += Math.min(1, M.deathT * 2) * (isH ? 0.45 : 0.12);
+  if (M.state === 'emp' && M.empT > 0.5) lean += 0.12;
+  lean += clamp(M.aimA.a * 0.18, -0.22, 0.16) * (isH ? 1 : 0.25);
+  const list = [], out = { list, bones: [] };
+  const recoil = M.recoilS.x, recoil2 = M.recoil2S.x;
+  const aimMain = M.aimA.a + M.kickS.x * 0.05;
+  const aimRapid = M.aimB.a + M.kickS.x * 0.02 + (M.spin > 0.8 ? rnd(-0.015, 0.015) : 0);
+  const spinFrame = Math.floor(M.spinPhase) % 2 === 0 ? 'barrelsA' : 'barrelsB';
+
+  const legPl = (l, i, hip, v) => {
+    const f = M.feet[i];
+    const bend = isH ? kneeBend : (l.front ? -1 : 1);
+    const ankleY = f.y - (isH ? 4 : 2);
+    const s = ik(hip[0], hip[1], f.x, ankleY, l.L1, l.L2, bend);
+    const footA = isH ? (f.lift > 0.5 ? -0.25 * (f.lift / concept.lift) : 0) + (M.airW * 0.35) : 0;
+    const thigh = pl(P.thigh, hip[0], hip[1], s.ta, v);
+    const shin = pl(P.shin, s.kx, s.ky, s.sa, v);
+    const foot = pl(P.foot, s.ax, s.ay, footA, v);
+    out.bones.push([hip, [s.kx, s.ky], [s.ax, s.ay]]);
+    return { thigh, shin, foot };
+  };
+
+  if (isH) {
+    const torso = pl(P.torso, hipX, hipY, lean, vN);
+    const hipNear = sock(torso, 18, 20), hipFar = sock(torso, 13, 19);
+    const shN = sock(torso, 14, 16), shF = sock(torso, 12, 10), podS = sock(torso, 6, 6), jetS = sock(torso, 0, 15), plateS = sock(torso, 10, 8);
+    const far = legPl(concept.legs[0], 0, hipFar, vF), near = legPl(concept.legs[1], 1, hipNear, vN);
+    // far gatling
+    const gat = pl(P.gatling, shF[0], shF[1], aimRapid, vF);
+    const gbS = sock(gat, 18, 5);
+    const gb = pl(P[spinFrame], gbS[0] + Math.cos(aimRapid) * recoil2 * 0.2, gbS[1] + Math.sin(aimRapid) * recoil2 * 0.2, aimRapid, vF);
+    // pod
+    const pod = pl(P.pod, podS[0], podS[1], lean, vN);
+    const lidS = sock(pod, 0, 1);
+    const lid = pl(P.lid, lidS[0], lidS[1], lean - M.hatch * 1.15, vN);
+    // plate
+    const po = M.plateOpen;
+    const plate = pl(P.plate, plateS[0] - po * 3, plateS[1] - po * 3, lean - po * 0.7, vN);
+    // cannon
+    const can = pl(P.cannon, shN[0], shN[1], aimMain, vN);
+    const bS = sock(can, 21, 5);
+    const bar = pl(P.barrel, bS[0] + Math.cos(aimMain) * recoil, bS[1] + Math.sin(aimMain) * recoil, aimMain, vN);
+    list.push(far.thigh, far.shin, far.foot, gb, gat, pod, lid,
+      pl(P.torso, torso.x, torso.y, torso.a, vN, { overlay: 'torso' }), plate,
+      near.thigh, near.shin, near.foot, bar, can);
+    const mz = sock(bar, 23, 2), mr = sock(gb, 14, 3), tube = sock(pod, 7, 0);
+    out.muzzleMain = { x: mz[0], y: mz[1], a: aimMain };
+    out.muzzleRapid = { x: mr[0], y: mr[1], a: aimRapid };
+    out.podTube = { x: tube[0], y: tube[1] };
+    out.podTop = sock(pod, 4, 1);
+    out.shMain = { x: shN[0], y: shN[1] };
+    out.shRapid = { x: shF[0], y: shF[1] };
+    out.eject = { x: sock(can, 14, 2)[0], y: sock(can, 14, 2)[1] };
+    out.vent = { x: sock(torso, 6, 6)[0], y: sock(torso, 6, 6)[1] };
+    out.plateGlow = plateS; out.torso = torso;
+    const calfN = sock(near.shin, 9, 7), calfF = sock(far.shin, 9, 7);
+    const bdx = Math.cos(lean + 2.1), bdy = Math.sin(lean + 2.1);
+    out.jets = [
+      { x: jetS[0], y: jetS[1], dx: M.dashT > 0 ? -M.dashDir * M.facing : bdx, dy: M.dashT > 0 ? 0.1 : bdy, main: true },
+      { x: calfF[0], y: calfF[1], dx: 0, dy: 1, far: true },
+      { x: calfN[0], y: calfN[1], dx: 0, dy: 1 },
+    ];
+    out.muzzleFlashAt = mz; out.rapidFlashAt = mr;
+  } else {
+    const pitch = lean * 0.6 + Math.sin(gaitPhase * Math.PI * 2) * 0.015 * M.gaitW;
+    const hull = pl(P.hull, hipX, hipY, pitch, vN);
+    const legs = concept.legs.map((l, i) => {
+      const s = { farBack: [14, 12], farFront: [31, 12], nearBack: [11, 14], nearFront: [34, 14] }[l.key];
+      return legPl(l, i, sock(hull, s[0], s[1]), l.far ? vF : vN);
+    });
+    const podS = sock(hull, 5, 3);
+    const pod = pl(P.pod, podS[0], podS[1], pitch, vN);
+    const lidS = sock(pod, 0, 1);
+    const lid = pl(P.lid, lidS[0], lidS[1], pitch - M.hatch * 1.15, vN);
+    const domeS = sock(hull, 27, 3);
+    const dome = pl(P.dome, domeS[0], domeS[1], pitch, vN);
+    const manS = sock(dome, 15, 4);
+    const man = pl(P.mantlet, manS[0], manS[1], aimMain, vN);
+    const bS = sock(man, 9, 4);
+    const bar = pl(P.barrel, bS[0] + Math.cos(aimMain) * recoil, bS[1] + Math.sin(aimMain) * recoil, aimMain, vN);
+    const chinS = sock(hull, 39, 16);
+    const chin = pl(P.chin, chinS[0], chinS[1], aimRapid, vN);
+    const cbS = sock(chin, 7, 3);
+    const cb = pl(P[spinFrame], cbS[0] + Math.cos(aimRapid) * recoil2 * 0.2, cbS[1] + Math.sin(aimRapid) * recoil2 * 0.2, aimRapid, vN);
+    const plateS = sock(hull, 14, 4), po = M.plateOpen;
+    const plate = pl(P.plate, plateS[0] - po * 2, plateS[1] - po * 4, pitch - po * 0.8, vN);
+    list.push(legs[0].thigh, legs[0].shin, legs[0].foot, legs[1].thigh, legs[1].shin, legs[1].foot,
+      pod, lid, bar, man, dome, pl(P.hull, hull.x, hull.y, hull.a, vN, { overlay: 'hull' }), plate, cb, chin,
+      legs[2].thigh, legs[2].shin, legs[2].foot, legs[3].thigh, legs[3].shin, legs[3].foot);
+    const mz = sock(bar, 25, 2), mr = sock(cb, 10, 3), tube = sock(pod, 5, 0);
+    out.muzzleMain = { x: mz[0], y: mz[1], a: aimMain };
+    out.muzzleRapid = { x: mr[0], y: mr[1], a: aimRapid };
+    out.podTube = { x: tube[0], y: tube[1] };
+    out.podTop = sock(pod, 3, 1);
+    out.shMain = { x: manS[0], y: manS[1] };
+    out.shRapid = { x: chinS[0], y: chinS[1] };
+    out.eject = { x: sock(man, 4, 0)[0], y: sock(man, 4, 0)[1] };
+    out.vent = { x: sock(hull, 4, 6)[0], y: sock(hull, 4, 6)[1] };
+    out.plateGlow = plateS; out.torso = hull;
+    const v1 = sock(hull, 15, 17), v2 = sock(hull, 31, 17), back = sock(hull, 1, 10);
+    out.jets = [
+      { x: v1[0], y: v1[1], dx: 0, dy: 1 }, { x: v2[0], y: v2[1], dx: 0, dy: 1 },
+      { x: back[0], y: back[1], dx: -M.dashDir * M.facing, dy: 0.05, main: true, dashOnly: true },
+    ];
+    out.muzzleFlashAt = mz; out.rapidFlashAt = mr;
+  }
+  return out;
+}
+
+function jetPower() {
+  if (M.state === 'dead' || M.state === 'emp') return 0;
+  if (M.launchBurst > 0) return 1.3;
+  if (M.thrusting) return 1;
+  if (M.sputter > 0) return Math.random() < 0.25 ? 0.9 : 0;
+  return 0;
+}
+function emitJets(pose, dt) {
+  const pw = jetPower(), dashing = M.dashT > 0 && M.dashT < DASH_T;
+  pose.jetPw = [];
+  for (const j of pose.jets) {
+    let p = j.dashOnly ? 0 : pw;
+    if (dashing && j.main) p = 1.2;
+    if (dashing && !j.main && concept === CONCEPTS.harrow) p = 0;
+    pose.jetPw.push(p);
+    if (p <= 0) continue;
+    const [wx, wy] = localToWorld(j.x, j.y);
+    const wdx = j.dx * M.facing, wdy = j.dy, ang = Math.atan2(wdy, wdx);
+    const n = Math.max(1, Math.round(p * 60 * dt * (j.far ? 0.6 : 1)));
+    for (let i = 0; i < n; i++) emit(wx, wy, { ramp: 'jet', ang: ang + rnd(-0.25, 0.25), sp: [50, 120].map(v => v * p), life: [0.1, 0.24], vx: M.vx * 0.3, vy: M.vy * 0.3, drag: 2 });
+    if (Math.random() < p * dt * 10) emit(wx, wy, { ramp: 'smoke', ang: ang + rnd(-0.4, 0.4), sp: [20, 50], life: [0.6, 1.1], fade: true, size: 2, g: -8, drag: 1.2 });
+    if (M.sputter > 0 && Math.random() < 0.2) emit(wx, wy, { ramp: 'smoke', ang: ang + rnd(-0.6, 0.6), sp: [10, 30], life: [0.5, 0.9], fade: true, size: 2, g: -8 });
+  }
+}
+
+function updateShots(dt) {
+  for (const s of shots) {
+    s.life -= dt;
+    if (s.type === 'missile') {
+      s.age += dt;
+      if (s.age > 0.25 && drone.alive) {
+        const want = Math.atan2(drone.y - s.y, drone.x - s.x);
+        const cur = Math.atan2(s.vy, s.vx);
+        let d = want - cur; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+        const na = cur + clamp(d, -5 * dt, 5 * dt), sp = Math.min(260, Math.hypot(s.vx, s.vy) + 300 * dt);
+        s.vx = Math.cos(na) * sp; s.vy = Math.sin(na) * sp;
+      } else if (s.age <= 0.25) { s.vy *= Math.pow(0.02, dt); }
+      emit(s.x, s.y, { ramp: 'smoke', sp: [2, 8], life: [0.4, 0.8], fade: true, size: 1 + (Math.random() < 0.3 ? 1 : 0), g: -4 });
+      emit(s.x, s.y, { ramp: 'fire', sp: [5, 15], life: [0.06, 0.12], ang: Math.atan2(-s.vy, -s.vx) });
+    } else if (s.type === 'rapid') {
+      if (Math.random() < 0.7) emit(s.x, s.y, { ramp: 'cyan', sp: 0, life: 0.08 });
+    }
+    s.x += s.vx * dt; s.y += s.vy * dt;
+    if (drone.alive && Math.abs(s.x - drone.x) < 15 && Math.abs(s.y - drone.y) < 10) {
+      s.life = 0;
+      const dmg = s.type === 'cannon' ? 2 : s.type === 'missile' ? 4 : 0.34;
+      drone.hp -= dmg; drone.flash = 0.06;
+      burst(s.x, s.y, s.type === 'rapid' ? 3 : 10, { ramp: s.type === 'rapid' ? 'cyan' : 'spark', sp: [30, 100], life: [0.1, 0.3], front: true, g: 120 });
+      if (s.type === 'missile') explodeAt(s.x, s.y, false);
+      if (drone.hp <= 0) { drone.alive = false; drone.respawn = 2.2; explodeAt(drone.x, drone.y, true); }
+    }
+    const fl = (s.x > WORLD.plat.x0 && s.x < WORLD.plat.x1 && s.y > WORLD.plat.y && s.y < WORLD.plat.y + 6) ? true : s.y >= 0;
+    if (s.life > 0 && fl) { s.life = 0; burst(s.x, Math.min(s.y, 0), s.type === 'missile' ? 18 : 5, { ramp: s.type === 'rapid' ? 'cyan' : 'spark', sp: [20, 80], life: [0.1, 0.3], front: true, g: 150, dir: -Math.PI / 2, spread: 1.3 }); if (s.type === 'missile') explodeAt(s.x, s.y - 2, false); }
+  }
+  for (let i = shots.length - 1; i >= 0; i--) if (shots[i].life <= 0) shots.splice(i, 1);
+}
+function updateParticles(dt) {
+  for (const p of parts) {
+    p.t += dt;
+    if (p.orbit) {
+      const o = p.orbit; o.a += o.w * dt; o.cx = M.x;
+      p.x = o.cx + Math.cos(o.a) * o.r; p.y = o.cy + Math.sin(o.a) * o.r * o.squash; o.r *= Math.pow(0.5, dt);
+      p.front = Math.sin(o.a) > 0;
+      continue;
+    }
+    p.vy += p.g * dt;
+    const dr = Math.exp(-p.drag * dt); p.vx *= dr; p.vy *= dr;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.bounce && p.y > 0) { p.y = 0; p.vy *= -0.35; p.vx *= 0.6; }
+  }
+  for (let i = parts.length - 1; i >= 0; i--) if (parts[i].t >= parts[i].life) parts.splice(i, 1);
+}
+
+// ───────────────────────── render ─────────────────────────
+function sx(x) { return Math.round(x - camX); }
+function sy(y) { return Math.round(y + camY); }
+function drawBackdrop() {
+  ctx.fillStyle = '#030318'; ctx.fillRect(0, 0, VW, VH);
+  for (const s of stars) {
+    const x = Math.round(((s.x - camX * 0.15) % 1400 + 1400) % 1400), y = Math.round(s.y + camY * 0.3);
+    if (x < VW && y >= 0 && y < VH) { ctx.fillStyle = s.b > 0.85 ? '#cfe9ff' : s.b > 0.5 ? '#5d6b98' : '#2c3560'; ctx.fillRect(x, y, 1, 1); }
+  }
+  // distant lunar domes (echoing the game's backdrop)
+  ctx.fillStyle = '#0a0e28';
+  for (let i = -1; i < 8; i++) {
+    const cx = Math.round(i * 150 - (camX * 0.5) % 150), cy = sy(0) - 2, r = 46;
+    for (let y = -r; y <= 0; y++) { const w = Math.round(Math.sqrt(r * r - y * y)); ctx.fillRect(cx - w, cy + y, w * 2, 1); }
+  }
+  ctx.fillStyle = '#0d1230'; ctx.fillRect(0, sy(0) - 18, VW, 18);
+  for (let i = -1; i < 10; i++) {
+    const bx = Math.round(i * 120 + 40 - (camX * 0.7) % 120), by = sy(0) - 1;
+    ctx.fillStyle = '#1a2044'; ctx.fillRect(bx, by - 12, 1, 12); ctx.fillRect(bx - 2, by - 13, 5, 1);
+    ctx.fillStyle = (Math.floor(time * 1.5 + i) % 3 === 0) ? '#ff5566' : '#5a2030'; ctx.fillRect(bx, by - 15, 1, 1);
+  }
+}
+function drawStrip(x0, x1, y) {
+  if (!groundImg.complete) { ctx.fillStyle = '#3b4159'; ctx.fillRect(sx(x0), sy(y), x1 - x0, 6); return; }
+  for (let x = x0; x < x1; x += 128) {
+    const w = Math.min(128, x1 - x);
+    ctx.drawImage(groundImg, 0, 0, w, 24, sx(x), sy(y), w, 24);
+  }
+}
+function drawWorld() {
+  drawStrip(Math.floor(camX / 128) * 128 - 128, camX + VW + 128, 0);
+  ctx.fillStyle = '#07081a'; ctx.fillRect(0, sy(24), VW, VH);
+  const p = WORLD.plat; drawStrip(p.x0, p.x1, p.y);
+  ctx.fillStyle = '#1b1e2c'; ctx.fillRect(sx(p.x0 + 6), sy(p.y + 24), 3, -p.y - 24); ctx.fillRect(sx(p.x1 - 9), sy(p.y + 24), 3, -p.y - 24);
+  // relay pylon
+  const rx = sx(relay.x), ry = sy(0);
+  ctx.fillStyle = '#0e1019'; ctx.fillRect(rx - 7, ry - 9, 15, 9); ctx.fillRect(rx - 2, ry - 40, 5, 32);
+  ctx.fillStyle = '#3b4159'; ctx.fillRect(rx - 6, ry - 8, 13, 7); ctx.fillRect(rx - 1, ry - 39, 3, 31);
+  ctx.fillStyle = '#57607d'; ctx.fillRect(rx - 6, ry - 8, 13, 1); ctx.fillRect(rx - 1, ry - 39, 1, 31);
+  ctx.fillStyle = '#0e1019'; ctx.fillRect(rx - 5, ry - 45, 11, 6);
+  ctx.fillStyle = '#57607d'; ctx.fillRect(rx - 4, ry - 44, 9, 4);
+  const on = relay.done >= 1;
+  ctx.fillStyle = on ? '#6de3ff' : (Math.floor(time * 2) % 2 ? '#ff5566' : '#7a2030'); ctx.fillRect(rx - 1, ry - 43, 3, 2);
+  if (relay.done > 0 && !on) { // progress ring
+    const n = 24, lit = Math.floor(relay.done * n);
+    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * Math.PI * 2; ctx.fillStyle = i < lit ? '#6de3ff' : '#173a52'; ctx.fillRect(Math.round(rx + Math.cos(a) * 11), Math.round(ry - 42 + Math.sin(a) * 11), 1, 1); }
+  }
+  if (on) { ctx.fillStyle = 'rgba(109,227,255,0.18)'; ctx.fillRect(rx - 3, ry - 46, 7, 7); }
+  ctx.font = '8px monospace';
+  // drone
+  if (drone.alive && viperImg.complete) {
+    const img = drone.flash > 0 && viperWhite ? viperWhite : viperImg;
+    const flip = M.x > drone.x;
+    ctx.save(); ctx.translate(sx(drone.x), sy(drone.y)); if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(img, 0, 0, 34, 24, -17, -12, 34, 24); ctx.restore();
+  }
+}
+function drawParticles(front) {
+  for (const p of parts) {
+    if (p.front !== front) continue;
+    const f = p.t / p.life, ramp = p.ramp;
+    ctx.globalAlpha = p.fade ? 0.65 * (1 - f) : 1;
+    ctx.fillStyle = ramp[Math.min(ramp.length - 1, Math.floor(f * ramp.length))];
+    ctx.fillRect(sx(p.x), sy(p.y), p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+}
+function lineWorld(x0, y0, x1, y1, col) {
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+  ctx.fillStyle = col;
+  for (let i = 0; i <= n; i++) ctx.fillRect(sx(x0 + (x1 - x0) * i / n), sy(y0 + (y1 - y0) * i / n), 1, 1);
+}
+function drawShots() {
+  for (const s of shots) {
+    if (s.type === 'cannon') {
+      const l = 6 / Math.hypot(s.vx, s.vy);
+      lineWorld(s.x - s.vx * l * 1.4, s.y - s.vy * l * 1.4, s.x - s.vx * l * 0.5, s.y - s.vy * l * 0.5, '#ff7a2a');
+      lineWorld(s.x - s.vx * l * 0.5, s.y - s.vy * l * 0.5, s.x, s.y, '#fff1b0');
+    } else if (s.type === 'rapid') { ctx.fillStyle = '#dffaff'; ctx.fillRect(sx(s.x), sy(s.y), 2, 2); }
+    else { ctx.fillStyle = '#ffb347'; ctx.fillRect(sx(s.x) - 1, sy(s.y), 3, 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(sx(s.x), sy(s.y), 1, 1); }
+  }
+}
+
+function drawRig(pose) {
+  rig.setTransform(1, 0, 0, 1, 0, 0);
+  rig.clearRect(0, 0, VW, VH);
+  rig.save();
+  rig.translate(sx(M.x), sy(M.y));
+  rig.scale(M.facing, 1);
+  const isH = concept === CONCEPTS.harrow;
+  for (const p of pose.list) {
+    rig.save();
+    rig.translate(Math.round(p.x), Math.round(p.y));
+    if (p.a) rig.rotate(p.a);
+    rig.drawImage(p.part[p.v], -(p.part.px + 1), -(p.part.py + 1));
+    rig.restore();
+    if (p.overlay && M.plateOpen > 0.05) { // glowing internals under the repair plate
+      const g = pose.plateGlow;
+      rig.fillStyle = Math.floor(time * 12) % 2 ? '#66ff99' : '#c8ffe0';
+      rig.globalAlpha = M.plateOpen;
+      rig.fillRect(Math.round(g[0]), Math.round(g[1]), isH ? 7 : 8, isH ? 6 : 4);
+      rig.globalAlpha = 1;
+    }
+  }
+  // pod LEDs: reload state
+  const led = pose.podTop;
+  const ready = M.missileCd <= 0;
+  for (let i = 0; i < 3; i++) {
+    const lit = ready || (1 - M.missileCd / 1.6) > (i + 1) / 3;
+    rig.fillStyle = M.lightsOff ? '#1f3342' : lit ? '#6de3ff' : '#9a5f22';
+    rig.fillRect(Math.round(led[0] + i * 3), Math.round(led[1] + 3), 1, 1);
+  }
+  // relay antenna
+  if (M.antenna > 0.02) {
+    const [ax, ay] = pose.podTop, len = Math.round(16 * smooth(M.antenna));
+    rig.fillStyle = '#0e1019'; rig.fillRect(Math.round(ax) - 1, Math.round(ay) - len, 3, len);
+    rig.fillStyle = '#8690b0'; rig.fillRect(Math.round(ax), Math.round(ay) - len, 1, len);
+    rig.fillStyle = '#6de3ff'; rig.fillRect(Math.round(ax) - 1, Math.round(ay) - len - 2, 3, 2);
+    pose.antTip = [ax, ay - len - 1];
+  } else pose.antTip = null;
+  // gatling heat glow
+  if (M.heat > 0.15) {
+    rig.globalAlpha = Math.min(1, M.heat);
+    rig.fillStyle = M.heat > 0.7 ? '#ffb347' : '#ff6a1a';
+    const [hx, hy] = [pose.muzzleRapid.x - Math.cos(pose.muzzleRapid.a) * 2, pose.muzzleRapid.y - Math.sin(pose.muzzleRapid.a) * 2];
+    rig.fillRect(Math.round(hx) - 1, Math.round(hy) - 1, 2, 3);
+    rig.globalAlpha = 1;
+  }
+  rig.restore();
+
+  // ── rig-wide effects, clipped to the silhouette ──
+  rig.globalCompositeOperation = 'source-atop';
+  if (M.flash > 0) { rig.fillStyle = '#ffffff'; rig.fillRect(0, 0, VW, VH); }
+  else if (M.tint > 0) { rig.globalAlpha = 0.35; rig.fillStyle = '#ff3344'; rig.fillRect(0, 0, VW, VH); }
+  if (M.state === 'emp' && M.empT > 0.5) { rig.globalAlpha = 0.25; rig.fillStyle = '#6de3ff'; rig.fillRect(0, 0, VW, VH); }
+  if (M.state === 'dead') { rig.globalAlpha = Math.min(0.55, M.deathT * 0.5); rig.fillStyle = '#05060c'; rig.fillRect(0, 0, VW, VH); }
+  if (M.state === 'repair') {
+    const top = sy(M.y - concept.hipH - 26), h = concept.hipH + 30;
+    const y = top + Math.floor((time * 40) % h);
+    rig.globalAlpha = 0.3; rig.fillStyle = '#66ff99'; rig.fillRect(0, y - 2, VW, 5);
+    rig.globalAlpha = 0.9; rig.fillRect(0, y, VW, 1);
+  }
+  if (M.glow > 0) { rig.globalAlpha = M.glow * 0.8; rig.fillStyle = M.glowCol; rig.fillRect(0, 0, VW, VH); }
+  rig.globalAlpha = 1;
+  rig.globalCompositeOperation = 'source-over';
+}
+function tintedCopy(color, alpha) {
+  tint.clearRect(0, 0, VW, VH);
+  tint.globalCompositeOperation = 'source-over'; tint.drawImage(rigCv, 0, 0);
+  tint.globalCompositeOperation = 'source-atop'; tint.fillStyle = color; tint.fillRect(0, 0, VW, VH);
+  tint.globalCompositeOperation = 'source-over';
+  return tintCv;
+}
+function drawFlames(pose) {
+  pose.jets.forEach((j, i) => {
+    const p = pose.jetPw[i]; if (!p) return;
+    const [wx, wy] = localToWorld(j.x, j.y);
+    const dx = j.dx * M.facing, dy = j.dy, len = Math.round((4 + Math.random() * 3) * p);
+    for (let k = 0; k < len; k++) {
+      const f = k / len;
+      ctx.fillStyle = f < 0.3 ? '#ffffff' : f < 0.6 ? '#ffe9a8' : f < 0.85 ? '#ffb347' : '#6de3ff';
+      const w = f < 0.5 ? 2 : 1;
+      ctx.fillRect(sx(wx + dx * k) - (w > 1 && Math.abs(dy) > 0.5 ? 1 : 0), sy(wy + dy * k) - (w > 1 && Math.abs(dx) > 0.5 ? 1 : 0), w, w);
+    }
+    ctx.globalAlpha = 0.18; ctx.fillStyle = '#6de3ff';
+    ctx.fillRect(sx(wx + dx * len * 0.5) - 3, sy(wy + dy * len * 0.5) - 3, 7, 7);
+    ctx.globalAlpha = 1;
+  });
+}
+function drawMuzzle(pos, a, big) {
+  const [wx, wy] = localToWorld(pos[0], pos[1]), wa = worldAngle(a);
+  const c = Math.cos(wa), s = Math.sin(wa);
+  const n = big ? 7 : 3;
+  for (let k = 0; k < n; k++) { ctx.fillStyle = k < 2 ? '#ffffff' : '#ffb347'; ctx.fillRect(sx(wx + c * k), sy(wy + s * k), big ? 2 : 1, big ? 2 : 1); }
+  if (big) { ctx.fillStyle = '#fff1b0'; ctx.fillRect(sx(wx + c * 2 - s * 3), sy(wy + s * 2 + c * 3), 1, 1); ctx.fillRect(sx(wx + c * 2 + s * 3), sy(wy + s * 2 - c * 3), 1, 1); }
+}
+function drawArcs(pose) {
+  for (const a of arcs) {
+    let seed = a.seed * 1000;
+    const r = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    let x = M.x + (r() - 0.5) * 30, y = M.y - concept.hipH + (r() - 0.5) * 26;
+    ctx.fillStyle = r() < 0.5 ? '#dffaff' : '#6de3ff';
+    for (let i = 0; i < 9; i++) { x += (r() - 0.5) * 6; y += (r() - 0.5) * 6; ctx.fillRect(sx(x), sy(y), 1, 1); ctx.fillRect(sx(x + (r() - 0.5) * 2), sy(y + 1), 1, 1); }
+  }
+}
+function drawBonesDebug(pose) {
+  ctx.save();
+  ctx.translate(sx(M.x), sy(M.y)); ctx.scale(M.facing, 1);
+  const dot = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2); };
+  for (const b of pose.bones) {
+    for (let i = 0; i < 2; i++) {
+      const [x0, y0] = b[i], [x1, y1] = b[i + 1], n = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
+      ctx.fillStyle = i === 0 ? '#ff4fd8' : '#ffe34f';
+      for (let k = 0; k <= n; k++) ctx.fillRect(Math.round(x0 + (x1 - x0) * k / n), Math.round(y0 + (y1 - y0) * k / n), 1, 1);
+    }
+    dot(...b[0], '#ffffff'); dot(...b[1], '#ffffff');
+  }
+  for (const m of [pose.muzzleMain, pose.muzzleRapid]) dot(m.x, m.y, '#66ff99');
+  for (const j of pose.jets) dot(j.x, j.y, '#ffb347');
+  ctx.restore();
+  // aim ray
+  const [wx, wy] = localToWorld(pose.muzzleMain.x, pose.muzzleMain.y);
+  const wa = worldAngle(pose.muzzleMain.a);
+  ctx.fillStyle = '#66ff99';
+  for (let k = 0; k < 120; k += 3) ctx.fillRect(sx(wx + Math.cos(wa) * k), sy(wy + Math.sin(wa) * k), 1, 1);
+}
+function drawCursor() {
+  if (!(I.mouseIn || demo)) return;
+  const x = sx(I.mx), y = sy(I.my);
+  ctx.fillStyle = '#6de3ff';
+  ctx.fillRect(x - 4, y, 3, 1); ctx.fillRect(x + 2, y, 3, 1); ctx.fillRect(x, y - 4, 1, 3); ctx.fillRect(x, y + 2, 1, 3);
+}
+
+function render() {
+  const pose = M.lastPose; if (!pose) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const shx = shake > 0.3 && !reduceMotion ? Math.round(rnd(-shake, shake) * 0.5) : 0, shy = shake > 0.3 && !reduceMotion ? Math.round(rnd(-shake, shake) * 0.5) : 0;
+  ctx.translate(shx, shy);
+  if (bare) ctx.clearRect(-8, -8, VW + 16, VH + 16);
+  else { drawBackdrop(); drawWorld(); }
+  drawParticles(false);
+  drawFlames(pose);
+  drawRig(pose);
+  // surge afterimages from the whole rig
+  if (M.dashT > 0 && M.dashT < DASH_T) {
+    M.ghostT -= 1 / 60;
+    if (M.ghostT <= 0) {
+      M.ghostT = 0.05;
+      const g = document.createElement('canvas'); g.width = VW; g.height = VH;
+      g.getContext('2d').drawImage(tintedCopy('#6de3ff'), 0, 0);
+      ghosts.push({ cv: g, cam: camX, t: 0.22 });
+    }
+  }
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalCompositeOperation = 'source-over';
+  for (const g of ghosts) { ctx.globalAlpha = 0.32 * (g.t / 0.22); ctx.drawImage(g.cv, Math.round(g.cam - camX), 0); } ctx.globalAlpha = 1;
+  if (M.glow > 0 || (M.state === 'repair' && M.plateOpen > 0.5)) {
+    const t = tintedCopy(M.glow > 0 ? M.glowCol : '#66ff99');
+    ctx.globalAlpha = M.glow > 0 ? Math.min(1, M.glow * 2) * 0.8 : 0.35 + 0.2 * Math.sin(time * 8);
+    for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) ctx.drawImage(t, ox, oy);
+    ctx.globalAlpha = 1;
+  }
+  ctx.drawImage(rigCv, 0, 0);
+  if (M.muzzleMain > 0) drawMuzzle([pose.muzzleMain.x, pose.muzzleMain.y], pose.muzzleMain.a, true);
+  if (M.muzzleRapid > 0) drawMuzzle([pose.muzzleRapid.x, pose.muzzleRapid.y], pose.muzzleRapid.a, false);
+  // relay beam
+  if (pose.antTip && M.state === 'relay') {
+    const [ax, ay] = localToWorld(pose.antTip[0], pose.antTip[1]);
+    const bx = relay.x, by = -42, n = Math.ceil(Math.hypot(bx - ax, by - ay));
+    for (let k = 0; k <= n; k++) {
+      const on = ((k + Math.floor(time * 30)) % 6) < 3;
+      if (!on) continue;
+      const t = k / n, arc = Math.sin(t * Math.PI) * -6;
+      ctx.fillStyle = (k + Math.floor(time * 30)) % 6 === 0 ? '#ffffff' : '#6de3ff';
+      ctx.fillRect(sx(ax + (bx - ax) * t), sy(ay + (by - ay) * t + arc), 1, 1);
+    }
+  }
+  drawShots();
+  drawArcs(pose);
+  drawParticles(true);
+  if (showBones) drawBonesDebug(pose);
+  if (!bare) drawCursor();
+}
+
+// ───────────────────────── HUD ─────────────────────────
+const animLabel = document.getElementById('animLabel'), aimLabel = document.getElementById('aimLabel');
+const pipsEl = document.getElementById('pips'), fuelBar = document.getElementById('fuelBar');
+function stateLabel() {
+  if (M.state === 'dead') return M.deathT < 1.2 ? 'destroyed · cook-off' : 'wreck';
+  if (M.state === 'spawn') return 'drop-in';
+  if (M.state === 'emp') return M.empT > 0.5 ? 'emp · shutdown' : 'emp · reboot';
+  if (M.state === 'repair') return 'nanite repair';
+  if (M.state === 'relay') return 'relay uplink';
+  if (M.dashT > 0) return 'surge dash';
+  if (M.anticip > 0) return 'jump · crouch';
+  if (!M.grounded) return M.sputter > 0 ? 'jets · sputter' : M.thrusting ? 'jump jets' : M.vy < 0 ? 'jump · rise' : 'fall · reach';
+  if (M.landT > 0) return M.heavyLand ? 'land · heavy' : 'land';
+  if (M.gaitW > 0.4) return M.vx * M.facing >= 0 ? 'walk' : 'backpedal';
+  return 'idle';
+}
+let lastHud = '';
+function hud() {
+  let s = stateLabel();
+  const layers = [];
+  if (M.muzzleMain > 0 || M.recoilS.x < -1) layers.push('cannon');
+  if (M.spin > 0.05) layers.push('gatling');
+  if (M.hatch > 0.05) layers.push('missile');
+  if (M.flash > 0 || M.tint > 0) layers.push('hurt');
+  if (layers.length) s += ' + ' + layers.join(' + ');
+  if (s !== lastHud) { animLabel.textContent = s; lastHud = s; }
+  aimLabel.textContent = 'aim ' + Math.round(-M.aimA.a * 180 / Math.PI) + '°';
+  const hp = Math.ceil(M.hp - 0.001);
+  if (pipsEl.childElementCount !== M.maxHp) pipsEl.innerHTML = '<i></i>'.repeat(M.maxHp);
+  [...pipsEl.children].forEach((el, i) => el.classList.toggle('off', i >= hp));
+  fuelBar.style.width = Math.round(M.fuel / FUEL * 100) + '%';
+}
+
+// ───────────────────────── loop ─────────────────────────
+let last = performance.now();
+function frame(now) {
+  let dt = Math.min(1 / 30, (now - last) / 1000); last = now;
+  if (slow) dt *= 0.25;
+  if (!window.__mechPaused) { update(dt); render(); hud(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__mech = { M, H, B, CONCEPTS, relay, resetMech, sx, sy, setBare(v) { bare = v; }, setConcept, update, render, cv, rigCv, get pose() { return M.lastPose; }, startDemo, stopDemo, I, pressed };
+})();
+</script>
