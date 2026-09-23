@@ -177,8 +177,48 @@ function hills(): Strip {
   };
 }
 
+/**
+ * Foreground: dark, backlit silhouettes (boulders, a sheared girder, a cable spool) that pass in
+ * front of the playfield near the bottom of the screen. Transparent between pieces.
+ */
+function foreground(): Strip {
+  const W = 700, H = 64;
+  return {
+    key: 'fg-rocks',
+    spec: {
+      w: W, h: H, px: 0, py: 0,
+      draw: (d) => {
+        const rock = (cx: number, rx: number, ry: number, seed: number) => {
+          for (let y = H - ry; y < H; y++) for (let x = cx - rx; x <= cx + rx; x++) {
+            const a = Math.atan2(y - H, x - cx);
+            const wob = 1 + 0.14 * Math.sin(a * 3 + seed) + 0.06 * Math.sin(a * 8 + seed);
+            const u = (x - cx) / (rx * wob), v = (y - H) / (ry * wob);
+            const q = u * u + v * v;
+            if (q > 1) continue;
+            // rim light where the upper-left edge faces back toward the lit scene
+            d.px(x, y, q > 0.8 && u < 0.2 && v < -0.3 ? 'hull2' : q > 0.6 && u < 0 ? 'hull1' : 'hull0');
+          }
+        };
+        rock(60, 46, 34, 1); rock(118, 22, 16, 2);
+        rock(330, 60, 44, 3); rock(400, 18, 12, 4);
+        rock(590, 34, 26, 5);
+        // sheared girder leaning out of the ground
+        d.P([[210, H], [236, 10], [246, 12], [222, H]], 'hull0');
+        line(d, 236, 10, 246, 12, 'hull2'); line(d, 211, H - 1, 236, 11, 'hull1');
+        for (let y = 20; y < H - 4; y += 9) d.R(230 - Math.round((y - 10) * 0.45), y, 4, 2, 'hull1');
+        // cable spool on its side
+        for (let y = -14; y <= 14; y++) for (let x = -14; x <= 14; x++) {
+          const q = (x * x + y * y) / 196;
+          if (q > 1 || H - 14 + y >= H) continue;
+          d.px(500 + x, H - 14 + y, q > 0.82 ? (x < 0 && y < 0 ? 'hull2' : 'hull1') : q < 0.12 ? 'hull1' : 'hull0');
+        }
+      },
+    },
+  };
+}
+
 /** The strips, for tests and tools. */
-export function backdropStrips(): Strip[] { return [highlands(), colony(), hills()]; }
+export function backdropStrips(): Strip[] { return [highlands(), colony(), hills(), foreground()]; }
 
 // ── layers ─────────────────────────────────────────────────────────────────────
 function texture(scene: Phaser.Scene, key: string, spec: PartSpec): void {
@@ -208,6 +248,8 @@ export class SurfaceBackdrop {
       [highlands(), 0.06, 0.05, 1010, 1.2],
       [colony(), 0.16, 0.12, 1010, 1.3],
       [hills(), 0.38, 0.3, 1060, 1.4],
+      // in front of everything in the world (actors are at 9–12), faster than the camera
+      [foreground(), 1.3, 1.25, 1110, 15],
     ];
     for (const [strip, fx, fy, bottom, depth] of strips) {
       texture(scene, strip.key, strip.spec);

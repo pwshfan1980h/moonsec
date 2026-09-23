@@ -1,6 +1,6 @@
 import type { PaletteName } from '../render/palette';
 import type { DrawApi, PartSet } from '../rig/parts/types';
-import { METAL, ROCK, chrome, cylinderH, cylinderV, dome, hash, lambert, line, plate, ramp, rivets } from './shade';
+import { METAL, ROCK, chrome, cylinderH, cylinderV, dome, hash, inside, lambert, line, plate, ramp, rivets } from './shade';
 
 /**
  * World props, built like HARROW's parts: palette-only primitives, one light from the upper
@@ -273,6 +273,117 @@ function drawCrate(d: DrawApi): void {
   d.R(0, 5, 14, 2, 'amber0'); d.R(0, 5, 14, 1, 'amber1');
 }
 
+// ── set pieces ───────────────────────────────────────────────────────────────
+/**
+ * A crashed lander, nose-down in the regolith: foil-wrapped descent stage tilted onto one
+ * snapped leg, the ascent cabin cracked open, a scorch streak and scattered panels.
+ */
+function drawLanderWreck(d: DrawApi): void {
+  const W = 84;
+  // scorch across the ground it slid through
+  for (let x = 2; x < 60; x++) if (hash(x, 1, 51) < 0.7) d.px(x, 55 - Math.floor(hash(x, 2, 51) * 2), 'hull0');
+  // snapped far leg, lying flat
+  line(d, 8, 54, 28, 50, 'hull3'); line(d, 8, 55, 28, 51, 'hull1'); d.R(4, 53, 6, 2, 'hull3');
+  // descent stage: a tilted octagonal box wrapped in amber foil
+  const stage: [number, number][] = [[20, 30], [52, 20], [66, 26], [70, 44], [60, 56], [28, 56], [18, 46]];
+  // dusty gold foil: crinkled facets, lit from the upper left, darkening into the dirt
+  const FOIL: readonly PaletteName[] = ['hull1', 'regolith0', 'amber0', 'amber1'];
+  for (let y = 20; y < 57; y++) for (let x = 18; x < 71; x++) {
+    if (!inside(stage, x + 0.5, y + 0.5)) continue;
+    const crinkle = (hash(x >> 2, y >> 1, 53) - 0.5) * 0.35;
+    const t = 0.72 - (y - 20) / 36 * 0.55 - (x - 18) / 52 * 0.12 + crinkle;
+    d.px(x, y, ramp(FOIL, t, x, y));
+  }
+  line(d, 20, 30, 52, 20, 'amber1'); // lit top edge of the foil
+  line(d, 30, 34, 62, 26, 'hull0'); line(d, 28, 45, 64, 38, 'regolith0'); // crumple creases
+  d.P([[46, 44], [60, 40], [62, 52], [50, 55]], 'hull1'); // torn hole
+  // near leg, still attached, buckled at the knee, footpad dug in
+  line(d, 64, 44, 76, 50, 'hull4'); line(d, 64, 45, 76, 51, 'hull2'); line(d, 76, 50, 80, 56, 'hull4');
+  d.R(76, 55, 8, 2, 'hull3'); d.R(76, 55, 8, 1, 'hull5');
+  // ascent cabin: brushed metal, lit from the upper left, window blown out
+  cylinderV(d, 30, 8, 22, 16, (nx, ny, nz, px, py) => ramp(METAL, 0.1 + 0.9 * lambert(nx, ny, nz) - (py - 8) * 0.012, px, py));
+  dome(d, 41, 9, 11, 7, (nx, ny, nz, px, py) => ramp(METAL, 0.15 + 0.9 * lambert(nx, ny, nz), px, py));
+  d.P([[35, 12], [42, 11], [42, 17], [35, 18]], 'hull0'); d.px(36, 13, 'cyan1'); line(d, 38, 12, 40, 17, 'hull2');
+  d.R(48, 4, 1, 6, 'hull3'); d.px(48, 3, 'hull5'); // bent antenna
+  // debris panels
+  d.P([[8, 48], [14, 46], [15, 50], [9, 51]], 'amber0'); d.px(9, 48, 'amber1');
+  d.P([[W - 12, 50], [W - 6, 49], [W - 5, 53], [W - 11, 54]], 'hull3');
+}
+
+/**
+ * Cargo crawler, parked: bogie tracks with road wheels, a plated chassis, forward cab with a lit
+ * window, a flatbed carrying a strapped load, and an amber beacon on the roof.
+ */
+function drawCrawler(d: DrawApi): void {
+  const W = 96;
+  // track run
+  d.R(4, 34, W - 8, 10, 'hull1'); d.R(4, 34, W - 8, 1, 'hull2');
+  for (let x = 5; x < W - 5; x += 3) d.R(x, 43, 2, 1, 'hull3');
+  for (const cx of [12, 26, 40, 54, 68, 82]) {
+    for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) {
+      const q = (x * x + y * y) / 16;
+      if (q > 1) continue;
+      d.px(cx + x, 39 + y, q > 0.6 ? 'hull2' : ramp(METAL, 0.3 + 0.7 * lambert(x / 4, y / 4, Math.sqrt(1 - q)), cx + x, 39 + y));
+    }
+    d.px(cx, 39, 'hull0');
+  }
+  // chassis
+  plate(d, 2, 26, W - 4, 8, 'hull3', 'hull5', 'hull1');
+  rivets(d, 6, 30, W - 6, 6, 'hull5');
+  for (let x = 0; x < 10; x++) d.R(W - 12 + x, 28, 1, 4, ((x >> 1) & 1) ? 'amber1' : 'hull0'); // bumper stripes
+  // cab
+  d.P([[W - 30, 26], [W - 30, 8], [W - 14, 8], [W - 6, 18], [W - 6, 26]], 'hull3');
+  d.P([[W - 30, 8], [W - 14, 8], [W - 13, 10], [W - 30, 10]], 'hull5');
+  d.P([[W - 26, 11], [W - 15, 11], [W - 10, 18], [W - 26, 18]], 'cyan0');
+  d.P([[W - 25, 12], [W - 18, 12], [W - 20, 15], [W - 25, 15]], 'cyan1'); d.px(W - 24, 12, 'cyan3');
+  d.R(W - 30, 20, 24, 1, 'hull1');
+  d.R(W - 24, 4, 4, 4, 'hull2'); d.R(W - 23, 4, 2, 2, 'amber1'); // beacon
+  // flatbed with a strapped load
+  plate(d, 4, 22, W - 36, 4, 'hull2', 'hull4', 'hull0');
+  plate(d, 10, 6, 42, 16, 'cold1', 'cold2', 'cold0');
+  for (let x = 12; x < 50; x += 4) d.R(x, 8, 2, 13, 'cold0');
+  for (const x of [18, 42]) { d.R(x, 6, 2, 16, 'amber0'); d.px(x, 6, 'amber1'); }
+  d.R(14, 9, 6, 1, 'hull6');
+}
+
+// ── pickups: 18×18 native, anchored at the centre ────────────────────────────
+/** Nanite repair canister: green fluid behind a glass window, machined caps, repair cross. */
+function drawPickupHealth(d: DrawApi): void {
+  cylinderV(d, 4, 3, 10, 12, (nx, ny, nz, px, py) => ramp(['green0', 'green1'], 0.2 + 0.9 * lambert(nx, ny, nz), px, py));
+  d.R(5, 4, 1, 10, 'cyan3');
+  for (const y of [0, 14]) cylinderV(d, 3, y, 12, 4, (nx, ny, nz, px, py) => ramp(METAL, 0.2 + 0.85 * lambert(nx, ny, nz), px, py));
+  d.R(8, 6, 2, 6, 'hull6'); d.R(6, 8, 6, 2, 'hull6');
+}
+
+/** Pressurised fuel cell: brushed tank, cyan charge band, gauge, top valve. */
+function drawPickupFuel(d: DrawApi): void {
+  cylinderV(d, 4, 3, 10, 15, (nx, ny, nz, px, py) => ramp(METAL, 0.12 + 0.95 * lambert(nx, ny, nz), px, py));
+  d.R(4, 8, 10, 3, 'cyan1'); d.R(5, 8, 7, 1, 'cyan2'); d.px(6, 9, 'cyan3');
+  d.R(7, 0, 4, 3, 'hull3'); d.R(7, 0, 4, 1, 'hull5'); d.R(11, 1, 3, 1, 'hull4');
+  d.R(6, 13, 3, 2, 'hull1'); d.px(7, 13, 'cyan2');
+}
+
+/** Ammo box: stamped steel case, amber band, a belt of rounds over the lid. */
+function drawPickupAmmo(d: DrawApi): void {
+  plate(d, 1, 7, 16, 10, 'hull3', 'hull5', 'hull1');
+  d.R(1, 11, 16, 2, 'amber0'); d.R(1, 11, 16, 1, 'amber1');
+  d.R(7, 8, 4, 2, 'hull2'); d.px(8, 8, 'hull4');
+  for (let i = 0; i < 5; i++) {
+    const x = 2 + i * 3, y = 2 + (i % 2);
+    d.R(x, y + 1, 2, 4, 'amber0'); d.R(x, y, 2, 1, 'amber1'); d.px(x, y + 1, 'amber1'); d.R(x, y + 5, 2, 1, 'hull2');
+  }
+}
+
+/** Data core: a cut crystal chip in an amber frame, one hard glint. */
+function drawPickupScore(d: DrawApi): void {
+  d.P([[9, 0], [17, 9], [9, 18], [1, 9]], 'amber0');
+  d.P([[9, 2], [15, 9], [9, 16], [3, 9]], 'amber1');
+  d.P([[9, 2], [9, 9], [3, 9]], 'hull6');
+  d.P([[9, 9], [15, 9], [9, 16]], 'amber0');
+  d.R(8, 8, 3, 3, 'hull1'); d.px(9, 9, 'cyan2');
+  d.px(6, 5, 'cyan3');
+}
+
 /** Every world prop, by name. Frame names in the world atlas are `name@n` / `name@f` (far). */
 export const WORLD_PROPS: PartSet = {
   dome: { w: DOME_W, h: DOME_H, px: DOME_W / 2, py: DOME_H, draw: drawDome },
@@ -298,4 +409,10 @@ export const WORLD_PROPS: PartSet = {
   boulderM: { w: 18, h: 12, px: 9, py: 12, draw: drawBoulder(18, 12, 2) },
   boulderL: { w: 30, h: 19, px: 15, py: 19, draw: drawBoulder(30, 19, 3) },
   crate: { w: 14, h: 12, px: 7, py: 12, draw: drawCrate },
+  landerWreck: { w: 84, h: 57, px: 42, py: 56, draw: drawLanderWreck },
+  crawler: { w: 96, h: 44, px: 48, py: 44, draw: drawCrawler },
+  pickupHealth: { w: 18, h: 18, px: 9, py: 9, draw: drawPickupHealth },
+  pickupFuel: { w: 18, h: 18, px: 9, py: 9, draw: drawPickupFuel },
+  pickupAmmo: { w: 18, h: 18, px: 9, py: 9, draw: drawPickupAmmo },
+  pickupScore: { w: 18, h: 18, px: 9, py: 9, draw: drawPickupScore },
 };

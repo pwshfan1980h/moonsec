@@ -56,7 +56,6 @@ export class BootScene extends Phaser.Scene {
     this.load.image('industrial-tileset-violet', 'assets/industrial-tileset-violet.png');
 
     // Collectables spritesheet (16x16 tiles, 8×6 grid)
-    this.load.spritesheet('collectables', `assets/collectables.png?v=${__APP_VERSION__}`, { frameWidth: 16, frameHeight: 16 });
 
     // Flare sprite for particles
     this.load.svg('flare', `assets/flare.svg?v=${__APP_VERSION__}`, { width: 32, height: 32 });

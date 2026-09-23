@@ -4,7 +4,6 @@ import { HEAL } from '../balance/armor';
 import {
   BODY_SIZE,
   CONTENT_PIXELS,
-  FRAME_PADDING,
   PICKUP_MAGNET_PULL,
   PICKUP_MAGNET_RANGE,
   PICKUP_SIZE,
@@ -16,31 +15,17 @@ import {
 } from '../systems/PickupSystem';
 
 describe('PickupSystem pure helpers', () => {
-  it('keeps pickup body geometry aligned with cropped art', () => {
-    expect(PICKUP_SIZE).toBe(44);
-    expect(CONTENT_PIXELS).toBe(12);
-    expect(FRAME_PADDING).toBe(2);
-    expect(BODY_SIZE).toBe(33);
+  it('sizes the pickup and its body from the kit art', () => {
+    expect(CONTENT_PIXELS).toBe(18);
+    expect(PICKUP_SIZE).toBe(40); // 18 px + outline, at 2x
+    expect(BODY_SIZE).toBe(18);   // frame pixels; the sprite scales it to 36
   });
 
-  it('selects expected health and fuel frames without tint', () => {
-    expect(getPickupVisual('health', () => 0.1)).toEqual({ frame: 36, tint: null });
-    expect(getPickupVisual('health', () => 0.9)).toEqual({ frame: 44, tint: null });
-    expect(getPickupVisual('fuel', () => 0.1)).toEqual({ frame: 32, tint: null });
-    expect(getPickupVisual('fuel', () => 0.9)).toEqual({ frame: 40, tint: null });
-  });
-
-  it('selects tinted ammo and score visuals', () => {
-    expect(getPickupVisual('ammo', () => 0.1)).toEqual({ frame: 9, tint: pal('cyan2') });
-    expect(getPickupVisual('ammo', () => 0.9)).toEqual({ frame: 17, tint: pal('cyan2') });
-    expect(getPickupVisual('score', () => 0.1)).toEqual({ frame: 4, tint: pal('amber1'), points: 100 });
-    expect(getPickupVisual('score', () => 0.9)).toEqual({ frame: 12, tint: pal('amber1'), points: 100 });
-  });
-
-  it('uses a single random roll per visual selection', () => {
-    const roll = vi.fn(() => 0.25);
-    expect(getPickupVisual('ammo', roll)).toEqual({ frame: 9, tint: pal('cyan2') });
-    expect(roll).toHaveBeenCalledTimes(1);
+  it('draws each pickup type from its own world-kit frame with a matching flash', () => {
+    expect(getPickupVisual('health')).toEqual({ frame: 'pickupHealth@n', flash: pal('green1') });
+    expect(getPickupVisual('fuel')).toEqual({ frame: 'pickupFuel@n', flash: pal('cyan2') });
+    expect(getPickupVisual('ammo')).toEqual({ frame: 'pickupAmmo@n', flash: pal('amber1') });
+    expect(getPickupVisual('score')).toEqual({ frame: 'pickupScore@n', flash: pal('amber1'), points: 100 });
   });
 
   it('uses Phaser 4 tint mode API for spawn flash tint', () => {

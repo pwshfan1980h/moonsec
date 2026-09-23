@@ -152,3 +152,13 @@ export function ridge1(x: number, period: number, seed: number, octaves = 4): nu
   }
   return sum / total;
 }
+
+/** Point-in-polygon (even–odd), for shading inside an irregular outline pixel by pixel. */
+export function inside(pts: readonly (readonly [number, number])[], x: number, y: number): boolean {
+  let hit = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i], [xj, yj] = pts[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+}

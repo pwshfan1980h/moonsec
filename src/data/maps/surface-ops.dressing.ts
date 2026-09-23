@@ -10,11 +10,11 @@ export const SURFACE_OPS_DRESSING: readonly Dressing[] = [
   { prop: 'crate', col: 13 }, { prop: 'crate', col: 13, dx: 30 },
   { prop: 'antenna', col: 5, far: true },
   // crater: loose rock on the rims and floor
-  { prop: 'boulderM', col: 20 }, { prop: 'boulderS', col: 23 }, { prop: 'boulderL', col: 29 },
+  { prop: 'boulderM', col: 20 }, { prop: 'boulderS', col: 23 }, { prop: 'landerWreck', col: 29 },
   { prop: 'boulderS', col: 31 }, { prop: 'boulderM', col: 38, flip: true },
   // training ground
   { prop: 'silo', col: 42, far: true }, { prop: 'silo', col: 44, dx: 8, far: true },
-  { prop: 'solar', col: 49 }, { prop: 'solar', col: 55 },
+  { prop: 'solar', col: 45 }, { prop: 'crawler', col: 52 }, { prop: 'solar', col: 57 },
   // survey plateau (relay 1 at 65)
   { prop: 'lamp', col: 62 }, { prop: 'antenna', col: 70 }, { prop: 'boulderS', col: 60 },
   // container yard

@@ -1,7 +1,7 @@
 // Remaps legacy art onto the Moonsec palette.
 //
 //   node tools/palette/remap.ts            # remap every job below
-//   node tools/palette/remap.ts collectables
+//   node tools/palette/remap.ts industrial-tileset
 //
 // Pixels are classified by OKLab hue family (neutral / cool / warm / red / green / violet)
 // and each family is sent to a palette ramp. Within a ramp the entry with the closest
@@ -49,11 +49,6 @@ export const JOBS: Record<string, Job> = {
       violet: ['hull0', 'hull1', 'regolith0', 'regolith1', 'regolith2'], warm: 'amber', red: 'amber', green: 'regolith',
     },
     chroma: 0.2, stretch: true,
-  },
-  collectables: {
-    src: 'art/originals/collectables.png', out: 'public/assets/collectables.png',
-    families: { neutral: 'hull', cool: 'cyan', violet: 'cyan', warm: 'amber', red: 'amber', green: 'green' },
-    stretch: true,
   },
 };
 

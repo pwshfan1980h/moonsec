@@ -53,8 +53,11 @@ Trade Lanes freight art (later, with its level).
    masts, blocks, cranes with lit windows (fx 0.16), near regolith hills with boulders
    (fx 0.38). Strips sink as the camera climbs. The legacy Earth, crater strip and background
    domes are skipped for text-map levels. Foreground occluders are parked for step 6.
-6. **Set pieces + props** — hand-placed decorative assemblies (wrecked lander, antenna farm,
-   cargo crawler), pickups redrawn in the kit.
+6. **Set pieces + props** ✅ — crashed lander (dusty gold-foil descent stage, blown cabin) in
+   the crater, parked cargo crawler on the training ground, and a foreground strip of backlit
+   rock/girder/spool silhouettes (fx 1.3) passing in front of the playfield's base. Pickups are
+   kit parts in every mission (nanite canister, fuel cell, ammo box, data core) with a
+   matching spawn flash; `collectables.png` and its remap job are gone.
 7. Roll the kit out to the other missions, one per pass.
 
 ## Other ideas (parked)

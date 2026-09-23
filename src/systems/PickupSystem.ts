@@ -5,27 +5,31 @@ import type Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { PICKUP_LIFETIME_MS, RAPID_AMMO_PER_PICKUP } from '../constants';
 import { HEAL } from '../balance/armor';
+import { WORLD_ATLAS_KEY } from '../world/worldTextures';
 
 export type PickupType = 'health' | 'fuel' | 'ammo' | 'score';
 
-export const PICKUP_SIZE = 44;
-export const CONTENT_PIXELS = 12;
-export const FRAME_PADDING = (16 - CONTENT_PIXELS) / 2;
-export const BODY_SIZE = PICKUP_SIZE * (CONTENT_PIXELS / 16);
+/** Pickup art is 18 native px (+1 px outline each side), drawn at 2×. */
+export const CONTENT_PIXELS = 18;
+export const PICKUP_SIZE = (CONTENT_PIXELS + 2) * 2;
+/** Body in frame pixels (scaled 2× by the sprite): the art without its outline. */
+export const BODY_SIZE = CONTENT_PIXELS;
 export const PICKUP_MAGNET_RANGE = 160;
 export const PICKUP_MAGNET_PULL = 520;
 
 export interface PickupVisual {
-  frame: number;
-  tint: number | null;
+  /** Frame in the world atlas. */
+  frame: string;
+  /** Spawn-flash colour. */
+  flash: number;
   points?: number;
 }
 
-export function getPickupVisual(type: PickupType, roll: () => number = Math.random): PickupVisual {
-  if (type === 'health') return { frame: roll() < 0.5 ? 36 : 44, tint: null };
-  if (type === 'fuel') return { frame: roll() < 0.5 ? 32 : 40, tint: null };
-  if (type === 'ammo') return { frame: roll() < 0.5 ? 9 : 17, tint: pal('cyan2') };
-  return { frame: roll() < 0.5 ? 4 : 12, tint: pal('amber1'), points: 100 };
+export function getPickupVisual(type: PickupType): PickupVisual {
+  if (type === 'health') return { frame: 'pickupHealth@n', flash: pal('green1') };
+  if (type === 'fuel') return { frame: 'pickupFuel@n', flash: pal('cyan2') };
+  if (type === 'ammo') return { frame: 'pickupAmmo@n', flash: pal('amber1') };
+  return { frame: 'pickupScore@n', flash: pal('amber1'), points: 100 };
 }
 
 export function randomIntBetween(min: number, max: number, roll: () => number = Math.random): number {
@@ -72,18 +76,15 @@ export class PickupSystem {
   }
 
   spawn(x: number, y: number, type: PickupType): void {
-    const key = 'collectables';
-    const { frame, tint, points } = getPickupVisual(type);
+    const { frame, flash, points } = getPickupVisual(type);
 
-    const p = this.scene.pickups.get(x, y, key, frame) as Phaser.Physics.Arcade.Image;
+    const p = this.scene.pickups.get(x, y, WORLD_ATLAS_KEY, frame) as Phaser.Physics.Arcade.Image;
     if (!p) return;
 
-    // Crop out the transparent padding baked into each 16x16 frame so the
-    // sprite hugs its artwork and sits flush on the ground.
-    p.setCrop(FRAME_PADDING, FRAME_PADDING, CONTENT_PIXELS, CONTENT_PIXELS);
+    p.setTexture(WORLD_ATLAS_KEY, frame);
     p.setActive(true).setVisible(true).setDepth(12).setPosition(x, y).setAlpha(1)
       .setScale(1, 1).setDisplaySize(PICKUP_SIZE, PICKUP_SIZE);
-    if (tint !== null) p.setTint(tint); else p.clearTint();
+    p.clearTint();
     p.setData('type', type);
     p.setData('landed', false);
     p.setData('hopped', false);
@@ -92,7 +93,7 @@ export class PickupSystem {
     if (p.body) {
       const pb = p.body as Phaser.Physics.Arcade.Body;
       pb.enable = true;
-      // Body matches the cropped content so it lands flush with the ground.
+      // Body matches the art inside its outline so it lands flush with the ground.
       pb.setSize(BODY_SIZE, BODY_SIZE, true);
       pb.setAllowGravity(true);
       pb.setVelocity(
@@ -103,7 +104,7 @@ export class PickupSystem {
       pb.setBounce(0.25, 0.2);
     }
 
-    this.playSpawnPop(p, tint);
+    this.playSpawnPop(p, flash);
     this.scheduleLifecycle(p);
   }
 
@@ -180,8 +181,8 @@ export class PickupSystem {
     this.scene.spawnFloatingText(pk.x, pk.y - 8, label, role, { icon: glyph, rise: 44, duration: 750 });
   }
 
-  private playSpawnPop(p: Phaser.Physics.Arcade.Image, tint: number | null): void {
-    // Spawn-pop: brief scale-up + white flash so drops read at the moment of birth.
+  private playSpawnPop(p: Phaser.Physics.Arcade.Image, flash: number): void {
+    // Spawn-pop: brief scale-up + a flash in the pickup's colour so drops read at the moment of birth.
     const popDx = p.displayWidth;
     const popDy = p.displayHeight;
     p.setDisplaySize(popDx * 0.6, popDy * 0.6);
@@ -192,10 +193,10 @@ export class PickupSystem {
       duration: 180,
       ease: 'Back.easeOut',
     });
-    applyFillTintCompat(p, pal('cyan3'));
+    applyFillTintCompat(p, flash);
     this.scene.time.delayedCall(80, () => {
       if (!p.active) return;
-      if (tint !== null) p.setTint(tint); else p.clearTint();
+      p.clearTint(); // also restores multiply mode
     });
   }
 
