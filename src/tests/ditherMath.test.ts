@@ -52,3 +52,11 @@ describe('pickColor', () => {
     for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) expect(same(pickColor(probe, PAL, x, y, 0), first)).toBe(true);
   });
 });
+
+describe('pickColor precision', () => {
+  it('does not dither colours a hair off the palette (GPU texture rounding)', () => {
+    const c = PAL[5];
+    const nudged: RGB = [c[0] + 0.001, c[1] - 0.001, c[2] + 0.0015];
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) expect(same(pickColor(nudged, PAL, x, y, 1), c)).toBe(true);
+  });
+});

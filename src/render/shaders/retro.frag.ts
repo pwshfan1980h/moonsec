@@ -57,8 +57,10 @@ void main() {
   }
   float s1 = sqrt(d1);
   float s2 = sqrt(d2);
-  float p2 = s1 / max(s1 + s2, 0.000001);
-  vec3 outc = (p2 * uSpread > bayer4(cell)) ? c2 : c1;
+  // near-exact matches never dither (texture precision leaves tiny residuals)
+  float p2 = s1 < 0.006 ? 0.0 : s1 / max(s1 + s2, 0.000001);
+  // thresholds sit half a step above 0 so a 0 probability can never flip a cell
+  vec3 outc = (p2 * uSpread > bayer4(cell) + 0.03125) ? c2 : c1;
   if (uScanlines > 0.0 && mod(floor(px.y), 2.0) < 1.0) outc *= 1.0 - 0.3 * uScanlines;
   gl_FragColor = vec4(outc * alpha, alpha);
 }

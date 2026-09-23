@@ -20,6 +20,7 @@ import { EnvironmentalLife } from '../systems/EnvironmentalLife';
 import { drawTradeLaneArt, makeFreightLiftTexture } from '../systems/TradeLaneArt';
 import { FlightNavigation } from '../systems/FlightNavigation';
 import { devParams } from '../dev/devParams';
+import { markDevReady } from '../dev/ready';
 import { HostileCombat } from '../collisions/HostileCombat';
 import { installPipeline, graphics, type CameraPipeline } from '../render/RenderPipeline';
 import { VPX, cameraZoom, type GraphicsSettings } from '../render/GraphicsSettings';
@@ -390,23 +391,9 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('rapidAmmoChange', this.player.rapidAmmo, this.player.rapidAmmoMax);
     this.events.emit('scoreChange', this.score);
 
-    this.markDevReady();
+    markDevReady(this);
   }
 
-  /** Dev harness hook (tools/shots): optionally freeze, then flag the scene as ready. */
-  private markDevReady(): void {
-    if (!import.meta.env.DEV) return;
-    const w = window as unknown as { __moonsecReady?: boolean };
-    w.__moonsecReady = false;
-    const freeze = devParams().freeze;
-    if (freeze === undefined) { w.__moonsecReady = true; return; }
-    this.time.delayedCall(freeze, () => {
-      this.physics.world.pause();
-      this.tweens.pauseAll();
-      this.time.timeScale = 0;
-      w.__moonsecReady = true;
-    });
-  }
 
   /** Camera zoom and retro filter follow the graphics settings (pause menu: G / V). */
   private applyGraphics(s: GraphicsSettings): void {

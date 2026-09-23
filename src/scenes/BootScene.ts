@@ -44,6 +44,9 @@ export class BootScene extends Phaser.Scene {
     // Title screen music loop
     this.load.audio('music-title', 'audio/music-title.ogg');
 
+    // Rigged bodies: every part of every rig in one atlas (tools/rig/build.ts)
+    this.load.atlas('rig', 'assets/rig.png', 'assets/rig.json');
+
     // Player mechs (Aseprite atlas for proper per-frame timing)
     this.load.aseprite('mech', 'assets/mech-sheet.png', 'assets/mech-sheet.json');
     this.load.aseprite('mech4', 'assets/mech4-sheet.png', 'assets/mech4-sheet.json');
@@ -142,6 +145,13 @@ export class BootScene extends Phaser.Scene {
     this.makeTextures();
 
     this.registry.set('firstBoot', true);
+    if (devParams().rigtest) {
+      void import('../dev/RigTestScene').then(({ RigTestScene }) => {
+        this.scene.add('RigTest', RigTestScene, true);
+        this.scene.stop();
+      });
+      return;
+    }
     this.scene.start('Game', { mechType: 'mech4', level: bootLevel(), totalScore: 0, completedNodes: [] });
     this.scene.launch('UI');
   }

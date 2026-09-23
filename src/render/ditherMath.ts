@@ -40,6 +40,7 @@ export function pickColor(rgb: RGB, palette: readonly RGB[], cellX: number, cell
     else if (d < d2) { d2 = d; c2 = p; }
   }
   const s1 = Math.sqrt(d1), s2 = Math.sqrt(d2);
-  const p2 = s1 / Math.max(s1 + s2, 1e-6);
-  return p2 * spread > bayer4(cellX, cellY) ? c2 : c1;
+  // near-exact matches never dither; thresholds sit half a step above 0
+  const p2 = s1 < 0.006 ? 0 : s1 / Math.max(s1 + s2, 1e-6);
+  return p2 * spread > bayer4(cellX, cellY) + 1 / 32 ? c2 : c1;
 }
