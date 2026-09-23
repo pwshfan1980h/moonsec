@@ -23,17 +23,25 @@ const { DEFAULT_GRAPHICS, toggleView, nextPreset } = await import('../render/Gra
 
 function fakeScene(rendererType: number) {
   const added: unknown[] = [];
-  const camera = { filters: { external: { add: (c: unknown) => { added.push(c); return c; } } } };
-  const scene = { sys: { game: { renderer: { type: rendererType } } } };
+  const camera = { filters: { external: {
+    add: (c: unknown) => { added.push(c); return c; },
+    addDisplacement: (key: string) => { const c = { kind: 'displacement', key, active: true }; added.push(c); return c; },
+  } } };
+  const textures = new Set<string>();
+  const scene = {
+    sys: { game: { renderer: { type: rendererType } } },
+    textures: { exists: (k: string) => textures.has(k), get: () => ({}), addDynamicTexture: (k: string) => { textures.add(k); return { key: k }; } },
+  };
   return { scene, camera, added };
 }
 
 describe('installPipeline', () => {
-  it('adds one retro filter to the camera on WebGL', () => {
+  it('adds heat haze then the retro filter to a world camera on WebGL', () => {
     const { scene, camera, added } = fakeScene(2);
     const p = installPipeline(scene as never, camera as never, 'world');
-    expect(added).toHaveLength(1);
-    expect(p.retro).toBe(added[0]);
+    expect(added).toHaveLength(2);
+    expect(added[0]).toMatchObject({ kind: 'displacement', key: 'haze-map', active: false });
+    expect(p.retro).toBe(added[1]);
     expect(p.retro).toMatchObject({ renderNode: 'FilterRetro', block: 2, quantize: true, spread: 1, hardAlpha: false });
   });
 
@@ -45,9 +53,11 @@ describe('installPipeline', () => {
     expect(() => p.apply(DEFAULT_GRAPHICS)).not.toThrow();
   });
 
-  it('keeps UI crisp: no dither, no grid, hard alpha', () => {
-    const { scene, camera } = fakeScene(2);
+  it('keeps UI crisp: no dither, no grid, hard alpha, no haze', () => {
+    const { scene, camera, added } = fakeScene(2);
     const p = installPipeline(scene as never, camera as never, 'ui');
+    expect(added).toHaveLength(1);
+    expect(p.haze).toBeUndefined();
     expect(p.retro).toMatchObject({ block: 1, spread: 0, hardAlpha: true, quantize: true });
   });
 

@@ -23,6 +23,9 @@ import { markDevReady } from '../dev/ready';
 import { HostileCombat } from '../collisions/HostileCombat';
 import { installPipeline, graphics, type CameraPipeline } from '../render/RenderPipeline';
 import { VPX, cameraZoom, type GraphicsSettings } from '../render/GraphicsSettings';
+import { Atmosphere } from '../fx/Atmosphere';
+import { atmosphereFor } from '../fx/atmosphereRecipes';
+import { TerrainProbe } from '../fx/terrain';
 
 /** Camera frames the mech slightly above its feet. */
 const CAMERA_FEET_OFFSET = 80;
@@ -63,7 +66,8 @@ export class GameScene extends Phaser.Scene {
   private gameEventUnsubs: Array<() => void> = [];
   private bgStars?: Phaser.GameObjects.TileSprite;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
-  private bgHaze?: Phaser.GameObjects.TileSprite;
+  private atmosphere?: Atmosphere;
+  terrain!: TerrainProbe;
   private trainOffset = 0;
   private isBossDead    = false;
 
@@ -107,7 +111,8 @@ export class GameScene extends Phaser.Scene {
     this.prevHp       = 0;
     this.gameEventUnsubs = [];
     this.isBossDead      = false;
-    this.bgHaze          = undefined;
+    this.atmosphere?.destroy();
+    this.atmosphere      = undefined;
     this.bgStars         = undefined;
     this.bgTerrain       = undefined;
     this.groundLayer     = undefined;
@@ -185,6 +190,7 @@ export class GameScene extends Phaser.Scene {
     this.ground = this.physics.add.staticGroup();
     const mapSeed = devParams().seed ?? (Math.random() * 0xFFFFFFFF | 0);
     const mapTiles = buildMap(this.activeConfig.template, mapSeed);
+    this.terrain = new TerrainProbe(mapTiles, this.activeConfig.template.tileK.EMPTY);
     this.flightNavigation = nodeIdx === 1 ? new FlightNavigation(mapTiles) : undefined;
     this.makeTilemapGround(
       mapTiles,
@@ -269,6 +275,13 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAME_H - 120));
     this.worldPipeline = installPipeline(this, this.cameras.main, 'world');
     this.applyGraphics(graphics());
+    const tmpl = this.activeConfig.template;
+    this.atmosphere = new Atmosphere(
+      this, atmosphereFor(nodeIdx), this.terrain,
+      tmpl.hasGround ? this.levelGroundY : 22 * 32,
+      tmpl.hasCeiling ? (tmpl.ceilingRow + 2) * 32 : null,
+      graphics(), this.worldPipeline,
+    );
     this.snapCameraTo(this.player.x, this.player.y, 1);
     const onGraphics = (s: GraphicsSettings) => this.applyGraphics(s);
     this.game.events.on('graphicsChanged', onGraphics);
@@ -393,7 +406,11 @@ export class GameScene extends Phaser.Scene {
   private applyGraphics(s: GraphicsSettings): void {
     this.cameras.main.setZoom(cameraZoom(s));
     this.worldPipeline?.apply(s);
+    this.atmosphere?.applySettings(s);
   }
+
+  /** Mission atmosphere (dust, fog, shafts, heat haze); FX sources feed it. */
+  get air(): Atmosphere | undefined { return this.atmosphere; }
 
   /**
    * Manual camera follow. The float target is lerped frame-rate independently and the
@@ -412,6 +429,7 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     // The rig keeps animating after death: the wreck burns while the game-over screen is up.
     this.player.tickPresentation(delta);
+    this.atmosphere?.update(delta);
     if (this.isGameOver) return;
     this.player.update(time, delta);
     const k = delta / (1000 / 60);
@@ -616,6 +634,7 @@ export class GameScene extends Phaser.Scene {
     y: number,
     opts?: { primary?: Phaser.GameObjects.GameObject; splashRadius?: number; splashDamage?: number },
   ): void {
+    this.atmosphere?.explosion(x, y, true);
     const radius = opts?.splashRadius ?? 110;
     const splashDamage = opts?.splashDamage ?? 1;
     const primary = opts?.primary ?? null;
@@ -676,6 +695,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   spawnExplosion(x: number, y: number): void {
+    this.atmosphere?.explosion(x, y, false);
     const emitter = this.add.particles(x, y, 'flare', {
       speed:    { min: 60, max: 160 },
       angle:    { min: 0, max: 360 },
@@ -740,7 +760,7 @@ export class GameScene extends Phaser.Scene {
       .setDepth(0).setScrollFactor(0);
 
     // Dedup texture keys on scene restart (instance is reused, not reconstructed)
-    for (const key of ['bgStars', 'bgTerrain', 'bgHaze']) {
+    for (const key of ['bgStars', 'bgTerrain']) {
       if (this.textures.exists(key)) this.textures.remove(key);
     }
 
@@ -779,17 +799,6 @@ export class GameScene extends Phaser.Scene {
     terrainGfx.destroy();
     this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerrain')
       .setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
-
-    // Layer 3: dust haze — 8-strip vertical gradient (120px tall, bottom edge at GROUND_Y)
-    const hazeGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    for (let i = 0; i < 8; i++) {
-      hazeGfx.fillStyle(0x1a1a2e, (1 - i / 8) * 0.35);
-      hazeGfx.fillRect(0, i * 15, GAME_W, 15);
-    }
-    hazeGfx.generateTexture('bgHaze', GAME_W, 120);
-    hazeGfx.destroy();
-    this.bgHaze = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 120, 'bgHaze')
-      .setDepth(3).setOrigin(0.5, 1).setScrollFactor(0);
 
     this.makeBackgroundDomes();
 
@@ -914,27 +923,6 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    // ── Moon-dust drift ──
-    // Low-alpha particles rising near ground, drifting slowly right. World-space
-    // emitter spread across the level so dust passes the camera naturally.
-    const dustGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    dustGfx.fillStyle(0xc8c8d8, 1);
-    dustGfx.fillRect(0, 0, 2, 2);
-    if (this.textures.exists('bgDust')) this.textures.remove('bgDust');
-    dustGfx.generateTexture('bgDust', 2, 2);
-    dustGfx.destroy();
-
-    this.add.particles(0, 0, 'bgDust', {
-      x:        { min: 0, max: WORLD_WIDTH },
-      y:        { min: GROUND_Y - 30, max: GROUND_Y - 2 },
-      speedX:   { min: 8, max: 22 },
-      speedY:   { min: -4, max: 2 },
-      lifespan: { min: 3500, max: 6000 },
-      alpha:    { start: 0.35, end: 0 },
-      scale:    { min: 0.8, max: 1.6 },
-      frequency: 180,
-      quantity: 1,
-    }).setDepth(3.4);
   }
 
   private makeBackgroundDomes(): void {
@@ -1083,12 +1071,10 @@ export class GameScene extends Phaser.Scene {
       this.trainOffset += delta * 0.12; // ~120 px/s leftward drift
       if (this.bgStars)   this.bgStars.setTilePosition(snapVpx(sx * 0.05 - this.trainOffset * 0.15), 0);
       if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20 - this.trainOffset * 0.55), 0);
-      if (this.bgHaze)    this.bgHaze.setTilePosition(snapVpx(sx * 0.35 - this.trainOffset), 0);
       return;
     }
     if (this.bgStars)   this.bgStars.setTilePosition(snapVpx(sx * 0.05), 0);
     if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20), 0);
-    if (this.bgHaze)    this.bgHaze.setTilePosition(snapVpx(sx * 0.35), 0);
   }
 
   private makeTilemapGround(mapData: number[][], tilesetKey = 'industrial-tileset'): void {
