@@ -1,0 +1,28 @@
+GIMP Palette
+Name: Moonsec
+Columns: 8
+#
+  6   7  15	void
+ 14  16  25	hull0
+ 27  30  44	hull1
+ 40  44  63	hull2
+ 59  65  89	hull3
+ 87  96 125	hull4
+134 144 176	hull5
+195 203 226	hull6
+ 58  52  49	regolith0
+ 98  89  80	regolith1
+151 139 124	regolith2
+ 11  18  51	cold0
+ 26  45  92	cold1
+ 52  87 154	cold2
+ 29  74  99	cyan0
+ 42 127 163	cyan1
+109 227 255	cyan2
+223 250 255	cyan3
+154  95  34	amber0
+255 179  71	amber1
+ 31 122  77	green0
+102 255 153	green1
+138  26  60	hostile0
+255  58  92	hostile1

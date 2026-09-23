@@ -1,0 +1,14 @@
+{
+  "_comment": "Legacy sprite sheets not yet on the Moonsec palette. Entries are removed as rigged replacements land (P5 player, P8 enemies). This list may only shrink.",
+  "pending": [
+    "mech-sheet.png",
+    "mech4-sheet.png",
+    "Viper-sheet.png",
+    "Hornet-sheet.png",
+    "Kodiak-sheet.png",
+    "Sentinel-sheet.png",
+    "Juggernaut-sheet.png",
+    "Nexus-sheet.png",
+    "Dart-sheet.png"
+  ]
+}
