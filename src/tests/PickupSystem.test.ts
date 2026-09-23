@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import { describe, expect, it, vi } from 'vitest';
 import { HEAL } from '../balance/armor';
 import {
@@ -30,15 +31,15 @@ describe('PickupSystem pure helpers', () => {
   });
 
   it('selects tinted ammo and score visuals', () => {
-    expect(getPickupVisual('ammo', () => 0.1)).toEqual({ frame: 9, tint: 0x00ffff });
-    expect(getPickupVisual('ammo', () => 0.9)).toEqual({ frame: 17, tint: 0x00ffff });
-    expect(getPickupVisual('score', () => 0.1)).toEqual({ frame: 4, tint: 0xffcc33, points: 100 });
-    expect(getPickupVisual('score', () => 0.9)).toEqual({ frame: 12, tint: 0xffcc33, points: 100 });
+    expect(getPickupVisual('ammo', () => 0.1)).toEqual({ frame: 9, tint: pal('cyan2') });
+    expect(getPickupVisual('ammo', () => 0.9)).toEqual({ frame: 17, tint: pal('cyan2') });
+    expect(getPickupVisual('score', () => 0.1)).toEqual({ frame: 4, tint: pal('amber1'), points: 100 });
+    expect(getPickupVisual('score', () => 0.9)).toEqual({ frame: 12, tint: pal('amber1'), points: 100 });
   });
 
   it('uses a single random roll per visual selection', () => {
     const roll = vi.fn(() => 0.25);
-    expect(getPickupVisual('ammo', roll)).toEqual({ frame: 9, tint: 0x00ffff });
+    expect(getPickupVisual('ammo', roll)).toEqual({ frame: 9, tint: pal('cyan2') });
     expect(roll).toHaveBeenCalledTimes(1);
   });
 
@@ -47,10 +48,10 @@ describe('PickupSystem pure helpers', () => {
     (globalThis as unknown as { Phaser?: unknown }).Phaser = { TintModes: { FILL: 'fill-mode' } };
     const target = { setTintFill: vi.fn(), setTint: vi.fn(), setTintMode: vi.fn() };
 
-    applyFillTintCompat(target, 0xffffff);
+    applyFillTintCompat(target, pal('cyan3'));
 
     expect(target.setTintFill).not.toHaveBeenCalled();
-    expect(target.setTint).toHaveBeenCalledWith(0xffffff);
+    expect(target.setTint).toHaveBeenCalledWith(pal('cyan3'));
     expect(target.setTintMode).toHaveBeenCalledWith('fill-mode');
     (globalThis as unknown as { Phaser?: unknown }).Phaser = originalPhaser;
   });
@@ -60,9 +61,9 @@ describe('PickupSystem pure helpers', () => {
     (globalThis as unknown as { Phaser?: unknown }).Phaser = undefined;
     const target = { setTint: vi.fn(), setTintMode: vi.fn() };
 
-    applyFillTintCompat(target, 0xffffff);
+    applyFillTintCompat(target, pal('cyan3'));
 
-    expect(target.setTint).toHaveBeenCalledWith(0xffffff);
+    expect(target.setTint).toHaveBeenCalledWith(pal('cyan3'));
     expect(target.setTintMode).not.toHaveBeenCalled();
     (globalThis as unknown as { Phaser?: unknown }).Phaser = originalPhaser;
   });

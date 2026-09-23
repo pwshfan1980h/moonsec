@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { MuzzlePose } from '../entities/Player';
@@ -50,7 +51,7 @@ export class RapidGun {
     b.setVelocity(vx, vy);
 
     // Attach glow trail
-    this.spawnTrail(b, 0x00ffff);
+    this.spawnTrail(b, pal('cyan2'));
 
     this.scene.audio.play('rapid');
     return true;

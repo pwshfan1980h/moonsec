@@ -206,7 +206,7 @@ export class Atmosphere {
     const cam = this.scene.cameras.main;
     const sx = HAZE_W / cam.width, sy = HAZE_H / cam.height;
     const tex = haze.texture;
-    tex.fill(0x808080, 1);
+    tex.fill(pal('regolith2'), 1);
     for (const st of this.hazeStamps) {
       const px = (st.x - cam.worldView.x) * cam.zoom * sx;
       const py = (st.y - cam.worldView.y) * cam.zoom * sy;

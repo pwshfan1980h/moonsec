@@ -12,6 +12,11 @@ describe('raw colour literals', () => {
     }
   });
 
+  it('has reached zero: every colour in src is a palette reference', () => {
+    expect(counts).toEqual({});
+    expect(baseline).toEqual({});
+  });
+
   it('baseline is kept tight (regenerate with node tools/palette/colorLiterals.ts --write)', () => {
     for (const [file, n] of Object.entries(baseline)) {
       expect(counts[file] ?? 0, `${file} dropped to ${counts[file] ?? 0}; lower the baseline`).toBe(n);

@@ -14,9 +14,10 @@ This plan is meant to keep the game easy to extend after fast AI-assisted iterat
 
 ### Scenes
 
-- `BootScene` owns loading and animation/texture registration only.
+- `BootScene` owns loading and procedural texture/font registration only.
+- `TitleScene` owns the start screen and its menu.
 - `GameScene` owns mission lifecycle, physics groups, collision wiring, and high-level events.
-- `UIScene` owns screen-space UI and listens to `GameScene` events through tracked subscriptions.
+- `UIScene` wires `GameScene` events (tracked subscriptions) to the HUD and screens in `src/ui/screens/`; it owns pause/modal state only.
 - `OverworldScene` owns campaign node navigation only.
 
 ### Systems
@@ -52,14 +53,9 @@ Move these out of `GameScene` in small, behavior-preserving PRs:
 - `MapBuilder` — tilemap ground, base props, background/parallax
 - `CollisionRegistry` — weapon/enemy/projectile overlap setup
 
-### Phase 4 — UIScene split
+### Phase 4 — UIScene split (done)
 
-Move these out of `UIScene`:
-
-- `TacticalHudPanel` — ammo/cooldown/nanite bars
-- `WaveBanner` — wave text, progress bar, remaining-hostiles label
-- `PauseControlsOverlay` — pause and controls modal
-- `EndStateOverlay` — game-over and level-complete screens
+`UIScene` is a thin coordinator. `CombatHud` (status, wave, score, ability dock, objective beacon, boss bar), `PauseMenu`, `UpgradePicker`, `ResultScreen`, `Telegraph`, `RadioPanel` and `PilotGuide` live in `src/ui/screens/` on the kit in `src/ui/kit/`. Gameplay code that draws world labels imports only `src/ui/kit/draw.ts` (no Phaser subclasses).
 
 ### Phase 5 — Content additions
 

@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
@@ -59,7 +60,7 @@ export class HomingMissile {
       speed: { min: 0, max: 40 },
       scale: { start: 2.5, end: 0 },
       alpha: { start: 1, end: 0 },
-      tint: [0xffff00, 0xff8800, 0xffffff],
+      tint: [pal('green1'), pal('amber1'), pal('cyan3')],
       lifespan: 200,
       frequency: 10,
       blendMode: 'ADD',

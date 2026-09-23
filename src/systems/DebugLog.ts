@@ -1,3 +1,4 @@
+import { pal, palCss } from '../render/palette';
 import Phaser from 'phaser';
 
 const MAX_LINES = 16;
@@ -14,7 +15,7 @@ export class DebugLog {
 
   constructor(scene: Phaser.Scene) {
     this.bg = scene.add
-      .rectangle(X - 4, Y - 4, W, MAX_LINES * LINE_H + 8, 0x000000, 0.70)
+      .rectangle(X - 4, Y - 4, W, MAX_LINES * LINE_H + 8, pal('void'), 0.70)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(199)
@@ -24,7 +25,7 @@ export class DebugLog {
       .text(X, Y, '', {
         fontFamily: 'monospace',
         fontSize: '13px',
-        color: '#00ff88',
+        color: palCss('green1'),
         lineSpacing: 3,
       })
       .setScrollFactor(0)

@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 
@@ -43,7 +44,7 @@ export class Turret {
     if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;
     b.setVelocity(vx, vy);
 
-    this.spawnTrail(b, 0xff6600);
+    this.spawnTrail(b, pal('hostile1'));
     this.spawnMuzzleFlash(spawnX, spawnY, angle);
 
     this.scene.cameras.main.shake(80, 0.006);
@@ -84,7 +85,7 @@ export class Turret {
       },
       scale: { start: 3.2, end: 0 },
       alpha: { start: 1, end: 0 },
-      tint: [0xfff0a0, 0xff9933, 0xff6600],
+      tint: [pal('cyan3'), pal('amber1'), pal('hostile1')],
       lifespan: 110,
       blendMode: 'ADD',
       emitting: false,

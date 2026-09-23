@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import { describe, expect, it, vi } from 'vitest';
 import { WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
 
@@ -60,7 +61,7 @@ describe('CollisionRegistry', () => {
     expect(collider).toHaveBeenCalledTimes(4);
     expect(overlap).toHaveBeenCalledTimes(12);
     expect(existing).toHaveBeenCalledTimes(1);
-    expect(rectangle).toHaveBeenCalledWith(WORLD_WIDTH / 2, WORLD_HEIGHT + 80, WORLD_WIDTH, 40, 0xff0000, 0);
+    expect(rectangle).toHaveBeenCalledWith(WORLD_WIDTH / 2, WORLD_HEIGHT + 80, WORLD_WIDTH, 40, pal('hostile1'), 0);
   });
 
   it('adds tile-layer collision hooks when a ground layer exists', async () => {

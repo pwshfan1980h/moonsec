@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import { icon as uiIcon, label as uiLabel } from '../ui/kit/draw';
 import type { IconName } from '../ui/icons';
 import type { Role } from '../ui/theme';
@@ -165,9 +166,9 @@ export class GameScene extends Phaser.Scene {
 
     // Boss projectile — large orange orb
     const bpg = this.add.graphics();
-    bpg.fillStyle(0xff6600, 0.9);
+    bpg.fillStyle(pal('hostile1'), 0.9);
     bpg.fillCircle(16, 16, 16);
-    bpg.fillStyle(0xffaa44, 0.6);
+    bpg.fillStyle(pal('amber1'), 0.6);
     bpg.fillCircle(16, 16, 9);
     bpg.generateTexture('boss-projectile', 32, 32);
     bpg.destroy();
@@ -177,11 +178,11 @@ export class GameScene extends Phaser.Scene {
     // --- Moving-platform texture (shared across all levels) ---
     if (!this.textures.exists('moving-platform')) {
       const mpg = this.add.graphics();
-      mpg.fillStyle(0x2a4a8a, 1);
+      mpg.fillStyle(pal('cold2'), 1);
       mpg.fillRect(0, 0, 128, 16);
-      mpg.lineStyle(2, 0x5588cc, 1);
+      mpg.lineStyle(2, pal('cyan1'), 1);
       mpg.strokeRect(0, 0, 128, 16);
-      mpg.fillStyle(0x5588cc, 0.4);
+      mpg.fillStyle(pal('cyan1'), 0.4);
       mpg.fillRect(4, 4, 120, 4);
       mpg.generateTexture('moving-platform', 128, 16);
       mpg.destroy();
@@ -553,7 +554,7 @@ export class GameScene extends Phaser.Scene {
       angle:    { min: back - 28, max: back + 28 },
       scale:    { start: 1.1, end: 0 },
       alpha:    { start: 0.85, end: 0 },
-      tint:     [0x6de3ff, 0xaaffff, 0xffffff, 0x2288ff],
+      tint:     [pal('cyan2'), pal('cyan3'), pal('cyan3'), pal('cyan1')],
       lifespan: { min: 220, max: 420 },
       frequency: 14, // emit one every ~14ms while active
       blendMode: 'ADD',
@@ -603,12 +604,12 @@ export class GameScene extends Phaser.Scene {
       ease:     'Cubic.Out',
       onUpdate: () => {
         ring.clear();
-        ring.lineStyle(3, 0x6de3ff, state.a);
+        ring.lineStyle(3, pal('cyan2'), state.a);
         ring.beginPath();
         ring.arc(x, y, state.r, startAngle, endAngle, false);
         ring.strokePath();
         // Inner glow rim
-        ring.lineStyle(1, 0xffffff, state.a * 0.6);
+        ring.lineStyle(1, pal('cyan3'), state.a * 0.6);
         ring.beginPath();
         ring.arc(x, y, state.r - 3, startAngle, endAngle, false);
         ring.strokePath();
@@ -623,7 +624,7 @@ export class GameScene extends Phaser.Scene {
       angle:    { min: baseAngle - 30, max: baseAngle + 30 },
       scale:    { start: 1.6, end: 0 },
       alpha:    { start: 1, end: 0 },
-      tint:     [0x6de3ff, 0xaaffff, 0xffffff, 0x2288ff],
+      tint:     [pal('cyan2'), pal('cyan3'), pal('cyan3'), pal('cyan1')],
       lifespan: { min: 180, max: 320 },
       emitting: false,
       blendMode: 'ADD',
@@ -667,7 +668,7 @@ export class GameScene extends Phaser.Scene {
       ease: 'Quad.Out',
       onUpdate: () => {
         core.clear();
-        core.fillStyle(0xffffcc, cs.a);
+        core.fillStyle(pal('cyan3'), cs.a);
         core.fillCircle(x, y, cs.r);
       },
       onComplete: () => core.destroy(),
@@ -682,9 +683,9 @@ export class GameScene extends Phaser.Scene {
       ease: 'Cubic.Out',
       onUpdate: () => {
         ring.clear();
-        ring.lineStyle(4, 0xffaa44, rs.a);
+        ring.lineStyle(4, pal('amber1'), rs.a);
         ring.strokeCircle(x, y, rs.r);
-        ring.lineStyle(2, 0xffffff, rs.a * 0.7);
+        ring.lineStyle(2, pal('cyan3'), rs.a * 0.7);
         ring.strokeCircle(x, y, rs.r - 3);
       },
       onComplete: () => ring.destroy(),
@@ -718,7 +719,7 @@ export class GameScene extends Phaser.Scene {
       gravityY: 280,
       scale:    { start: 1.2, end: 0 },
       alpha:    { start: 1, end: 0 },
-      tint:     [0xff6600, 0xff2200, 0xff9900, 0xffcc00],
+      tint:     [pal('hostile1'), pal('hostile1'), pal('amber1'), pal('amber1')],
       lifespan: { min: 1500, max: 3000 },
       emitting: false,
       blendMode: 'ADD',
@@ -732,8 +733,8 @@ export class GameScene extends Phaser.Scene {
    *  type='geometry' → cool dust/sparks that fall. type='enemy' → hot sparks + optional chunks. */
   spawnBulletImpact(x: number, y: number, type: 'enemy' | 'geometry'): void {
     const cfg = type === 'enemy'
-      ? { tints: [0xffddaa, 0xffaa33, 0xff6600], count: 5, gravity: 120, speed: [80, 220] as [number, number], life: [160, 320] as [number, number] }
-      : { tints: [0xbbccee, 0x8899aa, 0xddddee], count: 4, gravity: 320, speed: [40, 160] as [number, number], life: [200, 400] as [number, number] };
+      ? { tints: [pal('cyan3'), pal('amber1'), pal('hostile1')], count: 5, gravity: 120, speed: [80, 220] as [number, number], life: [160, 320] as [number, number] }
+      : { tints: [pal('hull6'), pal('hull5'), pal('hull6')], count: 4, gravity: 320, speed: [40, 160] as [number, number], life: [200, 400] as [number, number] };
 
     const emitter = this.add.particles(x, y, 'pixel', {
       speed:    { min: cfg.speed[0], max: cfg.speed[1] },
@@ -752,14 +753,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Bits falling off an enemy — tinted chunks with gravity. Called on hits, low chance. */
-  spawnEnemyChunks(x: number, y: number, tint = 0x99aaff, count = 3): void {
+  spawnEnemyChunks(x: number, y: number, tint = pal('hull6'), count = 3): void {
     const emitter = this.add.particles(x, y, 'pixel', {
       speed:    { min: 60, max: 180 },
       angle:    { min: 200, max: 340 }, // upward spray, then gravity pulls down
       gravityY: 520,
       scale:    { start: 1.2, end: 0.6 },
       alpha:    { start: 1, end: 0 },
-      tint:     [tint, 0x555566, 0x222233],
+      tint:     [tint, pal('hull4'), pal('hull1')],
       lifespan: { min: 600, max: 1100 },
       rotate:   { start: 0, end: 360 },
       emitting: false,
@@ -771,7 +772,7 @@ export class GameScene extends Phaser.Scene {
 
   private makeBackground(): void {
     // Sky — color from level config
-    const skyColor = this.activeConfig?.bgSkyColor ?? 0x030318;
+    const skyColor = this.activeConfig?.bgSkyColor ?? pal('void');
     this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, skyColor)
       .setDepth(0).setScrollFactor(0);
 
@@ -783,7 +784,7 @@ export class GameScene extends Phaser.Scene {
     // Layer 1: starfield — 420+ 1px dots, random alpha 0.25–0.55
     const starsGfx = this.make.graphics({ x: 0, y: 0 }, false);
     for (let i = 0; i < 420; i++) {
-      starsGfx.fillStyle(0xffffff, 0.25 + Math.random() * 0.30);
+      starsGfx.fillStyle(pal('cyan3'), 0.25 + Math.random() * 0.30);
       starsGfx.fillRect(
         Phaser.Math.Between(0, GAME_W - 1),
         Phaser.Math.Between(0, GROUND_Y - 1),
@@ -801,13 +802,13 @@ export class GameScene extends Phaser.Scene {
     // so the bowl shape cuts upward into the terrain.
     const hash = GameScene.hash;
     const terrainGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    terrainGfx.fillStyle(0x0d0d1e, 1);
+    terrainGfx.fillStyle(pal('hull0'), 1);
     terrainGfx.fillRect(0, 0, GAME_W, 200);
     for (let i = 0; i < 7; i++) {
       const cx = hash(i + 200) * GAME_W;
       const cr = 30 + hash(i + 400) * 50;
       // Center at bottom edge (y=200); upper semicircle cuts upward into terrain
-      terrainGfx.fillStyle(0x070710, 1);
+      terrainGfx.fillStyle(pal('void'), 1);
       terrainGfx.slice(cx, 200, cr, Math.PI, 0, false); // clockwise PI→0 = upper semicircle
       terrainGfx.fillPath();
     }
@@ -843,20 +844,20 @@ export class GameScene extends Phaser.Scene {
     // Soft atmosphere halo — 6 rings, outer-most is dimmest. Layered this way
     // so the edge reads as light scattering instead of a hard outline.
     for (let i = 6; i >= 1; i--) {
-      earth.fillStyle(0x4488ff, 0.05 * i);
+      earth.fillStyle(pal('hull5'), 0.05 * i);
       earth.fillCircle(0, 0, R + i * 3);
     }
 
     // Ocean with limb darkening — successive rings brighten toward the
     // sunlit core, offset slightly up-left so the center of brightness
     // sits on the implied-sun side.
-    earth.fillStyle(0x0a1a40, 1); earth.fillCircle(0, 0, R);
-    earth.fillStyle(0x12285e, 1); earth.fillCircle(-2, -2, R - 6);
-    earth.fillStyle(0x1a3c82, 1); earth.fillCircle(-4, -4, R - 14);
-    earth.fillStyle(0x2350a0, 1); earth.fillCircle(-6, -6, R - 26);
+    earth.fillStyle(pal('cold0'), 1); earth.fillCircle(0, 0, R);
+    earth.fillStyle(pal('cold1'), 1); earth.fillCircle(-2, -2, R - 6);
+    earth.fillStyle(pal('cyan0'), 1); earth.fillCircle(-4, -4, R - 14);
+    earth.fillStyle(pal('cold2'), 1); earth.fillCircle(-6, -6, R - 26);
 
     // Polar ice caps (ellipses inside the disc)
-    earth.fillStyle(0xe8f4ff, 0.60);
+    earth.fillStyle(pal('cyan3'), 0.60);
     earth.fillEllipse(0, -R * 0.88, R * 0.90, R * 0.22);
     earth.fillEllipse(0,  R * 0.88, R * 0.80, R * 0.18);
 
@@ -868,7 +869,7 @@ export class GameScene extends Phaser.Scene {
       [10, -28, 30, -22, 42, -10, 40, 10, 26, 24, 14, 20, 4, 4, 16, -8, 2, -16],
       [20, 36, 32, 38, 38, 46, 28, 48, 18, 44],
     ];
-    earth.fillStyle(0x2e6b3a, 1);
+    earth.fillStyle(pal('green0'), 1);
     for (const flat of continents) {
       const pts: Phaser.Math.Vector2[] = [];
       for (let i = 0; i < flat.length; i += 2) {
@@ -878,7 +879,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Interior land highlights — brighter green dots to suggest lit terrain
-    earth.fillStyle(0x5cbf6b, 0.75);
+    earth.fillStyle(pal('regolith2'), 0.75);
     earth.fillCircle(-30, -16, 5);
     earth.fillCircle(26,  -6, 5);
     earth.fillCircle(34,   8, 4);
@@ -887,12 +888,12 @@ export class GameScene extends Phaser.Scene {
 
     // Cloud bands — thin stretched ellipses at varying latitudes,
     // two alpha tiers so some bands read as high-cirrus wisps.
-    earth.fillStyle(0xffffff, 0.22);
+    earth.fillStyle(pal('cyan3'), 0.22);
     earth.fillEllipse(-16, -46, 44, 6);
     earth.fillEllipse( 12, -12, 56, 6);
     earth.fillEllipse(-30,  36, 40, 6);
     earth.fillEllipse( 28,  22, 34, 5);
-    earth.fillStyle(0xffffff, 0.42);
+    earth.fillStyle(pal('cyan3'), 0.42);
     earth.fillEllipse(  4, -38, 28, 3);
     earth.fillEllipse(-12,   4, 22, 3);
     earth.fillEllipse( 22,  48, 20, 3);
@@ -901,18 +902,18 @@ export class GameScene extends Phaser.Scene {
     // increasing offset, producing a soft gradient instead of a hard line.
     for (let i = 0; i < 5; i++) {
       const alpha = 0.12 + i * 0.05;
-      earth.fillStyle(0x000000, alpha);
+      earth.fillStyle(pal('void'), alpha);
       earth.beginPath();
       earth.slice(i * 3, i * 2, R - i * 2, -Math.PI * 0.18, Math.PI * 0.82, false);
       earth.fillPath();
     }
 
     // Specular rim — two stacked arcs on sunlit edge for a brighter hit
-    earth.lineStyle(1.5, 0xcce4ff, 0.75);
+    earth.lineStyle(1.5, pal('cyan3'), 0.75);
     earth.beginPath();
     earth.arc(0, 0, R - 0.5, Math.PI * 1.0, Math.PI * 1.55, false);
     earth.strokePath();
-    earth.lineStyle(1, 0xffffff, 0.45);
+    earth.lineStyle(1, pal('cyan3'), 0.45);
     earth.beginPath();
     earth.arc(0, 0, R - 1, Math.PI * 1.12, Math.PI * 1.40, false);
     earth.strokePath();
@@ -925,7 +926,7 @@ export class GameScene extends Phaser.Scene {
       const sy = Phaser.Math.Between(10, 200);
       // Avoid overlapping the Earth disc
       if (Phaser.Math.Distance.Between(sx, sy, earthX, earthY) < R + 12) continue;
-      const star = this.add.rectangle(sx, sy, 2, 2, 0xffffff, 1)
+      const star = this.add.rectangle(sx, sy, 2, 2, pal('cyan3'), 1)
         .setDepth(1.05)
         .setScrollFactor(0);
       this.tweens.add({
@@ -950,13 +951,13 @@ export class GameScene extends Phaser.Scene {
     const layers = [
       // Very far — huge, barely-there silhouettes just above the starfield
       { f: 0.06, count: 5, rMin: 210, rMax: 330,
-        outerColor: 0x06060f, innerColor: 0x09091a, rimColor: 0x111128, depth: 1.2 },
+        outerColor: pal('void'), innerColor: pal('void'), rimColor: pal('cold0'), depth: 1.2 },
       // Far — large domes, subtle blue tint
       { f: 0.13, count: 7, rMin: 140, rMax: 230,
-        outerColor: 0x08081c, innerColor: 0x0c0c28, rimColor: 0x18183c, depth: 1.5 },
+        outerColor: pal('void'), innerColor: pal('cold0'), rimColor: pal('cold0'), depth: 1.5 },
       // Mid-far — most visible, richer blue, smaller
       { f: 0.22, count: 9, rMin:  90, rMax: 165,
-        outerColor: 0x0a0a24, innerColor: 0x0f0f34, rimColor: 0x1e1e52, depth: 1.8 },
+        outerColor: pal('hull0'), innerColor: pal('cold0'), rimColor: pal('cold1'), depth: 1.8 },
     ];
 
     layers.forEach(({ f, count, rMin, rMax, outerColor, innerColor, rimColor, depth }, layerIdx) => {
@@ -1017,18 +1018,18 @@ export class GameScene extends Phaser.Scene {
       const g   = this.add.graphics().setDepth(3.5).setPosition(x, GROUND_Y);
 
       // Dome shell — upper semicircle (clockwise arc PI→0 passes through top)
-      g.fillStyle(0x12122e, 1);
+      g.fillStyle(pal('cold0'), 1);
       g.slice(0, 0, r, Math.PI, 0, false);
       g.fillPath();
 
       // Inner glow (60% radius)
-      g.fillStyle(0x0d0d25, 1);
+      g.fillStyle(pal('hull0'), 1);
       g.slice(0, 0, r * 0.6, Math.PI, 0, false);
       g.fillPath();
 
       // Panel lines — radial from center to rim
       const lineCount = 4 + Math.floor(hash(i + 40) * 3);
-      g.lineStyle(1, 0x2a2a50, 1);
+      g.lineStyle(1, pal('cold1'), 1);
       for (let l = 0; l < lineCount; l++) {
         if (dmg && l === 1) continue; // leave a gap for damaged domes
         const a = -Math.PI + (Math.PI * (l + 1)) / (lineCount + 1);
@@ -1036,20 +1037,20 @@ export class GameScene extends Phaser.Scene {
       }
 
       // Base plate (at ground level = y:0 in local coords since position is GROUND_Y)
-      g.fillStyle(0x1a1a3a, 1);
+      g.fillStyle(pal('hull1'), 1);
       g.fillRect(-r - 10, 0, r * 2 + 20, 12);
 
       // Airlock nub
-      g.fillStyle(0x1e1e44, 1);
+      g.fillStyle(pal('hull1'), 1);
       g.fillRect(-7, -18, 14, 18);
 
       // Window dot at upper-center
-      g.fillStyle(dmg ? 0xff2200 : 0x4488ff, dmg ? 1 : 0.6);
+      g.fillStyle(dmg ? pal('hostile1') : pal('hull5'), dmg ? 1 : 0.6);
       g.fillCircle(0, -r * 0.65, 4);
 
       // Crack for damaged domes
       if (dmg) {
-        g.lineStyle(1, 0xff4400, 0.7);
+        g.lineStyle(1, pal('hostile1'), 0.7);
         const crackA = -Math.PI * 0.7;
         g.lineBetween(
           Math.cos(crackA) * r * 0.9, Math.sin(crackA) * r * 0.9,
@@ -1067,15 +1068,15 @@ export class GameScene extends Phaser.Scene {
         const px = cx + (p - (cnt - 1) / 2) * 44;
 
         const g = this.add.graphics().setDepth(3.5);
-        g.fillStyle(0x1a1a38, 1);
+        g.fillStyle(pal('hull1'), 1);
         g.fillRect(px - 2, GROUND_Y - 40, 4, 40);
 
         // Panel tilted 30° (rotates around center of rectangle)
-        this.add.rectangle(px, GROUND_Y - 40, 32, 10, 0x1a2840)
+        this.add.rectangle(px, GROUND_Y - 40, 32, 10, pal('hull2'))
           .setDepth(3.5).setAngle(30);
 
         // Panel highlight
-        this.add.rectangle(px, GROUND_Y - 44, 30, 1, 0x334466)
+        this.add.rectangle(px, GROUND_Y - 44, 30, 1, pal('hull3'))
           .setDepth(3.6).setAngle(30);
       }
     }

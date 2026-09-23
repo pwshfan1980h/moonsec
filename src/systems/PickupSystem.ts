@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import type { IconName } from '../ui/icons';
 import type { Role } from '../ui/theme';
 import type Phaser from 'phaser';
@@ -23,8 +24,8 @@ export interface PickupVisual {
 export function getPickupVisual(type: PickupType, roll: () => number = Math.random): PickupVisual {
   if (type === 'health') return { frame: roll() < 0.5 ? 36 : 44, tint: null };
   if (type === 'fuel') return { frame: roll() < 0.5 ? 32 : 40, tint: null };
-  if (type === 'ammo') return { frame: roll() < 0.5 ? 9 : 17, tint: 0x00ffff };
-  return { frame: roll() < 0.5 ? 4 : 12, tint: 0xffcc33, points: 100 };
+  if (type === 'ammo') return { frame: roll() < 0.5 ? 9 : 17, tint: pal('cyan2') };
+  return { frame: roll() < 0.5 ? 4 : 12, tint: pal('amber1'), points: 100 };
 }
 
 export function randomIntBetween(min: number, max: number, roll: () => number = Math.random): number {
@@ -191,7 +192,7 @@ export class PickupSystem {
       duration: 180,
       ease: 'Back.easeOut',
     });
-    applyFillTintCompat(p, 0xffffff);
+    applyFillTintCompat(p, pal('cyan3'));
     this.scene.time.delayedCall(80, () => {
       if (!p.active) return;
       if (tint !== null) p.setTint(tint); else p.clearTint();

@@ -159,16 +159,16 @@ export class SurfaceMission {
     g.clear();
     SURFACE_ENCOUNTERS.forEach((e, i) => {
       const online = i < this.encounter || (i === 0 && this.phase === 'upgrade');
-      const color = online ? 0x56e39f : i === this.encounter ? 0x6de3ff : 0x365266;
-      g.fillStyle(0x0b1e2a, 1); g.fillRect(e.relayX - 28, 850, 56, 110);
+      const color = online ? pal('green1') : i === this.encounter ? pal('cyan2') : pal('cyan0');
+      g.fillStyle(pal('hull1'), 1); g.fillRect(e.relayX - 28, 850, 56, 110);
       g.lineStyle(3, color, 1); g.strokeRect(e.relayX - 28, 850, 56, 110);
       g.fillStyle(color, 1); g.fillRect(e.relayX - 18, 866, 36, 24);
       g.lineBetween(e.relayX, 850, e.relayX, 815);
       g.strokeCircle(e.relayX, 820, 12);
       if (i === this.encounter && this.phase === 'relay') {
         g.lineStyle(2, color, 0.4); g.strokeEllipse(e.relayX, 953, 250, 30);
-        g.fillStyle(0x142a36, 1); g.fillRect(e.relayX - 100, 810, 200, 8);
-        g.fillStyle(0x56e39f, 1); g.fillRect(e.relayX - 100, 810, 200 * this.relayProgress, 8);
+        g.fillStyle(pal('hull2'), 1); g.fillRect(e.relayX - 100, 810, 200, 8);
+        g.fillStyle(pal('green1'), 1); g.fillRect(e.relayX - 100, 810, 200 * this.relayProgress, 8);
         if (this.relayProgress > 0 && this.relayProgress < 1) this.drawUplinkBeam(g, e.relayX, 820);
       }
     });

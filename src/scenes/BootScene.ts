@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
@@ -104,39 +105,39 @@ export class BootScene extends Phaser.Scene {
 
     // Rapid bullet: small cyan circle
     g(8, 8, (gfx) => {
-      gfx.fillStyle(0x00ffff, 1);
+      gfx.fillStyle(pal('cyan2'), 1);
       gfx.fillCircle(4, 4, 3);
-      gfx.fillStyle(0xffffff, 0.8);
+      gfx.fillStyle(pal('cyan3'), 0.8);
       gfx.fillCircle(4, 4, 1.5);
     }, 'bullet-rapid');
 
     // Turret bullet: orange rect with hot core
     g(14, 6, (gfx) => {
-      gfx.fillStyle(0xff6600, 1);
+      gfx.fillStyle(pal('hostile1'), 1);
       gfx.fillRect(0, 1, 14, 4);
-      gfx.fillStyle(0xffdd00, 1);
+      gfx.fillStyle(pal('amber1'), 1);
       gfx.fillRect(2, 2, 8, 2);
     }, 'bullet-turret');
 
     // Missile: yellow with nose
     g(14, 6, (gfx) => {
-      gfx.fillStyle(0xffff00, 1);
+      gfx.fillStyle(pal('green1'), 1);
       gfx.fillRect(0, 1, 12, 4);
-      gfx.fillStyle(0xffffff, 1);
+      gfx.fillStyle(pal('cyan3'), 1);
       gfx.fillRect(10, 2, 4, 2);
     }, 'bullet-missile');
 
     // Drone bullet: small red orb
     g(8, 8, (gfx) => {
-      gfx.fillStyle(0xff2222, 1);
+      gfx.fillStyle(pal('hostile1'), 1);
       gfx.fillCircle(4, 4, 3);
-      gfx.fillStyle(0xff8888, 0.8);
+      gfx.fillStyle(pal('hostile1'), 0.8);
       gfx.fillCircle(4, 4, 1.5);
     }, 'bullet-drone');
 
     // Particle pixel (for trails + explosions)
     g(4, 4, (gfx) => {
-      gfx.fillStyle(0xffffff, 1);
+      gfx.fillStyle(pal('cyan3'), 1);
       gfx.fillRect(0, 0, 4, 4);
     }, 'pixel');
 
@@ -145,9 +146,9 @@ export class BootScene extends Phaser.Scene {
 
     // Ground tile (dark)
     g(32, 8, (gfx) => {
-      gfx.fillStyle(0x1a1a3a, 1);
+      gfx.fillStyle(pal('hull1'), 1);
       gfx.fillRect(0, 0, 32, 8);
-      gfx.fillStyle(0x3333aa, 1);
+      gfx.fillStyle(pal('cold2'), 1);
       gfx.fillRect(0, 0, 32, 2);
     }, 'ground-tile');
   }

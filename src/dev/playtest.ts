@@ -1,3 +1,4 @@
+import { palCss } from '../render/palette';
 import type Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 
@@ -5,7 +6,7 @@ import type { GameScene } from '../scenes/GameScene';
 export function mountPlaytest(game: Phaser.Game): void {
   const panel = document.createElement('aside');
   panel.setAttribute('aria-label', 'Development playtest');
-  panel.style.cssText = 'position:fixed;top:8px;left:8px;right:8px;z-index:5;background:#0b1e2a;color:#bfeeff;padding:10px;font:12px monospace;display:flex;gap:8px;flex-wrap:wrap';
+  panel.style.cssText = `position:fixed;top:8px;left:8px;right:8px;z-index:5;background:${palCss('hull0')};color:${palCss('cyan3')};padding:10px;font:12px monospace;display:flex;gap:8px;flex-wrap:wrap`;
   const readout = document.createElement('output');
   readout.style.cssText = 'width:100%;white-space:pre-wrap';
   const hold = (key: string, code: string, keyCode: number, duration = 160) => {
@@ -15,7 +16,7 @@ export function mountPlaytest(game: Phaser.Game): void {
   const button = (label: string, action: () => void) => {
     const el = document.createElement('button');
     el.textContent = label;
-    el.style.cssText = 'padding:6px 10px;background:#183949;color:#dbf5ff;border:1px solid #4b8193;cursor:pointer';
+    el.style.cssText = `padding:6px 10px;background:${palCss('hull2')};color:${palCss('cyan3')};border:1px solid ${palCss('cyan1')};cursor:pointer`;
     el.onclick = action; panel.append(el);
   };
   button('East 2s', () => hold('d', 'KeyD', 68, 2000));

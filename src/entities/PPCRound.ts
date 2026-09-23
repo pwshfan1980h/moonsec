@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 
@@ -20,7 +21,7 @@ export class PPCRound extends Phaser.Physics.Arcade.Image {
 
     this.setDepth(14);
     this.setScale(0.75);
-    this.setTint(0xcc55ff);
+    this.setTint(pal('hull5'));
     this.setBlendMode(Phaser.BlendModes.ADD);
     this.setRotation(angle);
 
@@ -31,7 +32,7 @@ export class PPCRound extends Phaser.Physics.Arcade.Image {
 
     this.emitter = scene.add.particles(0, 0, 'flare', {
       follow: this,
-      tint: [0xaa22ff, 0xcc66ff, 0xffffff, 0x8844cc],
+      tint: [pal('cold2'), pal('hull5'), pal('cyan3'), pal('cold2')],
       speed: { min: 10, max: 50 },
       angle: { min: 0, max: 360 },
       scale: { start: 1.6, end: 0 },

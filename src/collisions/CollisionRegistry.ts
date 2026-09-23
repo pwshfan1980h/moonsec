@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import type Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
@@ -191,7 +192,7 @@ export class CollisionRegistry {
   private registerVoidDeathZone(): void {
     // All levels — pits and void bottoms both kill.
     const deathY = WORLD_HEIGHT + 80;
-    const voidSensor = this.scene.add.rectangle(WORLD_WIDTH / 2, deathY, WORLD_WIDTH, 40, 0xff0000, 0);
+    const voidSensor = this.scene.add.rectangle(WORLD_WIDTH / 2, deathY, WORLD_WIDTH, 40, pal('hostile1'), 0);
     this.scene.physics.add.existing(voidSensor, true);
     this.scene.physics.add.overlap(this.scene.player, voidSensor, () => {
       if (!this.scene.isGameOverActive()) this.scene.triggerGameOver();

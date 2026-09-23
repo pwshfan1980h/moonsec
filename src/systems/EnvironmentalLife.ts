@@ -1,3 +1,4 @@
+import { pal } from '../render/palette';
 import Phaser from 'phaser';
 import { GAME_H, GAME_W, GROUND_Y, WORLD_WIDTH } from '../constants';
 import type { LevelConfig } from '../data/levelConfigs';
@@ -10,11 +11,11 @@ type Palette = {
 };
 
 const PALETTES: Palette[] = [
-  { activity: 0x66ccff, warning: 0xff6633, cabin: 0xffd68a, hull: 0x314865 },
-  { activity: 0x66eeff, warning: 0xffaa33, cabin: 0xb8f4ff, hull: 0x254b70 },
-  { activity: 0xcc77ff, warning: 0xff4466, cabin: 0xe8b8ff, hull: 0x513060 },
-  { activity: 0x88ddff, warning: 0xffcc55, cabin: 0xe8fbff, hull: 0x29445d },
-  { activity: 0xff5533, warning: 0xffdd44, cabin: 0xffb070, hull: 0x5d2929 },
+  { activity: pal('cyan2'), warning: pal('hostile1'), cabin: pal('amber1'), hull: pal('cyan0') },
+  { activity: pal('cyan2'), warning: pal('amber1'), cabin: pal('cyan3'), hull: pal('cyan0') },
+  { activity: pal('hull5'), warning: pal('hostile1'), cabin: pal('hull6'), hull: pal('hull3') },
+  { activity: pal('cyan2'), warning: pal('amber1'), cabin: pal('cyan3'), hull: pal('cyan0') },
+  { activity: pal('hostile1'), warning: pal('amber1'), cabin: pal('amber1'), hull: pal('regolith0') },
 ];
 
 /**
@@ -90,7 +91,7 @@ export class EnvironmentalLife {
       const startX = 420 + i * 650;
       const startY = GROUND_Y - 110 - (i % 3) * 55;
       const drone = scene.add.container(startX, startY).setDepth(3.25);
-      const shadow = scene.add.ellipse(0, 9, 30, 5, 0x000000, 0.25);
+      const shadow = scene.add.ellipse(0, 9, 30, 5, pal('void'), 0.25);
       const body = scene.add.rectangle(0, 0, 22, 8, palette.hull, 0.95)
         .setStrokeStyle(1, palette.activity, 0.55);
       const armL = scene.add.rectangle(-15, 0, 9, 2, palette.hull, 0.9);
@@ -152,7 +153,7 @@ export class EnvironmentalLife {
     const { scene, palette } = this;
     if (!scene.textures.exists('ambient-speck')) {
       const gfx = scene.make.graphics({ x: 0, y: 0 }, false);
-      gfx.fillStyle(0xffffff, 1);
+      gfx.fillStyle(pal('cyan3'), 1);
       gfx.fillRect(0, 0, 2, 2);
       gfx.generateTexture('ambient-speck', 2, 2);
       gfx.destroy();
@@ -167,7 +168,7 @@ export class EnvironmentalLife {
       quantity: 1,
       alpha: { start: 0.22, end: 0 },
       scale: { min: 0.5, max: 1.3 },
-      tint: [palette.activity, palette.cabin, 0xffffff],
+      tint: [palette.activity, palette.cabin, pal('cyan3')],
     }).setDepth(3.3);
   }
 }

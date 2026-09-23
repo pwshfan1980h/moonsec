@@ -1,17 +1,1 @@
-{
-  "src/collisions/CollisionRegistry.ts": 1,
-  "src/data/levelConfigs.ts": 10,
-  "src/dev/playtest.ts": 5,
-  "src/entities/PPCRound.ts": 5,
-  "src/fx/Atmosphere.ts": 1,
-  "src/scenes/BootScene.ts": 11,
-  "src/scenes/GameScene.ts": 69,
-  "src/systems/DebugLog.ts": 2,
-  "src/systems/EnvironmentalLife.ts": 23,
-  "src/systems/PickupSystem.ts": 3,
-  "src/systems/SurfaceMission.ts": 6,
-  "src/systems/TradeLaneArt.ts": 22,
-  "src/weapons/HomingMissile.ts": 3,
-  "src/weapons/RapidGun.ts": 1,
-  "src/weapons/Turret.ts": 4
-}
+{}
