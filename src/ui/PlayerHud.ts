@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Player } from '../entities/Player';
+import { HARROW_BODY, type Player } from '../entities/Player';
 
 const BAR_W       = 36;
 const BAR_H       = 3;
@@ -75,8 +75,8 @@ export class PlayerHud {
     const g = this.g;
     g.clear();
 
-    // Head position — Player has origin (0.5, 1) so y is at feet; estimate head from displayHeight
-    const headY = this.player.y - this.player.displayHeight - HEAD_OFFSET;
+    // Head position — Player has origin (0.5, 1) so y is at feet; the rig is HARROW_BODY.visualH tall
+    const headY = this.player.y - HARROW_BODY.visualH - HEAD_OFFSET;
     const cx = this.player.x;
     const x0 = Math.round(cx - BAR_W / 2);
     const yHp   = Math.round(headY);

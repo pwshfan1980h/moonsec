@@ -273,7 +273,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
     const nav = this.scene.flightNavigation!;
     const body = this.body as Phaser.Physics.Arcade.Body;
     const player = this.scene.getPlayerPos();
-    const target = { x: player.x, y: player.y - 60 };
+    const target = { x: player.x, y: player.y };
     if (!this.flightGoal || time >= this.nextFlightGoalAt) {
       this.flightGoal = nav.firingPosition(this, target, this.droneVariant === 'sniper' ? 400 : 220 + (this.sinOffset % 1) * 100, 48, 40, this.attackRange + 90);
       this.nextFlightGoalAt = time + 900;
@@ -292,7 +292,7 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
 
   private shoot(): void {
     const player = this.scene.getPlayerPos();
-    const target = { x: player.x, y: player.y - (this.flightRoute ? 60 : 0) };
+    const target = { x: player.x, y: player.y };
     if (this.scene.flightNavigation && !this.scene.flightNavigation.lineClear(this, target, 3, 3)) return;
     const angle  = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
 

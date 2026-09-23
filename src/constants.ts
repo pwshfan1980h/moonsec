@@ -1,4 +1,4 @@
-import { ARMOR_BASE, ARMOR_SCALE } from './balance/armor';
+import { ARMOR_BASE } from './balance/armor';
 // ── Screen / viewport dimensions ────────────────────────────────────────────
 export const GAME_W = 1920;
 export const GAME_H = 1080;
@@ -31,33 +31,15 @@ export const WAVE_BRACKETS: {
 export const PATROL_LANES = [300, 420, 540, 660, 780, 900];
 
 
-export const MECH_STATS: Record<string, {
-  maxHp: number;
-  walkSpeed: number;
-  runSpeed: number;
-  jumpVelocity: number;
-  jetpackAccel: number;
-  jetpackMaxFuel: number;
-  rapidAmmoMax: number;
-}> = {
-  mech: {   // STRIDER — speed archetype: fast, high fuel, low HP
-    maxHp: 3 * ARMOR_SCALE,
-    walkSpeed: 264,
-    runSpeed: 420,
-    jumpVelocity: -510,
-    jetpackAccel: -1840,
-    jetpackMaxFuel: 4400,
-    rapidAmmoMax: 220,
-  },
-  mech4: {  // SCOUT — balanced baseline
-    maxHp: ARMOR_BASE,
-    walkSpeed: 132,
-    runSpeed: 210,
-    jumpVelocity: -510,
-    jetpackAccel: -920,
-    jetpackMaxFuel: 2200,
-    rapidAmmoMax: 150,
-  },
+/** HARROW's movement and weapon baseline. */
+export const PLAYER_STATS: Readonly<Record<'maxHp' | 'walkSpeed' | 'runSpeed' | 'jumpVelocity' | 'jetpackAccel' | 'jetpackMaxFuel' | 'rapidAmmoMax', number>> = {
+  maxHp: ARMOR_BASE,
+  walkSpeed: 132,
+  runSpeed: 210,
+  jumpVelocity: -510,
+  jetpackAccel: -920,
+  jetpackMaxFuel: 2200,
+  rapidAmmoMax: 150,
 };
 
 export const RAPID_AMMO_PER_PICKUP = 25;

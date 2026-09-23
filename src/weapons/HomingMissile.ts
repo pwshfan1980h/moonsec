@@ -32,24 +32,25 @@ export class HomingMissile {
     return Math.min(1, elapsed / this.scene.player.missileCooldownMs);
   }
 
-  fire(player: Player): void {
+  /** Launches from HARROW's shoulder pod, climbing out toward the facing side. Returns true on launch. */
+  fire(player: Player): boolean {
     const now = this.scene.time.now;
-    if (now - this.lastFire < this.scene.player.missileCooldownMs) return;
-    if (this.active.length >= player.missileSlots) return;
+    if (now - this.lastFire < this.scene.player.missileCooldownMs) return false;
+    if (this.active.length >= player.missileSlots) return false;
     this.lastFire = now;
 
-    const facingRight = !player.flipX;
-    const dir = facingRight ? 1 : -1;
+    const facingRight = player.facing > 0;
+    const tube = player.muzzle('podTube');
 
-    const m = this.scene.missiles.get(player.x + dir * 35, player.y - 90, 'bullet-missile') as Phaser.Physics.Arcade.Image;
-    if (!m) return;
+    const m = this.scene.missiles.get(tube.x, tube.y, 'bullet-missile') as Phaser.Physics.Arcade.Image;
+    if (!m) return false;
 
     m.setActive(true).setVisible(true).setDepth(16);
     m.setData('hitTarget', false); // clear stale flag from pool re-use
     m.setBlendMode(Phaser.BlendModes.ADD);
     if (m.body) (m.body as Phaser.Physics.Arcade.Body).enable = true;
 
-    const angle = facingRight ? 0 : Math.PI;
+    const angle = facingRight ? -0.9 : Math.PI + 0.9;
     m.setRotation(angle);
     m.setVelocity(Math.cos(angle) * SPEED, Math.sin(angle) * SPEED);
 
@@ -72,6 +73,7 @@ export class HomingMissile {
     this.active.push({ obj: m, angle, target, emitter });
     this.scene.audio.play('missile-launch');
     if (wasEmpty) this.scene.audio.startLoop('missile');
+    return true;
   }
 
   update(_time: number, _delta: number): void {

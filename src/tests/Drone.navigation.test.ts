@@ -16,7 +16,7 @@ import { TMPL_TRADE_LANES, buildMap } from '../data/levelData';
 function fixture(x: number, y: number) {
   const scene: any = {
     flightNavigation: new FlightNavigation(buildMap(TMPL_TRADE_LANES, 0)),
-    player: { x: 1520, y: 704, hp: 5 }, getPlayerPos: () => scene.player, isGameOverActive: () => false,
+    player: { x: 1520, y: 704, hp: 5 }, getPlayerPos: () => ({ x: scene.player.x, y: scene.player.y - 80 }), isGameOverActive: () => false,
   };
   const drone = new Drone(scene, x, y, 'drone-red', { attackSpeed: 216, shootInterval: 100000, bulletSpeedMult: 1, extraHp: 0 });
   // Keep this movement test independent of randomized firing cadence.

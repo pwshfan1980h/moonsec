@@ -4,7 +4,6 @@ import { NODE_GRAPH, NODE_SUBTITLES } from '../data/levelConfigs';
 import { installPipeline } from '../render/RenderPipeline';
 import { palCss } from '../render/palette';
 
-type MechType = 'mech' | 'mech4';
 
 interface NodeDef {
   x: number;
@@ -35,7 +34,6 @@ export class OverworldScene extends Phaser.Scene {
   private currentNode:    number   = 0;
   private completedNodes: number[] = [];
   private totalScore:     number   = 0;
-  private mechType:       MechType = 'mech4';
 
   // selectableNodes = available nodes not yet completed (cursor can move among these)
   private selectableNodes: number[] = [];
@@ -52,12 +50,10 @@ export class OverworldScene extends Phaser.Scene {
     currentNode?:    number;
     completedNodes?: number[];
     totalScore?:     number;
-    mechType?:       MechType;
   }): void {
     this.currentNode    = data.currentNode    ?? 0;
     this.completedNodes = data.completedNodes ?? [];
     this.totalScore     = data.totalScore     ?? ((this.registry.get('totalScore') as number) ?? 0);
-    this.mechType       = data.mechType       ?? ((this.registry.get('mechType')   as MechType) ?? 'mech4');
   }
 
   create(): void {
@@ -526,12 +522,10 @@ export class OverworldScene extends Phaser.Scene {
     this.currentNode = chosen;
 
     this.registry.set('totalScore', this.totalScore);
-    this.registry.set('mechType',   this.mechType);
 
     this.cameras.main.fadeOut(600, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('Game', {
-        mechType:       this.mechType,
         level:          chosen,         // 0-indexed node
         totalScore:     this.totalScore,
         completedNodes: this.completedNodes,

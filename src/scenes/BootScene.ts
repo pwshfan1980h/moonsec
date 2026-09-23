@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { devParams } from '../dev/devParams';
+import { HARROW_BODY } from '../entities/Player';
 
 // Dev-only: `?level=N` jumps straight to level N on boot (0-indexed, clamped).
 function bootLevel(): number {
@@ -47,9 +48,6 @@ export class BootScene extends Phaser.Scene {
     // Rigged bodies: every part of every rig in one atlas (tools/rig/build.ts)
     this.load.atlas('rig', 'assets/rig.png', 'assets/rig.json');
 
-    // Player mechs (Aseprite atlas for proper per-frame timing)
-    this.load.aseprite('mech', 'assets/mech-sheet.png', 'assets/mech-sheet.json');
-    this.load.aseprite('mech4', 'assets/mech4-sheet.png', 'assets/mech4-sheet.json');
 
     // Enemy drones as spritesheets (fixed-size frames, simpler)
     this.load.spritesheet('drone-red', 'assets/Viper-sheet.png', {
@@ -88,9 +86,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Mechs: build animations with prefix support for each mech type
-    this.buildAsepriteAnims('mech', '');        // → 'idle', 'walk', etc. (unchanged)
-    this.buildAsepriteAnims('mech4', 'mech4-'); // → 'mech4-idle', 'mech4-walk', etc.
 
     // Drone animations (manual with prefixed keys to avoid conflicts)
     this.buildDroneAnims('drone-red');
@@ -152,44 +147,8 @@ export class BootScene extends Phaser.Scene {
       });
       return;
     }
-    this.scene.start('Game', { mechType: 'mech4', level: bootLevel(), totalScore: 0, completedNodes: [] });
+    this.scene.start('Game', { level: bootLevel(), totalScore: 0, completedNodes: [] });
     this.scene.launch('UI');
-  }
-
-  private buildAsepriteAnims(textureKey: string, prefix: string): void {
-    const atlas = this.cache.json.get(textureKey) as {
-      frames: Record<string, { duration: number }>;
-      meta: { frameTags: Array<{ name: string; from: number; to: number; direction: string }> };
-    };
-
-    if (!atlas) {
-      console.warn(`[BootScene] No Aseprite data found for key: ${textureKey}`);
-      return;
-    }
-
-    const frameKeys = Object.keys(atlas.frames);
-
-    for (const tag of atlas.meta.frameTags) {
-      const animFrames: Phaser.Types.Animations.AnimationFrame[] = [];
-      for (let i = tag.from; i <= tag.to; i++) {
-        const frameKey = frameKeys[i];
-        animFrames.push({
-          key: textureKey,
-          frame: frameKey,
-          duration: atlas.frames[frameKey].duration,
-        });
-      }
-
-      if (tag.direction === 'reverse') animFrames.reverse();
-
-      const isPingPong = tag.direction === 'pingpong';
-
-      this.anims.create({
-        key: prefix + tag.name,
-        frames: animFrames,
-        yoyo: isPingPong,
-      });
-    }
   }
 
   private buildDroneAnims(key: string): void {
@@ -266,6 +225,9 @@ export class BootScene extends Phaser.Scene {
       gfx.fillStyle(0xffffff, 1);
       gfx.fillRect(0, 0, 4, 4);
     }, 'pixel');
+
+    // HARROW's physics body: an invisible texture the size of the hitbox (the rig draws the mech)
+    g(HARROW_BODY.w, HARROW_BODY.h, () => undefined, 'harrow-hitbox');
 
     // Ground tile (dark)
     g(32, 8, (gfx) => {

@@ -60,7 +60,8 @@ export class SurfaceEnemy extends Phaser.Physics.Arcade.Sprite {
     this.setFlipX(player.x > this.x);
     if (this.role === 'target') return;
     this.timer -= delta;
-    const distance = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y - 60);
+    const aimPoint = player.getAimPoint();
+    const distance = Phaser.Math.Distance.Between(this.x, this.y, aimPoint.x, aimPoint.y);
     if (this.mode === 'approach') {
       const desiredX = player.x + (this.x < player.x ? -1 : 1) * (this.role === 'sniper' ? 500 : 330);
       const desiredY = player.y - (this.role === 'sniper' ? 220 : 140);
@@ -68,7 +69,7 @@ export class SurfaceEnemy extends Phaser.Physics.Arcade.Sprite {
       if (this.timer <= 0 && distance < 750 && this.acquire(this)) {
         this.mode = 'warn';
         this.timer = this.role === 'sniper' ? 1200 : 900;
-        this.aim = { x: player.x, y: player.y - 50 };
+        this.aim = { ...aimPoint };
         body.setVelocity(0, 0);
         this.label.setText(this.role === 'charger' ? 'DASH INCOMING' : 'SHOT INCOMING').setColor('#ffb347');
       }

@@ -4,6 +4,7 @@ import { SurfaceEnemy } from '../entities/SurfaceEnemy';
 import { SurfaceWarden } from '../entities/SurfaceWarden';
 import { EncounterSchedule, SURFACE_ENCOUNTERS, SURFACE_MAX_ATTACKERS, type SurfaceEnemyRole } from '../data/surfaceMission';
 import { HEAL } from '../balance/armor';
+import { pal } from '../render/palette';
 
 export type SurfacePhase = 'training' | 'travel' | 'combat' | 'relay' | 'upgrade' | 'boss-travel' | 'boss' | 'complete';
 export interface MissionObjective { title: string; detail: string; x: number; progress: number; }
@@ -130,6 +131,7 @@ export class SurfaceMission {
     } else if (this.phase === 'relay') {
       const near = Math.abs(player.x - current.relayX) < 130 && player.y > 780;
       this.relayProgress = near && this.interact.isDown ? Math.min(1, this.relayProgress + delta / 1800) : 0;
+      this.scene.events.emit('relayProgress', this.relayProgress, near && this.interact.isDown);
       if (this.relayProgress >= 1) {
         this.relayLabels[this.encounter].setText(`${current.name} / ONLINE`).setColor('#56e39f');
         player.heal(HEAL.relay);
@@ -177,8 +179,25 @@ export class SurfaceMission {
         g.lineStyle(2, color, 0.4); g.strokeEllipse(e.relayX, 953, 250, 30);
         g.fillStyle(0x142a36, 1); g.fillRect(e.relayX - 100, 810, 200, 8);
         g.fillStyle(0x56e39f, 1); g.fillRect(e.relayX - 100, 810, 200 * this.relayProgress, 8);
+        if (this.relayProgress > 0 && this.relayProgress < 1) this.drawUplinkBeam(g, e.relayX, 820);
       }
     });
+  }
+
+  /** Marching data dashes from HARROW's antenna to the relay dish while F is held. */
+  private drawUplinkBeam(g: Phaser.GameObjects.Graphics, rx: number, ry: number): void {
+    const tip = this.scene.player.socketWorld('antennaTip');
+    const len = Math.hypot(rx - tip.x, ry - tip.y);
+    const steps = Math.max(1, Math.floor(len / 8));
+    const march = Math.floor(this.scene.time.now / 40);
+    for (let k = 0; k < steps; k++) {
+      if ((k + march) % 4 >= 2) continue;
+      const t = k / steps;
+      const x = tip.x + (rx - tip.x) * t;
+      const y = tip.y + (ry - tip.y) * t - Math.sin(t * Math.PI) * 24;
+      g.fillStyle((k + march) % 4 === 0 ? pal('cyan3') : pal('cyan2'), 1);
+      g.fillRect(Math.round(x / 2) * 2 - 2, Math.round(y / 2) * 2 - 2, 4, 4);
+    }
   }
 
   private updateObjective(): void {

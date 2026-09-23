@@ -106,7 +106,7 @@ export class PickupSystem {
 
   updateMagnet(): void {
     const tx = this.scene.player.x;
-    const ty = this.scene.player.y - 50; // torso, not feet
+    const ty = this.scene.player.getAimPoint().y; // torso, not feet
     this.scene.pickups.getChildren().forEach((go) => {
       const p = go as Phaser.Physics.Arcade.Image;
       if (!p.active) return;

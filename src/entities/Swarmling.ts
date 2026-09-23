@@ -124,7 +124,7 @@ export class Swarmling extends Phaser.Physics.Arcade.Sprite implements Hostile {
     const vy = Math.sin(angle) * HARASS_SPEED + Math.sin(time * 0.006 + this.sinOffset) * SIN_AMP;
     body.setVelocity(vx, vy);
     if (this.flightRoute) {
-      const v = this.flightRoute.steer(this, { x: target.x, y: target.y - 60 }, HARASS_SPEED, time);
+      const v = this.flightRoute.steer(this, { x: target.x, y: target.y }, HARASS_SPEED, time);
       body.setVelocity(v.x, v.y);
     }
     this.setFlipX(dx < 0);

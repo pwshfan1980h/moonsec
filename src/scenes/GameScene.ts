@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { Player } from '../entities/Player';
-import type { MechType } from '../entities/Player';
+import { Player, HARROW_BODY } from '../entities/Player';
 import { SurfaceMission } from '../systems/SurfaceMission';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
@@ -78,8 +77,7 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'Game' });
   }
 
-  init(data: { mechType?: MechType; totalScore?: number; level?: number; completedNodes?: number[] }): void {
-    if (data.mechType)                this.registry.set('mechType',      data.mechType);
+  init(data: { totalScore?: number; level?: number; completedNodes?: number[] }): void {
     if (data.totalScore !== undefined) this.registry.set('totalScore',   data.totalScore);
     if (data.level      !== undefined) this.registry.set('currentLevel', data.level);
     this.currentNode    = data.level        ?? 0;
@@ -145,7 +143,6 @@ export class GameScene extends Phaser.Scene {
         kb.addKey(keyCode).on('down', () => {
           this.scene.stop('UI');
           this.scene.start('Game', {
-            mechType: (this.registry.get('mechType') as MechType) ?? 'mech4',
             level: i,
             totalScore: this.score,
             completedNodes: this.completedNodes,
@@ -249,21 +246,18 @@ export class GameScene extends Phaser.Scene {
 
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
-    const mechType = (this.registry.get('mechType') as MechType) ?? 'mech';
     const spawnCol = this.activeConfig.spawnCol;
     const spawnX = spawnCol !== undefined ? spawnCol * 32 : 300;
     const spawnY = this.activeConfig.spawnRow !== undefined
       ? this.activeConfig.spawnRow * 32 - 4
       : GROUND_Y - 5;
-    this.player = new Player(this, spawnX, spawnY, mechType);
+    this.player = new Player(this, spawnX, spawnY);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
     this.playerHud = new PlayerHud(this, this.player);
 
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
-    const bc = this.player.bodyConfig;
-    pb.setSize(bc.w, bc.h, false);
-    pb.setOffset(bc.offX, bc.offY);
+    pb.setSize(HARROW_BODY.w, HARROW_BODY.h, true);
     pb.setCollideWorldBounds(true);
     pb.setMaxVelocityX(1200);
 
@@ -416,6 +410,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    // The rig keeps animating after death: the wreck burns while the game-over screen is up.
+    this.player.tickPresentation(delta);
     if (this.isGameOver) return;
     this.player.update(time, delta);
     const k = delta / (1000 / 60);
@@ -465,8 +461,9 @@ export class GameScene extends Phaser.Scene {
     return this.isGameOver;
   }
 
+  /** Where enemies aim: HARROW's torso. */
   public getPlayerPos(): { x: number; y: number } {
-    return { x: this.player.x, y: this.player.y };
+    return this.player.getAimPoint();
   }
 
   public getApproxGroundY(): number {
@@ -507,22 +504,9 @@ export class GameScene extends Phaser.Scene {
    * Cheap echo — same texture/frame, no physics, time-tweened destruction.
    */
   spawnSurgeGhost(player: Player): void {
-    const ghost = this.add.sprite(player.x, player.y, player.texture.key, player.frame.name);
-    ghost.setOrigin(player.originX, player.originY);
-    ghost.setScale(player.scaleX, player.scaleY);
-    ghost.setFlipX(player.flipX);
-    ghost.setDepth(player.depth - 1);
-    ghost.setTint(0x6de3ff);
-    ghost.setAlpha(0.55);
-    ghost.setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({
-      targets:  ghost,
-      alpha:    0,
-      duration: 260,
-      ease:     'Cubic.Out',
-      onComplete: () => ghost.destroy(),
-    });
+    player.rigView.spawnGhost('cyan2', 0.45, 260);
   }
+
 
   /**
    * Particle trail that follows the player for the duration of the surge — dissipating

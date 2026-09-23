@@ -10,6 +10,8 @@ import { GAME_W, GAME_H, RADAR_X, RADAR_Y, RADAR_SCREEN_RADIUS } from '../consta
 import { installPipeline, graphics, setGraphics, type CameraPipeline } from '../render/RenderPipeline';
 import { nextPreset, saveGraphicsSettings, toggleView, type GraphicsSettings } from '../render/GraphicsSettings';
 import { ARMOR_PER_SEGMENT, damageStage, displayArmor } from '../balance/armor';
+import { HarrowRig } from '../rig/bodies/harrow';
+import { RigView } from '../rig/view/RigView';
 
 // ── Tactical HUD design tokens ────────────────────────────────────────────
 const FONT_MONO     = '"Share Tech Mono", monospace';
@@ -125,6 +127,7 @@ export class UIScene extends Phaser.Scene {
   private pauseSub!: Phaser.GameObjects.Text;
   private pauseGfx!: Phaser.GameObjects.Text;
   private uiPipeline?: CameraPipeline;
+  private portrait?: { rig: HarrowRig; view: RigView; t: number };
   private paused = false;
 
   // Game-over state
@@ -820,7 +823,8 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  update(time: number, _delta: number): void {
+  update(time: number, delta: number): void {
+    if (this.controlsOpen && this.portrait) this.tickPortrait(delta);
     if (this.gameOverActive || this.paused || this.controlsOpen || this.upgradeOpen) return;
     const game = this.scene.get('Game') as GameScene;
     if (!game || !game.sys.isActive()) return;
@@ -1167,15 +1171,14 @@ export class UIScene extends Phaser.Scene {
     text(122, 164, 'MOONSEC', 94);
     text(128, 278, 'PILOT FIELD GUIDE', 24, COL.inkDim);
 
-    // Use the real pixel sprite as the visual anchor for the briefing.
-    const game = this.scene.get('Game') as GameScene;
-    const texture = game.player.texture.key;
+    // A live HARROW rig as the visual anchor for the briefing (idles and tracks around).
     frame.lineStyle(1, 0x244353, 0.65);
     frame.strokeCircle(366, 562, 168);
     frame.strokeCircle(366, 562, 198);
     frame.lineBetween(148, 562, 584, 562);
     frame.lineBetween(366, 344, 366, 780);
-    push(this.add.sprite(366, 692, texture, game.player.frame.name).setOrigin(0.5, 1).setScale(5).setDepth(61));
+    this.portrait = { rig: new HarrowRig(), view: new RigView(this, 'harrow', 61), t: 0 };
+    push(this.portrait.view.container);
     text(128, 794, 'HOLD THE LINE.', 36);
     text(128, 850, 'Clear each wave. Upgrade your mech.\nKeep your armor and fuel in view.', 22, COL.inkDim).setLineSpacing(12);
     text(716, 128, 'KNOW YOUR MECH', 44);
@@ -1212,9 +1215,24 @@ export class UIScene extends Phaser.Scene {
     this.controlsObjs = objs;
   }
 
+  /** Pilot-guide portrait: HARROW idling and sweeping its guns. */
+  private tickPortrait(delta: number): void {
+    const p = this.portrait!;
+    const dt = Math.min(delta, 50) / 1000;
+    p.t += dt;
+    p.rig.update({
+      dt, dx: 0, vx: 0, vy: 0, grounded: true, facing: 1,
+      aimDx: 70 + Math.cos(p.t * 0.9) * 30, aimDy: -46 + Math.sin(p.t * 1.3) * 30,
+      moving: false, dashing: false, dashDir: 1, thrust: 0, sputter: false, mode: 'normal',
+      modeRemaining: 0, modeTime: p.t, hp: 100, time: p.t,
+    });
+    p.view.sync(346, 700, 1, p.rig, {}, 6);
+  }
+
   private closeControlsOverlay(resumeGame = true): void {
     if (!this.controlsOpen) return;
     this.controlsOpen = false;
+    this.portrait = undefined;
     for (const o of this.controlsObjs) {
       this.tweens.killTweensOf(o);
       o.destroy();
@@ -1267,7 +1285,6 @@ export class UIScene extends Phaser.Scene {
       this.cameras.main.fade(500, 0, 0, 0, false, (_cam: unknown, progress: number) => {
         if (progress === 1) {
           const gs       = this.scene.get('Game') as GameScene;
-          const mechType = (this.registry.get('mechType') as string) ?? 'mech4';
           const completed = [...(gs?.completedNodes ?? []), gs?.currentNode ?? 0];
           const nextNode  = gs?.getDefaultNextNode() ?? 0;
           gameScene.scene.stop('UI');
@@ -1275,7 +1292,6 @@ export class UIScene extends Phaser.Scene {
             currentNode:    nextNode,
             completedNodes: completed,
             totalScore:     this.currentScore,
-            mechType,
           });
         }
       });

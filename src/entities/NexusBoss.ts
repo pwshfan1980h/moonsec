@@ -202,7 +202,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
         this.setFlipX(this.driftDir > 0);
         if (this.flightRoute && this.scene.flightNavigation) {
           const player = this.scene.getPlayerPos();
-          const goal = this.scene.flightNavigation.firingPosition(this, { x: player.x, y: player.y - 60 }, 350, 100, 72);
+          const goal = this.scene.flightNavigation.firingPosition(this, { x: player.x, y: player.y }, 350, 100, 72);
           const v = this.flightRoute.steer(this, goal, 120, _time);
           body.setVelocity(v.x, v.y);
         }

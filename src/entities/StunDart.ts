@@ -55,7 +55,7 @@ export class StunDart extends Phaser.Physics.Arcade.Sprite implements Hostile {
         body.setVelocityY(ny * APPROACH_SPEED + Math.sin(time * 0.003 + this.sinOffset) * 50);
         this.setFlipX(dx > 0);
         const nav = this.scene.flightNavigation;
-        const aim = { x: target.x, y: target.y - 60 };
+        const aim = { x: target.x, y: target.y };
         if (nav && this.flightRoute) {
           const goal = nav.firingPosition(this, aim, 180);
           const v = this.flightRoute.steer(this, goal, 150, time);

@@ -34,7 +34,7 @@ function fixture() {
     return obj;
   };
   const scene: any = { add: { existing: vi.fn(), graphics: fluent, text: fluent }, drones: { add: vi.fn() },
-    player: { x: 450, y: 500, hp: 5, takeDamage: vi.fn() },
+    player: { x: 450, y: 500, hp: 5, takeDamage: vi.fn(), getAimPoint() { return { x: this.x, y: this.y - 80 }; } },
     spawnFloatingText: vi.fn(), isGameOverActive: () => false };
   const acquire = vi.fn(() => true), release = vi.fn();
   const enemy = new SurfaceEnemy(scene, 800, 400, 'charger', acquire, release, vi.fn());

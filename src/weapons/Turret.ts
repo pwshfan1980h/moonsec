@@ -18,12 +18,14 @@ export class Turret {
     return Math.min(1, elapsed / this.scene.player.turretCooldownMs);
   }
 
-  fire(fromX: number, fromY: number, toX: number, toY: number, time: number): void {
-    if (time - this.lastFire < this.scene.player.turretCooldownMs) return;
+  /**
+   * Fires from the cannon's muzzle along its barrel toward the cursor.
+   * Returns true when a shot was fired (the rig plays recoil only on real shots).
+   */
+  fire(spawnX: number, spawnY: number, toX: number, toY: number, time: number): boolean {
+    if (time - this.lastFire < this.scene.player.turretCooldownMs) return false;
     this.lastFire = time;
 
-    const spawnX = fromX;
-    const spawnY = fromY - 100;
     const baseAngle = Phaser.Math.Angle.Between(spawnX, spawnY, toX, toY);
     const jitter = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-SPREAD_DEG, SPREAD_DEG));
     const angle = baseAngle + jitter;
@@ -31,7 +33,7 @@ export class Turret {
     const vy = Math.sin(angle) * SPEED;
 
     const b = this.scene.playerBullets.get(spawnX, spawnY, 'bullet-turret') as Phaser.Physics.Arcade.Image;
-    if (!b) return;
+    if (!b) return false;
 
     b.setActive(true).setVisible(true).setDepth(15);
     b.setData('damage', this.scene.player.turretDamage);
@@ -47,6 +49,7 @@ export class Turret {
     this.scene.cameras.main.shake(80, 0.006);
     this.scene.audio.play('turret');
     this.applyHitStop();
+    return true;
   }
 
   private spawnTrail(bullet: Phaser.Physics.Arcade.Image, tint: number): void {

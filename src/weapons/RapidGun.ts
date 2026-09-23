@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
+import type { MuzzlePose } from '../entities/Player';
 
 const FIRE_INTERVAL = 60; // ms between shots
 const SPEED = 348; // suppression — slow enough that the player has to lead targets
@@ -14,9 +15,10 @@ export class RapidGun {
     this.scene = scene;
   }
 
-  update(time: number, facingRight: boolean): void {
-    if (!this.scene.input.mousePointer.rightButtonDown()) return;
-    if (time - this.lastFire < this.scene.player.rapidMinInterval) return;
+  /** Fires from the gatling muzzle toward the cursor while RMB is held. Returns true on a shot. */
+  update(time: number, muzzle: MuzzlePose): boolean {
+    if (!this.scene.input.mousePointer.rightButtonDown()) return false;
+    if (time - this.lastFire < this.scene.player.rapidMinInterval) return false;
 
     if (!this.scene.player.consumeRapidAmmo()) {
       // Dry-fire: soft click, rate-limited so holding RMB doesn't machine-gun the sfx
@@ -24,22 +26,21 @@ export class RapidGun {
         this.lastDryClick = time;
         this.scene.audio.playAt('hit', { rate: 0.7, detune: -900, volume: 0.25 });
       }
-      return;
+      return false;
     }
     this.lastFire = time;
 
-    const player = this.scene.player;
     const pointer = this.scene.input.mousePointer;
     const worldPt = this.scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
-    const spawnX = player.x + (facingRight ? 45 : -45);
-    const spawnY = player.y - 78;
+    const spawnX = muzzle.x;
+    const spawnY = muzzle.y;
     const baseAngle = Phaser.Math.Angle.Between(spawnX, spawnY, worldPt.x, worldPt.y);
     const angle = baseAngle + (Math.random() - 0.5) * SPREAD;
     const vx = Math.cos(angle) * SPEED;
     const vy = Math.sin(angle) * SPEED;
 
     const b = this.scene.playerBullets.get(spawnX, spawnY, 'bullet-rapid') as Phaser.Physics.Arcade.Image;
-    if (!b) { console.warn('[RapidGun] pool exhausted — no bullet returned'); return; }
+    if (!b) { console.warn('[RapidGun] pool exhausted — no bullet returned'); return false; }
 
     b.setActive(true).setVisible(true).setDepth(15);
     b.setData('damage', 1);
@@ -52,6 +53,7 @@ export class RapidGun {
     this.spawnTrail(b, 0x00ffff);
 
     this.scene.audio.play('rapid');
+    return true;
   }
 
   private spawnTrail(bullet: Phaser.Physics.Arcade.Image, tint: number): void {

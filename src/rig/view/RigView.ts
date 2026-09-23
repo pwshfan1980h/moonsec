@@ -35,15 +35,17 @@ export class RigView {
     this.container = scene.add.container(0, 0).setDepth(depth);
   }
 
-  sync(x: number, y: number, facing: 1 | -1, src: RigSource, fx: RigViewEffects = {}): void {
+  /** `scale` is screen/world units per native pixel (VPX in the world; larger for UI portraits). */
+  sync(x: number, y: number, facing: 1 | -1, src: RigSource, fx: RigViewEffects = {}, scale = VPX): void {
     this.frameCounter++;
     const c = this.container;
-    c.setPosition(x, y).setScale(VPX * facing, VPX);
+    c.setPosition(x, y).setScale(scale * facing, scale);
     const parts = src.placements;
-    const fill = src.flash > 0 ? pal('cyan3')
-      : src.glow > 0 && this.frameCounter % 4 < 2 ? pal(src.glowColor)
-      : undefined;
-    const multiply = src.tint > 0 ? pal('hostile1') : fx.dark && fx.dark > 0.3 ? pal('hull3') : undefined;
+    // Hit flash is a solid silhouette; pulses (upgrade, repair done, drop-in) tint instead.
+    const fill = src.flash > 0 ? pal('cyan3') : undefined;
+    const multiply = src.tint > 0 ? pal('hostile1')
+      : src.glow > 0 && this.frameCounter % 6 < 3 ? pal(src.glowColor)
+      : fx.dark && fx.dark > 0.3 ? pal('hull3') : undefined;
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i];
       let img = this.images[i];
@@ -57,8 +59,8 @@ export class RigView {
       img.setPosition(p.x, p.y).setRotation(p.rot).setScale(1, p.scaleY ?? 1).setAlpha(p.alpha ?? 1);
       let partFill = fill;
       if (partFill === undefined && fx.scanY !== undefined) {
-        const wy = y + p.y * VPX;
-        if (Math.abs(wy - fx.scanY) < 5 * VPX) partFill = pal('green1');
+        const wy = y + p.y * scale;
+        if (Math.abs(wy - fx.scanY) < 5 * scale) partFill = pal('green1');
       }
       if (partFill !== undefined) img.setTint(partFill).setTintMode(Phaser.TintModes.FILL);
       else if (multiply !== undefined) img.setTint(multiply).setTintMode(Phaser.TintModes.MULTIPLY);

@@ -67,7 +67,7 @@ export class Carrier extends Phaser.Physics.Arcade.Sprite implements Hostile {
     this.setFlipX(this.patrolDir < 0);
     if (this.flightRoute && this.scene.flightNavigation) {
       const player = this.scene.getPlayerPos();
-      const goal = this.scene.flightNavigation.firingPosition(this, { x: player.x, y: player.y - 60 }, 360);
+      const goal = this.scene.flightNavigation.firingPosition(this, { x: player.x, y: player.y }, 360);
       const v = this.flightRoute.steer(this, goal, 90, time);
       body.setVelocity(v.x, v.y);
     }
