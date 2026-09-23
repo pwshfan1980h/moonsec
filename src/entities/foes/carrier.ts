@@ -253,7 +253,6 @@ export class Manta extends Flyer {
       onComplete: () => {
         bomb.destroy();
         this.scene.spawnExplosion(bomb.x, ground - 10);
-        this.scene.air?.explosion(bomb.x, ground - 10, true);
         const p = this.scene.player;
         if (Math.abs(p.x - bomb.x) < 70 && Math.abs(p.y - ground) < 60) p.takeDamage(DAMAGE.stickBomb, bomb.x);
       },

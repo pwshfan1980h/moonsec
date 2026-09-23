@@ -146,7 +146,6 @@ export abstract class Flyer extends FoeBase {
       if (!k.startsWith('nozzle') || Math.random() > 0.35) continue;
       const wx = this.x + s.x * this.facing * VPX, wy = this.y + s.y * VPX;
       this.fx.jetFlame(wx, wy, Math.PI / 2 + (this.accX > 0 ? -0.3 : 0.3) * this.facing, 0.35, 16);
-      if (Math.random() < 0.05) this.scene.air?.jetWash(wx, wy, 0, 1, 0.3);
     }
   }
 }
@@ -222,11 +221,6 @@ export abstract class Walker extends FoeBase {
     });
     if (wasAir && this.grounded) {
       this.rig.land(Math.abs(body.velocity.y) / VPX + 80);
-      this.scene.air?.landing(this.x, this.y, 300);
-    }
-    for (const e of this.rig.gait?.events ?? []) {
-      const wx = this.x + e.x * this.facing * VPX;
-      this.scene.air?.footstep(wx, this.y, e.weight * 0.6);
     }
   }
 }

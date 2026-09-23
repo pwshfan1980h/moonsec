@@ -55,9 +55,9 @@ describe('constants', () => {
     }
   });
 
-  it('RADAR_X near right edge of 1920 screen', () => {
-    expect(RADAR_X).toBe(1770);
-    expect(RADAR_Y).toBe(830);
+  it('radar sits top-right, clear of the ground band', () => {
+    expect(RADAR_X).toBe(1812);
+    expect(RADAR_Y).toBe(270);
   });
 
   it('pickup lifetime is 10000ms (not the old 6000)', () => {

@@ -164,7 +164,6 @@ export abstract class RiggedHostile extends Phaser.Physics.Arcade.Sprite impleme
         if (!this.scene) return;
         const x = this.x + (Math.random() - 0.5) * w, y = this.y - (this.opts.originY === 1 ? h / 2 : 0) + (Math.random() - 0.5) * h;
         this.scene.spawnExplosion(x, y);
-        this.scene.air?.explosion(x, y, i === o.booms - 1);
         fx.chips(x, y, 3); fx.flame(x, y, 4);
         this.rig.flash = 0.05;
         this.scene.cameras.main.shake(120, 0.004);

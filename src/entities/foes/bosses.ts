@@ -152,7 +152,6 @@ export class Warden extends Walker {
         g.fillRect(this.strikeX - 125, 220, 250, floor - 220);
         g.strokeRect(this.strikeX - 125, 220, 250, floor - 220);
         const dish = this.socket('extra_dish');
-        this.scene.air?.heat(dish.x, dish.y - 10, 1.5);
       }
     }
     if (strike) {
@@ -161,13 +160,11 @@ export class Warden extends Walker {
         : Math.abs(p.x - this.strikeX) < 125;
       if (hit) p.takeDamage(DAMAGE.wardenSweep, this.x);
       this.scene.spawnExplosion(strike === 'sweep' ? p.x : this.strikeX, floor - 30);
-      this.scene.air?.explosion(strike === 'sweep' ? p.x : this.strikeX, floor - 30, true);
       this.scene.audio.play('explosion');
       for (const id of ['armN', 'armF']) if (!this.broken.has(id)) this.rig.fire(id, -6);
     }
     if (c.phase === 'exposed') {
       const core = this.socket('core');
-      this.scene.air?.heat(core.x, core.y, 0.8);
     }
     this.arms.forEach((arm, i) => { const s = this.socket(i === 0 ? 'muzzle_armN' : 'muzzle_armF'); arm.follow(s.x - 20 * Math.cos(s.angle), s.y - 20 * Math.sin(s.angle)); });
     const d = this.socket('extra_dish');
@@ -291,7 +288,6 @@ export class Nexus extends Flyer {
     } else if (this.mode === 'charge') {
       this.drive(0, 0, dt);
       const core = this.socket('core');
-      this.scene.air?.heat(core.x, core.y, 1.2);
       if (this.modeT > (this.desperate ? 0.9 : 1.6)) {
         if (this.cycleN % 3 === 1) this.startTelegraph();
         else { this.tripleShot(); this.mode = 'reposition'; this.modeT = 0; }

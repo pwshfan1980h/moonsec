@@ -349,7 +349,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.scene.audio.play('landing-soft');
     }
     this.rig.land(vy / VPX, heavy);
-    this.scene.air?.landing(this.x, this.y, heavy ? Math.max(vy, 600) : vy);
     if (heavy) this.scene.ai?.noise(this.x, this.y, 0.8);
     this.fx.kickDust(this.x - 16, this.y, heavy ? 14 : 5, heavy ? 1.8 : 1);
     this.fx.kickDust(this.x + 16, this.y, heavy ? 14 : 5, heavy ? 1.8 : 1);
@@ -395,11 +394,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private drawEffects(delta: number, mode: RigMode): void {
     const rig = this.rig;
-    const air = this.scene.air;
     for (const j of rig.jets) {
       const p = this.toWorld(j.x, j.y);
       this.fx.jetFlame(p.x, p.y, Math.atan2(j.dy, j.dx * this.facing), j.power, delta);
-      air?.jetWash(p.x, p.y, j.dx * this.facing, j.dy, j.power);
     }
     // wash dust when jets fire near the ground
     if (rig.jets.length && !this.onGround && Math.random() < 0.3) this.fx.kickDust(this.x, this.y + 40, 1, 1.5);
@@ -408,8 +405,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       if (e.type === 'footfall') {
         const p = this.toWorld(e.x, 0);
         this.fx.kickDust(p.x, p.y, e.weight > 0.7 ? 5 : 3, e.weight);
-        air?.footstep(p.x, p.y, e.weight);
-        this.scene.audio.play('footstep');
+        this.scene.audio.footstep(e.weight);
       } else if (e.type === 'toeDrag') {
         const p = this.toWorld(e.x, e.y);
         if (Math.random() < 0.5) this.fx.spark(p.x, p.y, 2, -Math.PI / 2 - this.facing * 1.2, 0.8);
@@ -417,7 +413,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       } else if (e.type === 'boom') {
         const p = this.toWorld(e.x, e.y);
         this.scene.spawnExplosion(p.x, p.y);
-        this.scene.air?.explosion(p.x, p.y, e.big);
         this.fx.chips(p.x, p.y, e.big ? 8 : 3);
         this.fx.flame(p.x, p.y, e.big ? 10 : 4);
         this.scene.cameras.main.shake(e.big ? 240 : 100, e.big ? 0.01 : 0.004);

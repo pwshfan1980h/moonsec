@@ -17,7 +17,9 @@ export type Label = Phaser.GameObjects.BitmapText;
 export function label(scene: Phaser.Scene, x: number, y: number, text: string, style: TextStyle = 'body', role: Role = 'ink'): Label {
   const t = TEXT[style];
   const size = FONTS[t.font].glyphH * t.scale;
-  return scene.add.bitmapText(Math.round(x), Math.round(y), t.font, normalizeText(text, KNOWN), size).setTint(tc(role));
+  const m = FONTS[t.font];
+  return scene.add.bitmapText(Math.round(x), Math.round(y), t.font, normalizeText(text, KNOWN), size)
+    .setLetterSpacing(m.tracking).setLineSpacing(m.lineH - m.glyphH).setTint(tc(role));
 }
 
 /** Update a label's text (normalized) and optionally its role colour. */

@@ -27,8 +27,6 @@ import { markDevReady } from '../dev/ready';
 import { HostileCombat } from '../collisions/HostileCombat';
 import { installPipeline, graphics, type CameraPipeline } from '../render/RenderPipeline';
 import { VPX, cameraZoom, type GraphicsSettings } from '../render/GraphicsSettings';
-import { Atmosphere } from '../fx/Atmosphere';
-import { atmosphereFor } from '../fx/atmosphereRecipes';
 import { TerrainProbe } from '../fx/terrain';
 import { AiWorld } from '../ai/AiWorld';
 
@@ -73,7 +71,6 @@ export class GameScene extends Phaser.Scene {
   private gameEventUnsubs: Array<() => void> = [];
   private bgStars?: Phaser.GameObjects.TileSprite;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
-  private atmosphere?: Atmosphere;
   terrain!: TerrainProbe;
   private trainOffset = 0;
   private isBossDead    = false;
@@ -118,8 +115,6 @@ export class GameScene extends Phaser.Scene {
     this.prevHp       = 0;
     this.gameEventUnsubs = [];
     this.isBossDead      = false;
-    this.atmosphere?.destroy();
-    this.atmosphere      = undefined;
     this.bgStars         = undefined;
     this.bgTerrain       = undefined;
     this.groundLayer     = undefined;
@@ -283,13 +278,6 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAME_H - 120));
     this.worldPipeline = installPipeline(this, this.cameras.main, 'world');
     this.applyGraphics(graphics());
-    const tmpl = this.activeConfig.template;
-    this.atmosphere = new Atmosphere(
-      this, atmosphereFor(nodeIdx), this.terrain,
-      tmpl.hasGround ? this.levelGroundY : 22 * 32,
-      tmpl.hasCeiling ? (tmpl.ceilingRow + 2) * 32 : null,
-      graphics(), this.worldPipeline,
-    );
     this.snapCameraTo(this.player.x, this.player.y, 1);
     const onGraphics = (s: GraphicsSettings) => this.applyGraphics(s);
     this.game.events.on('graphicsChanged', onGraphics);
@@ -414,14 +402,11 @@ export class GameScene extends Phaser.Scene {
   private applyGraphics(s: GraphicsSettings): void {
     this.cameras.main.setZoom(cameraZoom(s));
     this.worldPipeline?.apply(s);
-    this.atmosphere?.applySettings(s);
   }
 
   /** The active level's map template (ground, ceiling, rows). */
   get levelTemplate() { return this.activeConfig.template; }
 
-  /** Mission atmosphere (dust, fog, shafts, heat haze); FX sources feed it. */
-  get air(): Atmosphere | undefined { return this.atmosphere; }
 
   /**
    * Manual camera follow. The float target is lerped frame-rate independently and the
@@ -440,20 +425,12 @@ export class GameScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     // The rig keeps animating after death: the wreck burns while the game-over screen is up.
     this.player.tickPresentation(delta);
-    this.atmosphere?.update(delta);
     if (this.isGameOver) return;
     this.ai?.update(Math.min(delta, 50) / 1000);
     this.player.update(time, delta);
     const k = delta / (1000 / 60);
     this.snapCameraTo(this.player.x, this.player.y, 1 - Math.pow(1 - CAMERA_LERP, k));
     this.playerHud?.update();
-    const pb = this.player.body as Phaser.Physics.Arcade.Body;
-    this.audio.update({
-      onGround:  pb.blocked.down,
-      moving:    Math.abs(pb.velocity.x) > 10,
-      velocityX: pb.velocity.x,
-      delta,
-    });
     this.spawner?.update(time, delta);
     this.surfaceMission?.update(time, delta);
     // Moving platforms: runChildUpdate is true on the group, so they self-update
@@ -651,7 +628,6 @@ export class GameScene extends Phaser.Scene {
     y: number,
     opts?: { primary?: Phaser.GameObjects.GameObject; splashRadius?: number; splashDamage?: number },
   ): void {
-    this.atmosphere?.explosion(x, y, true);
     const radius = opts?.splashRadius ?? 110;
     const splashDamage = opts?.splashDamage ?? 1;
     const primary = opts?.primary ?? null;
@@ -712,7 +688,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   spawnExplosion(x: number, y: number): void {
-    this.atmosphere?.explosion(x, y, false);
     const emitter = this.add.particles(x, y, 'flare', {
       speed:    { min: 60, max: 160 },
       angle:    { min: 0, max: 360 },
@@ -781,14 +756,15 @@ export class GameScene extends Phaser.Scene {
       if (this.textures.exists(key)) this.textures.remove(key);
     }
 
-    // Layer 1: starfield — 420+ 1px dots, random alpha 0.25–0.55
+    // Layer 1: starfield — 2×2 dots on even coordinates so every star covers a whole cell of
+    // the retro filter's 2px grid (1px stars flickered in and out as the grid sampled past them).
     const starsGfx = this.make.graphics({ x: 0, y: 0 }, false);
-    for (let i = 0; i < 420; i++) {
+    for (let i = 0; i < 260; i++) {
       starsGfx.fillStyle(pal('cyan3'), 0.25 + Math.random() * 0.30);
       starsGfx.fillRect(
-        Phaser.Math.Between(0, GAME_W - 1),
-        Phaser.Math.Between(0, GROUND_Y - 1),
-        1, 1,
+        Phaser.Math.Between(0, GAME_W / 2 - 1) * 2,
+        Phaser.Math.Between(0, GROUND_Y / 2 - 1) * 2,
+        2, 2,
       );
     }
     starsGfx.generateTexture('bgStars', GAME_W, GROUND_Y);

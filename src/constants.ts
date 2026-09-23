@@ -10,9 +10,9 @@ export const GROUND_HEIGHT = 120;
 
 // Compact radar with a safe inset for the bezel and cardinal labels.
 export const RADAR_WORLD_RADIUS = 460;   // world units visible around player (widened with bigger radar)
-export const RADAR_SCREEN_RADIUS = 86;   // px radius of drawn circle
-export const RADAR_X = 1770;             // screen-space center X — leaves room for the +28 cardinal "E" glyph at x=1913
-export const RADAR_Y = 830;              // screen-space center Y
+export const RADAR_SCREEN_RADIUS = 72;   // px radius of drawn circle
+export const RADAR_X = 1812;             // screen-space center X — top-right, under the score/help/pause cluster
+export const RADAR_Y = 270;              // screen-space center Y — kept off the ground band the mech walks in
 
 export const MISSILE_SEEK_RANGE = 650;
 export const PICKUP_LIFETIME_MS = 10000;

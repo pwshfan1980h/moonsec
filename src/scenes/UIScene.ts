@@ -260,7 +260,7 @@ export class UIScene extends Phaser.Scene {
     const game = this.game_;
     if (!game || !game.sys.isActive()) return;
     this.minimap.draw(time, game);
-    this.hud.tick(time, delta / 1000, game.cameras.main, game.player.x);
+    this.hud.tick(time, delta / 1000, game.cameras.main, game.player.x, game.player.y);
     if (this.naniteState === 'cooldown') this.refreshRepair();
   }
 

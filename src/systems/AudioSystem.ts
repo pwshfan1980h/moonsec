@@ -13,13 +13,6 @@ type SoundId =
 
 type LoopId = 'jetpack' | 'missile' | 'missile-reload';
 
-interface AudioUpdateState {
-  onGround:  boolean;
-  moving:    boolean;    // Math.abs(velocityX) > 10
-  velocityX: number;     // raw px/s — used for footstep interval scaling
-  delta:     number;     // ms
-}
-
 interface LoopEntry {
   sources: (AudioBufferSourceNode | OscillatorNode)[];
   gainNode: GainNode;
@@ -65,7 +58,7 @@ export class AudioSystem {
   };
   private loops = new Map<LoopId, LoopEntry>();
   private deathAmbientNodes: (OscillatorNode | GainNode)[] = [];
-  private footstepTimer = 0;
+  private stepSide = 0;
   private readonly onBeforeUnload = () => {
     try {
       const closing = this.ctx.close();
@@ -116,7 +109,7 @@ export class AudioSystem {
 
     // Procedural sounds — bypass Phaser sound manager
     if (id === 'missile-launch') { this.playMissileLaunch(); return; }
-    if (id === 'footstep')      { this.playMechFootstep(); return; }
+    if (id === 'footstep')      { this.playMechFootstep(1); return; }
     if (id === 'landing-soft')  { this.playProceduralOneShot(70, 0.08, 0.30); return; }
     if (id === 'landing-heavy') { this.playProceduralOneShot(55, 0.12, 0.50, { filterHz: 200 }); return; }
     if (id === 'landing-slam')  { this.playLandingSlam(); return; }
@@ -394,21 +387,6 @@ export class AudioSystem {
     } catch { /* ignore */ }
   }
 
-  update(state: AudioUpdateState): void {
-    const { onGround, moving, velocityX, delta } = state;
-
-    if (onGround && moving) {
-      this.footstepTimer -= delta;
-      if (this.footstepTimer <= 0) {
-        // Heavy mech cadence — lumbering, with a slightly tighter beat at full pace
-        this.footstepTimer = Math.abs(velocityX) > 250 ? 320 : 440;
-        this.play('footstep');
-      }
-    } else {
-      this.footstepTimer = Math.min(this.footstepTimer, 200);
-    }
-  }
-
   /** Short, crisp two-tone beep — missile cooldown reached zero. */
   playMissileReady(): void {
     try {
@@ -513,22 +491,36 @@ export class AudioSystem {
     } catch { /* ignore */ }
   }
 
-  /** ED-209-style heavy mech footstep — hydraulic thud + metallic clank + servo whine. */
-  private playMechFootstep(): void {
+  /** Rig footfall at `weight` (0..1): varies pitch and level so a stride never sounds like a loop. */
+  footstep(weight: number): void { this.playMechFootstep(weight); }
+
+  /**
+   * Heavy mech footstep — hydraulic thud + metallic clank + servo whine + rumble.
+   * Driven only by the rig's footfall events so sound lands with the foot. Every step
+   * gets its own pitch/level jitter, and left/right feet differ slightly.
+   */
+  private playMechFootstep(weight: number): void {
     try {
       if (this.ctx.state === 'suspended') this.ctx.resume();
       const t = this.ctx.currentTime;
+      this.stepSide ^= 1;
+      const w = Math.max(0.2, Math.min(1, weight));
+      const pitch = (this.stepSide ? 1 : 0.94) * (0.95 + Math.random() * 0.1);
+      const bus = this.ctx.createGain();
+      bus.gain.setValueAtTime(VOLUMES.footstep * 2 * (0.55 + 0.45 * w) * (0.9 + Math.random() * 0.2), t);
+      bus.connect(this.ctx.destination);
+      setTimeout(() => { try { bus.disconnect(); } catch { /* ok */ } }, 400);
 
       // 1. Sub-bass hydraulic thud — sine sweep 90→38 Hz
       const thumpDur = 0.18;
       const thumpG = this.ctx.createGain();
       thumpG.gain.setValueAtTime(0.55, t);
       thumpG.gain.exponentialRampToValueAtTime(0.0001, t + thumpDur);
-      thumpG.connect(this.ctx.destination);
+      thumpG.connect(bus);
       const thump = this.ctx.createOscillator();
       thump.type = 'sine';
-      thump.frequency.setValueAtTime(90, t);
-      thump.frequency.exponentialRampToValueAtTime(38, t + thumpDur);
+      thump.frequency.setValueAtTime(90 * pitch, t);
+      thump.frequency.exponentialRampToValueAtTime(38 * pitch, t + thumpDur);
       thump.connect(thumpG);
       thump.start(t);
       thump.stop(t + thumpDur);
@@ -537,15 +529,15 @@ export class AudioSystem {
       // 2. Metallic clank — bandpassed noise burst around 2.4 kHz
       const clankDur = 0.06;
       const clankG = this.ctx.createGain();
-      clankG.gain.setValueAtTime(0.22, t);
+      clankG.gain.setValueAtTime(0.1 + 0.12 * w, t);
       clankG.gain.exponentialRampToValueAtTime(0.0001, t + clankDur);
       const bp = this.ctx.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.setValueAtTime(2400, t);
+      bp.frequency.setValueAtTime(2400 * pitch * (this.stepSide ? 1 : 1.12), t);
       bp.Q.setValueAtTime(4.5, t);
       const clankNs = this.ctx.createBufferSource();
       clankNs.buffer = this.noiseBuffer;
-      clankNs.connect(bp); bp.connect(clankG); clankG.connect(this.ctx.destination);
+      clankNs.connect(bp); bp.connect(clankG); clankG.connect(bus);
       clankNs.start(t);
       clankNs.stop(t + clankDur);
       clankNs.onended = () => { try { clankG.disconnect(); bp.disconnect(); } catch { /* ok */ } };
@@ -557,11 +549,11 @@ export class AudioSystem {
       servoG.gain.setValueAtTime(0, servoStart);
       servoG.gain.linearRampToValueAtTime(0.10, servoStart + 0.008);
       servoG.gain.exponentialRampToValueAtTime(0.0001, servoStart + servoDur);
-      servoG.connect(this.ctx.destination);
+      servoG.connect(bus);
       const servo = this.ctx.createOscillator();
       servo.type = 'triangle';
-      servo.frequency.setValueAtTime(620, servoStart);
-      servo.frequency.exponentialRampToValueAtTime(180, servoStart + servoDur);
+      servo.frequency.setValueAtTime(620 * pitch, servoStart);
+      servo.frequency.exponentialRampToValueAtTime(180 * pitch, servoStart + servoDur);
       servo.connect(servoG);
       servo.start(servoStart);
       servo.stop(servoStart + servoDur);
@@ -578,7 +570,7 @@ export class AudioSystem {
       lp.frequency.setValueAtTime(160, rumbleStart);
       const rumbleNs = this.ctx.createBufferSource();
       rumbleNs.buffer = this.noiseBuffer;
-      rumbleNs.connect(lp); lp.connect(rumbleG); rumbleG.connect(this.ctx.destination);
+      rumbleNs.connect(lp); lp.connect(rumbleG); rumbleG.connect(bus);
       rumbleNs.start(rumbleStart);
       rumbleNs.stop(rumbleStart + rumbleDur);
       rumbleNs.onended = () => { try { rumbleG.disconnect(); lp.disconnect(); } catch { /* ok */ } };

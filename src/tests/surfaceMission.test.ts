@@ -22,7 +22,7 @@ function sceneFixture() {
     for (const key of ['setDepth', 'clear', 'fillStyle', 'fillRect', 'lineStyle', 'strokeRect', 'lineBetween', 'strokeCircle', 'strokeEllipse', 'destroy']) g[key] = () => g;
     return g;
   };
-  const label = () => { const t: any = {}; for (const k of ['setOrigin', 'setDepth', 'setText', 'setColor', 'setTint', 'setScale', 'setFrame', 'destroy']) t[k] = () => t; return t; };
+  const label = () => { const t: any = {}; for (const k of ['setOrigin', 'setDepth', 'setText', 'setColor', 'setTint', 'setScale', 'setFrame', 'setLetterSpacing', 'setLineSpacing', 'destroy']) t[k] = () => t; return t; };
   const key = { isDown: false };
   const events = new EventEmitter();
   const player = { x: 300, y: 950, jetpackMaxFuel: 2200, heal: vi.fn(), refillRapidAmmo: vi.fn(), restoreJetpackFuel: vi.fn(), setPosition: vi.fn() };

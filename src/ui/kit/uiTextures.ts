@@ -88,11 +88,13 @@ function buildFont(scene: Phaser.Scene, key: FontKey, glyphs: readonly Glyph[]):
     const g = lookup.get(ch)!;
     chars[ch.charCodeAt(0)] = {
       x, y: 0, width: g.w, height: g.h, centerX: Math.floor(g.w / 2), centerY: Math.floor(g.h / 2),
-      xOffset: 0, yOffset: 0, xAdvance: g.w + m.tracking, data: {}, kerning: {},
+      xOffset: 0, yOffset: 0, xAdvance: g.w, data: {}, kerning: {},
       u0: x / W, v0: 1, u1: (x + g.w) / W, v1: 1 - g.h / H,
     };
   }
-  const data = { retroFont: true, font: key, size: m.glyphH, lineHeight: m.lineH, chars };
+  // Tight metrics (no trailing tracking, line box = glyph height) so origin 0.5 centres the ink;
+  // tracking and leading are applied per label as letter/line spacing, which only go between glyphs/lines.
+  const data = { retroFont: true, font: key, size: m.glyphH, lineHeight: m.glyphH, chars };
   scene.cache.bitmapFont.add(key, { data, texture: `font-${key}`, frame: null });
 }
 

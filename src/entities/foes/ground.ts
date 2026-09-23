@@ -47,14 +47,12 @@ export class Tick extends Walker {
     if (this.mode === 'burrowed') {
       this.rigExtra.crouch = 1;
       this.view.container.setAlpha(0.35);
-      if (Math.random() < dt * 0.8) this.scene.air?.footstep(this.x, this.y, 0.4);
       body.setVelocityX(0);
     } else {
       this.view.container.setAlpha(1);
       this.rigExtra.crouch = 0;
     }
     if (this.mode === 'emerge' && prev === 'burrowed') {
-      this.scene.air?.landing(this.x, this.y, 300);
       this.fx.kickDust(this.x, this.y, 8, 1.2);
     }
     if (this.mode === 'hop') {
@@ -87,7 +85,6 @@ export class Tick extends Walker {
     if (this.dying) return;
     const p = this.player;
     if (Phaser.Math.Distance.Between(this.x, this.y - 10, p.x, p.y - 40) < 95) p.takeDamage(DAMAGE.mine, this.x);
-    this.scene.air?.explosion(this.x, this.y - 8, true);
     this.die();
   }
 }
@@ -138,7 +135,6 @@ export class Longleg extends Walker {
       this.beam.lineStyle(2, pal(blink ? 'hostile1' : 'amber1'), 0.8);
       this.beam.lineBetween(m.x, m.y, m.x + Math.cos(m.angle) * 1600, m.y + Math.sin(m.angle) * 1600);
       const coil = this.socket('coil');
-      this.scene.air?.heat(coil.x, coil.y, 1 + this.modeT);
       if (Math.random() < dt * 20) this.fx.spark(coil.x, coil.y, 1, -Math.PI / 2, 2);
       if (this.modeT > 1.1) {
         this.beam.destroy(); this.beam = undefined;
@@ -245,7 +241,6 @@ export class Bulwark extends Walker {
         onComplete: () => {
           shell.destroy();
           this.scene.spawnExplosion(tx, ty - 10);
-          this.scene.air?.explosion(tx, ty - 10, true);
           const p = this.scene.player;
           if (Math.abs(p.x - tx) < 80 && Math.abs(p.y - ty) < 70) p.takeDamage(DAMAGE.tankShell, tx);
         } }) });

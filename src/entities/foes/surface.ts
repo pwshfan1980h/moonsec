@@ -176,7 +176,6 @@ export class Ram extends Walker {
     } else if (this.mode === 'charge') {
       body.setVelocityX(this.dir * 520);
       this.rigExtra.pitch = 0.3; this.rigExtra.crouch = 0.3;
-      if (Math.random() < 0.5) this.scene.air?.footstep(this.x, this.y, 0.8);
       if (!this.hitPlayer && Math.abs(p.x - this.x) < 50 && Math.abs(p.y - this.y) < 60) {
         this.hitPlayer = true;
         p.takeDamage(DAMAGE.charger, this.x);
@@ -363,7 +362,6 @@ export class Scuttler extends RiggedHostile {
       const g = terrain?.surfaceBelow(this.x, this.y) ?? this.scene.getApproxGroundY();
       if (this.y >= g - 10) {
         this.y = g - 10; this.mode = 'floor';
-        this.scene.air?.landing(this.x, g, 500);
         if (Math.abs(p.x - this.x) < 60 && Math.abs(p.y - g) < 40) p.takeDamage(DAMAGE.charger, this.x);
       }
     } else {
@@ -426,7 +424,6 @@ export class Burrower extends RiggedHostile {
       const lead = predictLanding(p, p.velocity, 600, (x, y) => terrain?.surfaceBelow(x, y) ?? null, { maxTime: 0.5 });
       const dx = lead.x - this.x;
       this.x += Phaser.Math.Clamp(dx, -130 * dt, 130 * dt);
-      if (Math.random() < dt * 14) this.scene.air?.footstep(this.x, g, 1.2);
       if (Math.random() < dt * 6) enemyFx(this.scene).kickDust(this.x, g, 1, 0.6);
       this.emerge = Math.max(0, this.emerge - dt * 3);
       if (Math.abs(dx) < 24 && this.modeT > 1.2 && Math.abs(p.y - g) < 80) { this.mode = 'erupt'; this.modeT = 0; }
@@ -434,7 +431,6 @@ export class Burrower extends RiggedHostile {
       this.emerge = Math.min(1, this.modeT / 0.25);
       if (this.modeT > 0.25) {
         body.enable = true;
-        this.scene.air?.explosion(this.x, g - 10, false);
         enemyFx(this.scene).kickDust(this.x, g, 18, 2);
         this.scene.cameras.main.shake(150, 0.006);
         if (Math.abs(p.x - this.x) < 60 && Math.abs(p.y - g) < 60) p.takeDamage(DAMAGE.charger, this.x);
