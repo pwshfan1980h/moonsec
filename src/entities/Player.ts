@@ -12,6 +12,7 @@ import { RigFx } from '../rig/view/RigFx';
 import { worldAngle, type SocketPose } from '../rig/pose';
 import { VPX } from '../render/GraphicsSettings';
 import { devParams } from '../dev/devParams';
+import { stepUpHeight } from '../level/stepUp';
 import { nextFacing, surgeDirection, type FacingState } from './playerFacing';
 
 const FRICTION = 0.78;
@@ -67,6 +68,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private sputtering = false;
   private walkHeld = false;
   private lastX = 0;
+  /** Visual lag after a step-up: the rig eases up onto the ledge instead of popping. */
+  private stepLag = 0;
   private presentationTime = 0;
   private fxClock = { smoke: 0, sparks: 0, fire: 0, debris: 0 };
 
@@ -265,6 +268,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       body.setVelocityX(body.velocity.x * Math.pow(FRICTION, delta / (1000 / 60)));
     }
 
+    if (this.onGround && (surging || left !== right)) this.tryStepUp(surging ? this.surgeDir : left ? -1 : 1);
+
     // Buffered presses can jump on landing or just after leaving an edge.
     const jump = this.jumpAssist.update(time, this.onGround, Phaser.Input.Keyboard.JustDown(this.keySpace));
     const thrust = space && !this.onGround && this.jetpackFuel > 0 && !jump;
@@ -337,6 +342,20 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  /** Walk up one-tile terraces instead of stopping dead against them. */
+  private tryStepUp(dir: number): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const terrain = this.scene.terrain;
+    if (!terrain || !(dir > 0 ? body.blocked.right : body.blocked.left)) return;
+    const d = dir > 0 ? 1 : -1;
+    const h = stepUpHeight(terrain, { x: this.x, y: body.bottom, halfW: body.width / 2, h: body.height }, d);
+    if (h <= 0) return;
+    this.y -= h;
+    this.x += d * 4;
+    this.stepLag += h;
+    this.rig.land(90, false);
+  }
+
   private onLanded(vy: number): void {
     const heavy = vy > 450 || this.spawning;
     if (vy > 600 || this.spawning) {
@@ -385,7 +404,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       modeRemaining: Math.max(0, (this.empUntil - now) / 1000), modeTime: 0,
       hp: this.hp, time: this.presentationTime,
     });
-    this.rigView.sync(this.x, this.y, this.facing, this.rig, {
+    this.stepLag = Math.max(0, this.stepLag - dt * 360);
+    this.rigView.sync(this.x, this.y + this.stepLag, this.facing, this.rig, {
       dark: this.dead ? Math.min(1, this.rig.deathT) : 0,
       scanY: mode === 'repair' ? this.y - ((this.presentationTime * 90) % HARROW_BODY.visualH) : undefined,
     });

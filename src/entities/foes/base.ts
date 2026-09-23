@@ -9,6 +9,8 @@ import { VPX } from '../../render/GraphicsSettings';
 import { pal, type PaletteName } from '../../render/palette';
 import { DAMAGE } from '../../balance/armor';
 import type { Span, SpanLink } from '../../ai/GroundNav';
+import { TILE } from '../../fx/terrain';
+import { stepUpHeight } from '../../level/stepUp';
 
 export interface Scaling { attackSpeed: number; shootInterval: number; extraHp: number; bulletSpeedMult: number }
 export const BASE_SCALING: Scaling = { attackSpeed: 216, shootInterval: 1890, extraHp: 0, bulletSpeedMult: 0.78 };
@@ -151,6 +153,11 @@ export abstract class Flyer extends FoeBase {
 }
 
 /** Ground enemy: gravity, span-aware walking, jumps along GroundNav links. */
+/** A route link that is just a one-tile rise onto the adjacent cell. */
+function isStepLink(l: SpanLink): boolean {
+  return l.kind === 'jump' && Math.abs(l.from.y - l.land.y - TILE) < 1 && Math.abs(l.land.x - l.from.x) <= TILE;
+}
+
 export abstract class Walker extends FoeBase {
   protected walkSpeed = 90;
   protected route: SpanLink[] | null = null;
@@ -178,12 +185,18 @@ export abstract class Walker extends FoeBase {
     const nav = this.scene.ai?.ground;
     const here = this.span();
     let tx = goalX;
+    let stepping = false;
     if (nav && here && goalY !== null) {
       const goalSpan = nav.spanAt(goalX, goalY);
       if (goalSpan && goalSpan.id !== here.id) {
         if (time > this.routeAt || !this.route) { this.route = nav.route(here.id, goalSpan.id); this.routeAt = time + 1000; }
         const next = this.route?.[0];
-        if (next) {
+        if (next && isStepLink(next)) {
+          // one-tile terrace: walk into it and let step-up lift the walker
+          tx = next.land.x;
+          stepping = true;
+          if (Math.abs(this.x - next.land.x) < 10 || this.span()?.id === next.to) this.route?.shift();
+        } else if (next) {
           tx = next.from.x;
           if (Math.abs(this.x - next.from.x) < 10) {
             // take the link: jump up/across, or step off
@@ -197,11 +210,24 @@ export abstract class Walker extends FoeBase {
         }
       }
     }
-    if (here && nav) tx = nav.clampToSpan(here, tx, 10);
+    if (here && nav && !stepping) tx = nav.clampToSpan(here, tx, 10);
     const dx = tx - this.x;
     const speed = this.walkSpeed * speedScale;
     body.setVelocityX(Math.abs(dx) < 6 ? 0 : Math.sign(dx) * speed);
+    if (Math.abs(dx) >= 6) this.stepUp(Math.sign(dx) as -1 | 1);
     return Math.abs(dx) < 6;
+  }
+
+  /** Lift onto a one-tile ledge when pushing into it. */
+  private stepUp(dir: -1 | 1): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    const terrain = this.scene.ai?.terrain;
+    if (!terrain || !(dir > 0 ? body.blocked.right : body.blocked.left)) return;
+    const h = stepUpHeight(terrain, { x: this.x, y: body.bottom, halfW: body.width / 2, h: body.height }, dir);
+    if (h <= 0) return;
+    this.y -= h;
+    this.x += dir * 4;
+    this.rig.land(60);
   }
 
   protected halt(): void {

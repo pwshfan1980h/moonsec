@@ -25,8 +25,12 @@ Trade Lanes freight art (later, with its level).
 1. **Grid format + parser** ✅ — text maps (`src/data/maps/*.txt`, legend in
    `src/level/levelMap.ts`): `.` empty, `#` solid mass, `=` deck, `S` spawn. Surface Ops loads
    from `surface-ops.txt`; legacy templates still work through `buildMap`.
-2. **Terrain steps** — half-tile step cells and automatic step-up for HARROW and walkers
-   (the IK legs already plant on uneven ground). Later: per-column heightfield for true slopes.
+2. **Terrain steps** ✅ — one-tile (32-unit) terraces with automatic step-up
+   (`src/level/stepUp.ts`): HARROW eases up onto the ledge (visual lag + knee dip); ground
+   walkers walk into one-tile rises instead of jumping. Whole-tile steps keep collision, AI nav
+   and radar on the one grid; half-tile cells would need a second collision system. Surface Ops
+   has four terraced mounds/ridges; relay columns and the Warden arena stay flat. Later:
+   per-column heightfield for true slopes.
 3. **Environment part kit** — a `PartSpec`-style kit for world pieces, rasterised into an atlas
    like the rig: regolith edge/fill pieces chosen by neighbour mask (autotile), deck plates with
    trusses, dome shells (chrome ramps: `hull3`→`hull6` with `cyan` reflections), bulkhead doors,
