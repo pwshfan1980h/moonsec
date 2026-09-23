@@ -83,6 +83,25 @@ export class RigView {
     this.scene.tweens.add({ targets: ghost, alpha: 0, duration: durationMs, ease: 'Cubic.Out', onComplete: () => ghost.destroy(true) });
   }
 
+  /** Death: every part flies off, tumbling and falling, tinted and fading. */
+  shatter(tint: PaletteName, durationMs = 900): void {
+    for (const img of this.images) {
+      if (!img.visible) continue;
+      const m = img.getWorldTransformMatrix();
+      const piece = this.scene.add.image(m.tx, m.ty, RIG_ATLAS_KEY, img.frame.name)
+        .setOrigin(img.originX, img.originY).setRotation(m.rotationNormalized)
+        .setScale(m.scaleX, m.scaleY).setDepth(this.container.depth)
+        .setTint(pal(tint)).setTintMode(Phaser.TintModes.MULTIPLY);
+      const vx = (Math.random() - 0.5) * 260, vy = -120 - Math.random() * 180;
+      const spin = (Math.random() - 0.5) * 8;
+      this.scene.tweens.add({ targets: piece, x: m.tx + vx * (durationMs / 1000), duration: durationMs, ease: 'Linear' });
+      this.scene.tweens.add({ targets: piece, y: m.ty + vy * 0.35, duration: durationMs * 0.3, ease: 'Quad.Out', yoyo: false,
+        onComplete: () => this.scene.tweens.add({ targets: piece, y: piece.y + 320, duration: durationMs * 0.7, ease: 'Quad.In' }) });
+      this.scene.tweens.add({ targets: piece, rotation: piece.rotation + spin, alpha: 0, duration: durationMs, ease: 'Quad.In', onComplete: () => piece.destroy() });
+    }
+    this.container.setVisible(false);
+  }
+
   setVisible(v: boolean): void { this.container.setVisible(v); }
 
   destroy(): void { this.container.destroy(true); }

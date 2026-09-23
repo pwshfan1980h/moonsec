@@ -1,3 +1,4 @@
+import { radarColor, type RadarKind } from '../entities/RiggedHostile';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Drone } from '../entities/Drone';
@@ -156,7 +157,8 @@ export class MinimapRenderer {
         const dotR = state === 'ATTACK'
           ? 4 + Math.sin(time * 0.012) * 2
           : 4;
-        const color = drone.texture.key === 'drone-red' ? 0xff3a4a : 0x56e39f;
+        const radar = (drone as unknown as { radar?: { kind: RadarKind } }).radar;
+        const color = radar ? radarColor(radar.kind) : drone.texture.key === 'drone-red' ? 0xff3a4a : 0x56e39f;
         gfx.fillStyle(color, 1);
         gfx.fillCircle(dp.x, dp.y, dotR);
         gfx.fillStyle(color, 0.25);

@@ -146,6 +146,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         const m = this.muzzle('muzzleMain');
         if (this.turret.fire(m.x, m.y, wp.x, wp.y, scene.time.now)) {
           this.rig.fireCannon();
+          this.scene.ai?.noise(m.x, m.y, 1.4);
           const e = this.socketWorld('eject');
           this.fx.chips(e.x, e.y, 1, -Math.PI / 2 - this.facing * 0.6);
           this.fx.puff(m.x, m.y, 2, m.angle, 0.6);
@@ -289,7 +290,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // --- Weapons ---
     const rmb = this.scene.input.mousePointer.rightButtonDown();
     this.rig.setGatlingSpin(rmb);
-    if (this.rapidGun.update(time, this.muzzle('muzzleRapid'))) this.rig.fireGatling();
+    if (this.rapidGun.update(time, this.muzzle('muzzleRapid'))) {
+      this.rig.fireGatling();
+      this.scene.ai?.noise(this.x, this.y - 60, 1);
+    }
     this.missile.update(time, delta);
 
     if (Phaser.Input.Keyboard.JustDown(this.keyE) && this.missile.fire(this)) this.rig.openHatch();
@@ -340,6 +344,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     this.rig.land(vy / VPX, heavy);
     this.scene.air?.landing(this.x, this.y, heavy ? Math.max(vy, 600) : vy);
+    if (heavy) this.scene.ai?.noise(this.x, this.y, 0.8);
     this.fx.kickDust(this.x - 16, this.y, heavy ? 14 : 5, heavy ? 1.8 : 1);
     this.fx.kickDust(this.x + 16, this.y, heavy ? 14 : 5, heavy ? 1.8 : 1);
     if (this.spawning) {

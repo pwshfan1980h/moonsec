@@ -26,6 +26,7 @@ import { VPX, cameraZoom, type GraphicsSettings } from '../render/GraphicsSettin
 import { Atmosphere } from '../fx/Atmosphere';
 import { atmosphereFor } from '../fx/atmosphereRecipes';
 import { TerrainProbe } from '../fx/terrain';
+import { AiWorld } from '../ai/AiWorld';
 
 /** Camera frames the mech slightly above its feet. */
 const CAMERA_FEET_OFFSET = 80;
@@ -60,6 +61,8 @@ export class GameScene extends Phaser.Scene {
   private spawner?: DroneSpawner;
   surfaceMission?: SurfaceMission;
   flightNavigation?: FlightNavigation;
+  /** Shared enemy AI data for this mission (navigation, cover, tokens, noise). */
+  ai?: AiWorld;
   private worldPipeline?: CameraPipeline;
   private camFollow = { x: 0, y: 0 };
   private pickupSystem?: PickupSystem;
@@ -191,7 +194,8 @@ export class GameScene extends Phaser.Scene {
     const mapSeed = devParams().seed ?? (Math.random() * 0xFFFFFFFF | 0);
     const mapTiles = buildMap(this.activeConfig.template, mapSeed);
     this.terrain = new TerrainProbe(mapTiles, this.activeConfig.template.tileK.EMPTY);
-    this.flightNavigation = nodeIdx === 1 ? new FlightNavigation(mapTiles) : undefined;
+    this.flightNavigation = new FlightNavigation(mapTiles);
+    this.ai = new AiWorld(this.terrain, this.flightNavigation);
     this.makeTilemapGround(
       mapTiles,
       this.activeConfig.tilesetKey,
@@ -431,6 +435,7 @@ export class GameScene extends Phaser.Scene {
     this.player.tickPresentation(delta);
     this.atmosphere?.update(delta);
     if (this.isGameOver) return;
+    this.ai?.update(Math.min(delta, 50) / 1000);
     this.player.update(time, delta);
     const k = delta / (1000 / 60);
     this.snapCameraTo(this.player.x, this.player.y, 1 - Math.pow(1 - CAMERA_LERP, k));
