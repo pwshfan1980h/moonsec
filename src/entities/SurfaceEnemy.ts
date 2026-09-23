@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { SurfaceEnemyRole } from '../data/surfaceMission';
+import { DAMAGE } from '../balance/armor';
 
 const APPEARANCE = {
   skirmisher: { key: 'drone-red', color: 0xffb347, hp: 3, scale: 2.1 },
@@ -85,7 +86,7 @@ export class SurfaceEnemy extends Phaser.Physics.Arcade.Sprite {
         } else {
           const bullet = this.scene.droneBullets.get(this.x, this.y, 'bullet-drone') as Phaser.Physics.Arcade.Image | null;
           if (bullet) {
-            bullet.setActive(true).setVisible(true).setDepth(12).setData('damage', 1);
+            bullet.setActive(true).setVisible(true).setDepth(12).setData('damage', DAMAGE.droneBullet);
             (bullet.body as Phaser.Physics.Arcade.Body).enable = true;
             const speed = this.role === 'sniper' ? 480 : 330;
             bullet.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed).setTint(this.config.color);
@@ -95,7 +96,7 @@ export class SurfaceEnemy extends Phaser.Physics.Arcade.Sprite {
         }
       }
     } else {
-      if (this.role === 'charger' && distance < 75) this.scene.player.takeDamage(1, this.x);
+      if (this.role === 'charger' && distance < 75) this.scene.player.takeDamage(DAMAGE.charger, this.x);
       if (this.timer <= 0) {
         this.release(this);
         this.mode = 'approach';

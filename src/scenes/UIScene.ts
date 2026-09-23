@@ -9,6 +9,7 @@ import { devParams } from '../dev/devParams';
 import { GAME_W, GAME_H, RADAR_X, RADAR_Y, RADAR_SCREEN_RADIUS } from '../constants';
 import { installPipeline, graphics, setGraphics, type CameraPipeline } from '../render/RenderPipeline';
 import { nextPreset, saveGraphicsSettings, toggleView, type GraphicsSettings } from '../render/GraphicsSettings';
+import { ARMOR_PER_SEGMENT, damageStage, displayArmor } from '../balance/armor';
 
 // ── Tactical HUD design tokens ────────────────────────────────────────────
 const FONT_MONO     = '"Share Tech Mono", monospace';
@@ -610,9 +611,11 @@ export class UIScene extends Phaser.Scene {
       this.curHp = hp;
       this.curMaxHp = maxHp;
       const ratio = maxHp > 0 ? hp / maxHp : 0;
-      const color = ratio > 0.5 ? COL.green : ratio > 0.25 ? COL.amber : COL.red;
-      this.paintBar(this.healthFill, this.healthRect, ratio, color, Math.max(1, maxHp));
-      this.healthValue.setText(`${Number(hp.toFixed(1))} / ${maxHp}`).setColor(ratio > 0.5 ? COL.greenHex : ratio > 0.25 ? COL.amberHex : COL.redHex);
+      const stage = damageStage(hp);
+      const color = stage === 'healthy' ? COL.green : stage === 'light' ? COL.amber : COL.red;
+      this.paintBar(this.healthFill, this.healthRect, ratio, color, Math.max(1, Math.round(maxHp / ARMOR_PER_SEGMENT)));
+      this.healthValue.setText(`${displayArmor(hp)} / ${maxHp}`)
+        .setColor(stage === 'healthy' ? COL.greenHex : stage === 'light' ? COL.amberHex : COL.redHex);
       if (hp < this.lastHp) this.cameras.main.flash(200, 220, 30, 30, false);
       this.lastHp = hp;
       this.updateRepairAvailability();

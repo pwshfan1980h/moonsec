@@ -5,6 +5,7 @@ import { Turret } from '../weapons/Turret';
 import { HomingMissile } from '../weapons/HomingMissile';
 import { JumpAssist } from '../systems/JumpAssist';
 import { MECH_STATS } from '../constants';
+import { ARMOR_BASE, HEAL } from '../balance/armor';
 
 type AnimState = 'idle' | 'walk' | 'run' | 'jump_loop' | 'jump_start' | 'jump_land' | 'hurt' | 'death';
 
@@ -26,8 +27,8 @@ const MECH_CONFIG: Record<MechType, {
 export class Player extends Phaser.Physics.Arcade.Sprite {
   declare scene: GameScene;
 
-  hp = 5;
-  maxHp = 5;
+  hp = ARMOR_BASE;
+  maxHp = ARMOR_BASE;
 
   walkSpeed = 220;
   runSpeed  = 350;
@@ -43,7 +44,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   missileCooldownMs = 5000;
   missileSlots      = 6;
   naniteCooldownMs  = 20000;
-  naniteHealAmount  = 1;
+  naniteHealAmount  = HEAL.nanite;
 
   private curAnim: AnimState = 'idle';
   private empStunned = false;
@@ -489,14 +490,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
     if (id === 'repair-core') {
-      this.naniteHealAmount = 2;
+      this.naniteHealAmount = HEAL.naniteRepairCore;
       this.naniteCooldownMs = 28000;
-      this.heal(1);
+      this.heal(HEAL.repairCoreUpgrade);
       return;
     }
     if (id === 'armor') {
-      this.maxHp += 1;
-      this.hp = Math.min(this.maxHp, this.hp + 1);
+      this.maxHp += HEAL.armorUpgradeMax;
+      this.hp = Math.min(this.maxHp, this.hp + HEAL.armorUpgradeMax);
       this.scene.events.emit('healthChange', this.hp, this.maxHp);
       return;
     }

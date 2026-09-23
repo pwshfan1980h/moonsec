@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { HEAL } from '../balance/armor';
 import {
   BODY_SIZE,
   CONTENT_PIXELS,
@@ -123,7 +124,7 @@ describe('PickupSystem pure helpers', () => {
     callback(scene.player, pickup);
 
     expect(pickup.setActive).toHaveBeenCalledWith(false);
-    expect(scene.player.heal).toHaveBeenCalledWith(1);
+    expect(scene.player.heal).toHaveBeenCalledWith(HEAL.pickup);
     expect(scene.player.restoreJetpackFuel).not.toHaveBeenCalled();
   });
 });

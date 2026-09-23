@@ -3,6 +3,7 @@ import type { GameScene } from '../scenes/GameScene';
 import { GAME_W } from '../constants';
 import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
+import { DAMAGE } from '../balance/armor';
 
 const FLY_SPEED    = 144;  // px/s horizontal
 const BOMB_RADIUS  = 85;   // px — damage zone radius
@@ -140,7 +141,7 @@ export class BomberDrone extends Phaser.Physics.Arcade.Sprite implements Hostile
     // Damage if player is in the blast radius
     const dist = Math.abs(this.scene.player.x - this.targetX);
     if (dist < BOMB_RADIUS) {
-      this.scene.player.takeDamage(2, this.targetX);
+      this.scene.player.takeDamage(DAMAGE.bomber, this.targetX);
     }
   }
 

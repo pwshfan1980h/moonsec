@@ -3,6 +3,7 @@ import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
 import type { PPCRound } from '../entities/PPCRound';
 import { WORLD_HEIGHT, WORLD_WIDTH } from '../constants';
+import { DAMAGE } from '../balance/armor';
 
 export class CollisionRegistry {
   constructor(private readonly scene: GameScene) {}
@@ -107,7 +108,7 @@ export class CollisionRegistry {
         const bullet = b as Phaser.Physics.Arcade.Image;
         bullet.setActive(false).setVisible(false);
         if (bullet.body) (bullet.body as Phaser.Physics.Arcade.Body).enable = false;
-        const dmg = (bullet.getData('damage') as number | undefined) ?? 1;
+        const dmg = (bullet.getData('damage') as number | undefined) ?? DAMAGE.droneBullet;
         (playerObj as Player).takeDamage(dmg, bullet.x);
         this.scene.cameras.main.shake(80, 0.006);
       },
@@ -133,7 +134,7 @@ export class CollisionRegistry {
         if (!p.active) return;
         p.setActive(false).setVisible(false);
         if (p.body) (p.body as Phaser.Physics.Arcade.Body).enable = false;
-        (playerObj as Player).takeDamage(1, p.x);
+        (playerObj as Player).takeDamage(DAMAGE.bossProjectile, p.x);
         this.scene.cameras.main.shake(100, 0.008);
       },
     );
@@ -145,7 +146,7 @@ export class CollisionRegistry {
       (playerObj, roundObj) => {
         const r = roundObj as PPCRound;
         if (!r.active) return;
-        (playerObj as Player).takeDamage(3, r.x);
+        (playerObj as Player).takeDamage(DAMAGE.ppcRound, r.x);
         r.detonate(true);
       },
     );

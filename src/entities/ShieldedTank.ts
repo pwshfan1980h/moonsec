@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
+import { DAMAGE } from '../balance/armor';
 
 type TankState = 'PATROL' | 'ATTACK' | 'SHIELD_BREAK' | 'EXPOSED_ATTACK' | 'HURT' | 'DEATH';
 
@@ -159,7 +160,7 @@ export class ShieldedTank extends Phaser.Physics.Arcade.Sprite implements Hostil
     b.setBlendMode(Phaser.BlendModes.ADD);
     b.setScale(3.0);
     b.setTint(0xff6600);
-    b.setData('damage', 2); // artillery deals 2 HP
+    b.setData('damage', DAMAGE.tankShell);
     if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;
 
     const angle = Phaser.Math.Angle.Between(this.x, this.y - 40, targetX, targetY);

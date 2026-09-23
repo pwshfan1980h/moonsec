@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { presentEnemyArrival } from './effects/enemyPresentation';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
+import { DAMAGE } from '../balance/armor';
 
 type MineState = 'IDLE' | 'ARMED' | 'DETONATING' | 'DEAD';
 
@@ -107,7 +108,7 @@ export class Mine extends Phaser.Physics.Arcade.Sprite implements Hostile {
     // Damage check
     const dist = Phaser.Math.Distance.Between(this.x, this.y, this.scene.player.x, this.scene.player.y);
     if (dist < BLAST_RADIUS) {
-      this.scene.player.takeDamage(2, this.x);
+      this.scene.player.takeDamage(DAMAGE.mine, this.x);
     }
 
     this.mineState = 'DEAD';

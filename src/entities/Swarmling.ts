@@ -4,6 +4,7 @@ import type { GameScene } from '../scenes/GameScene';
 import type { Carrier } from './Carrier';
 import { presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
+import { DAMAGE } from '../balance/armor';
 
 type SwarmState = 'HARASS' | 'RECALL' | 'DOCKED' | 'DEATH';
 
@@ -11,7 +12,7 @@ const HARASS_SPEED  = 108;
 const RECALL_SPEED  = 144;
 const DOCK_RADIUS   = 24;   // px from carrier to dock
 const SIN_AMP       = 50;   // vertical weave amplitude
-const COLLIDE_DAMAGE = 1;
+const COLLIDE_DAMAGE = DAMAGE.swarmling;
 
 // Small darting enemy deployed by the Carrier. Weaves toward the player,
 // damages on contact, recalls home when the Carrier signals, and docks

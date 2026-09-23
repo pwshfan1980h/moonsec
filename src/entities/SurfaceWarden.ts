@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { SURFACE_BOSS_X, wardenDamage } from '../data/surfaceMission';
 import { playJuggernautDeath } from './effects/juggernautDeath';
+import { DAMAGE } from '../balance/armor';
 
 /** Alternates a jumpable ground sweep and a locked orbital strike, then vents its core. */
 export class SurfaceWarden extends Phaser.Physics.Arcade.Sprite {
@@ -78,7 +79,7 @@ export class SurfaceWarden extends Phaser.Physics.Arcade.Sprite {
         const hit = lowSweep
           ? p.x >= 5000 && p.x <= 6380 && p.y > floor - 58
           : Math.abs(p.x - this.strikeX) < 125;
-        if (hit) p.takeDamage(1, this.x);
+        if (hit) p.takeDamage(DAMAGE.wardenSweep, this.x);
         this.scene.spawnExplosion(lowSweep ? p.x : this.strikeX, floor - 30);
         this.scene.audio.play('explosion');
         this.phase = 'exposed';

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 vi.mock('phaser', () => ({ default: { Physics: { Arcade: { Sprite: class {} } } } }));
 import { Player } from '../entities/Player';
+import { HEAL } from '../balance/armor';
 
 function playerFixture() {
   return {
@@ -28,8 +29,15 @@ describe('field specialization tradeoffs', () => {
   it('increases repair amount but makes the recharge longer', () => {
     const p = playerFixture();
     Player.prototype.applyUpgrade.call(p as never, 'repair-core');
-    expect(p.naniteHealAmount).toBe(2);
+    expect(p.naniteHealAmount).toBe(HEAL.naniteRepairCore);
     expect(p.naniteCooldownMs).toBe(28000);
-    expect(p.heal).toHaveBeenCalledWith(1);
+    expect(p.heal).toHaveBeenCalledWith(HEAL.repairCoreUpgrade);
+  });
+  it('adds one armor segment (+20) to max and current armor', () => {
+    const p = { ...playerFixture(), hp: 60, maxHp: 100 };
+    Player.prototype.applyUpgrade.call(p as never, 'armor');
+    expect(p.maxHp).toBe(120);
+    expect(p.hp).toBe(80);
+    expect(p.scene.events.emit).toHaveBeenCalledWith('healthChange', 80, 120);
   });
 });

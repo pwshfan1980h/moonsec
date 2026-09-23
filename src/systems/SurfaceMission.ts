@@ -3,6 +3,7 @@ import type { GameScene } from '../scenes/GameScene';
 import { SurfaceEnemy } from '../entities/SurfaceEnemy';
 import { SurfaceWarden } from '../entities/SurfaceWarden';
 import { EncounterSchedule, SURFACE_ENCOUNTERS, SURFACE_MAX_ATTACKERS, type SurfaceEnemyRole } from '../data/surfaceMission';
+import { HEAL } from '../balance/armor';
 
 export type SurfacePhase = 'training' | 'travel' | 'combat' | 'relay' | 'upgrade' | 'boss-travel' | 'boss' | 'complete';
 export interface MissionObjective { title: string; detail: string; x: number; progress: number; }
@@ -131,7 +132,7 @@ export class SurfaceMission {
       this.relayProgress = near && this.interact.isDown ? Math.min(1, this.relayProgress + delta / 1800) : 0;
       if (this.relayProgress >= 1) {
         this.relayLabels[this.encounter].setText(`${current.name} / ONLINE`).setColor('#56e39f');
-        player.heal(1);
+        player.heal(HEAL.relay);
         player.refillRapidAmmo(50);
         player.restoreJetpackFuel(player.jetpackMaxFuel);
         this.scene.audio.play('level-complete');

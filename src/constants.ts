@@ -1,3 +1,4 @@
+import { ARMOR_BASE, ARMOR_SCALE } from './balance/armor';
 // ── Screen / viewport dimensions ────────────────────────────────────────────
 export const GAME_W = 1920;
 export const GAME_H = 1080;
@@ -40,7 +41,7 @@ export const MECH_STATS: Record<string, {
   rapidAmmoMax: number;
 }> = {
   mech: {   // STRIDER — speed archetype: fast, high fuel, low HP
-    maxHp: 3,
+    maxHp: 3 * ARMOR_SCALE,
     walkSpeed: 264,
     runSpeed: 420,
     jumpVelocity: -510,
@@ -49,7 +50,7 @@ export const MECH_STATS: Record<string, {
     rapidAmmoMax: 220,
   },
   mech4: {  // SCOUT — balanced baseline
-    maxHp: 5,
+    maxHp: ARMOR_BASE,
     walkSpeed: 132,
     runSpeed: 210,
     jumpVelocity: -510,

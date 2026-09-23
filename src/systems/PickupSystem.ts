@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { PICKUP_LIFETIME_MS, RAPID_AMMO_PER_PICKUP } from '../constants';
+import { HEAL } from '../balance/armor';
 
 export type PickupType = 'health' | 'fuel' | 'ammo' | 'score';
 
@@ -148,7 +149,7 @@ export class PickupSystem {
     let label = '+ITEM';
     let color = '#ffffff';
     if (pickupType === 'health') {
-      this.scene.player.heal(1);
+      this.scene.player.heal(HEAL.pickup);
       rate = 1.25;
       label = '+1 HP';
       color = '#5cff8a';

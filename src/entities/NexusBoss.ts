@@ -7,6 +7,7 @@ import type { DroneScaling } from '../systems/DroneSpawner';
 import { GAME_W } from '../constants';
 import { playJuggernautDeath } from './effects/juggernautDeath';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
+import { DAMAGE } from '../balance/armor';
 
 type BossState = 'DRIFT' | 'CHARGE' | 'FIRE' | 'TELEGRAPH' | 'BLAST' | 'HURT' | 'DEATH';
 
@@ -249,7 +250,8 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
       const angle = baseAngle + Phaser.Math.DegToRad(offsetDeg);
       const b = this.scene.droneBullets.get(this.x, this.y, 'bullet-drone') as Phaser.Physics.Arcade.Image;
       if (!b) continue;
-      b.setActive(true).setVisible(true).setDepth(14);
+      // droneBullets is a shared pool: always stamp damage so a recycled tank shell can't carry 40
+      b.setActive(true).setVisible(true).setDepth(14).setData('damage', DAMAGE.bossProjectile);
       b.setBlendMode(Phaser.BlendModes.ADD);
       const body = b.body as Phaser.Physics.Arcade.Body;
       if (body) {
@@ -389,7 +391,7 @@ export class NexusBoss extends Phaser.Physics.Arcade.Sprite implements Hostile {
         if (rect) {
           const px = this.scene.getPlayerPos().x;
           if (px >= rect.x && px <= rect.right) {
-            this.scene.player.takeDamage(3, this.x);
+            this.scene.player.takeDamage(DAMAGE.nexusBlast, this.x);
           }
         }
 

@@ -4,6 +4,7 @@ import type { GameScene } from '../scenes/GameScene';
 import type { DroneScaling } from '../systems/DroneSpawner';
 import { flashEnemyHit, presentEnemyArrival, presentEnemyBreakup } from './effects/enemyPresentation';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
+import { DAMAGE } from '../balance/armor';
 
 type DroneState = 'HOVER' | 'ATTACK' | 'FLEE' | 'HURT' | 'DOWNED' | 'DEATH';
 export type DroneType = 'drone-red' | 'drone-green' | 'sentinel';
@@ -328,7 +329,8 @@ export class Drone extends Phaser.Physics.Arcade.Sprite implements Hostile {
     const b = this.scene.droneBullets.get(this.x, this.y, 'bullet-drone') as Phaser.Physics.Arcade.Image;
     if (!b) return;
 
-    b.setActive(true).setVisible(true).setDepth(14);
+    // droneBullets is a shared pool: always stamp damage so a recycled tank shell can't carry 40
+    b.setActive(true).setVisible(true).setDepth(14).setData('damage', DAMAGE.droneBullet);
     b.setBlendMode(Phaser.BlendModes.ADD);
     if (b.body) (b.body as Phaser.Physics.Arcade.Body).enable = true;
     b.setVelocity(Math.cos(angle) * this.bulletSpeed, Math.sin(angle) * this.bulletSpeed);

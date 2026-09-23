@@ -15,6 +15,7 @@ vi.mock('phaser', () => {
 vi.mock('../entities/effects/juggernautDeath', () => ({ playJuggernautDeath: vi.fn() }));
 import { SurfaceWarden } from '../entities/SurfaceWarden';
 import { playJuggernautDeath } from '../entities/effects/juggernautDeath';
+import { DAMAGE } from '../balance/armor';
 
 function fixture() {
   const fluent = () => {
@@ -41,7 +42,7 @@ describe('Warden attack cycle', () => {
     expect(boss.phase).toBe('warning');
     expect(scene.player.takeDamage).not.toHaveBeenCalled();
     boss.update(0, 1700);
-    expect(scene.player.takeDamage).toHaveBeenCalledWith(1, boss.x);
+    expect(scene.player.takeDamage).toHaveBeenCalledWith(DAMAGE.wardenSweep, boss.x);
     expect(boss.phase).toBe('exposed');
     boss.takeDamage(4);
     expect(boss.hp).toBe(28);
