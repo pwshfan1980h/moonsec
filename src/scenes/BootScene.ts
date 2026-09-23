@@ -1,13 +1,11 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
+import { devParams } from '../dev/devParams';
 
 // Dev-only: `?level=N` jumps straight to level N on boot (0-indexed, clamped).
 function bootLevel(): number {
-  if (!import.meta.env.DEV) return 0;
-  const raw = new URLSearchParams(window.location.search).get('level');
-  const n = raw == null ? 0 : parseInt(raw, 10);
-  if (!Number.isFinite(n)) return 0;
+  const n = devParams().level ?? 0;
   return Phaser.Math.Clamp(n, 0, LEVEL_CONFIGS.length - 1);
 }
 

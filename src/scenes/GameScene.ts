@@ -19,6 +19,7 @@ import { CollisionRegistry } from '../collisions/CollisionRegistry';
 import { EnvironmentalLife } from '../systems/EnvironmentalLife';
 import { drawTradeLaneArt, makeFreightLiftTexture } from '../systems/TradeLaneArt';
 import { FlightNavigation } from '../systems/FlightNavigation';
+import { devParams } from '../dev/devParams';
 import { HostileCombat } from '../collisions/HostileCombat';
 
 export class GameScene extends Phaser.Scene {
@@ -174,7 +175,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Ground (tilemap) ---
     this.ground = this.physics.add.staticGroup();
-    const mapSeed = Math.random() * 0xFFFFFFFF | 0;
+    const mapSeed = devParams().seed ?? (Math.random() * 0xFFFFFFFF | 0);
     const mapTiles = buildMap(this.activeConfig.template, mapSeed);
     this.flightNavigation = nodeIdx === 1 ? new FlightNavigation(mapTiles) : undefined;
     this.makeTilemapGround(
@@ -273,8 +274,7 @@ export class GameScene extends Phaser.Scene {
 
     // --- Spawner ---
     const cfg = this.activeConfig;
-    const startAtBoss = import.meta.env.DEV
-      && new URLSearchParams(window.location.search).get('boss') === '1';
+    const startAtBoss = devParams().boss;
     if (this.currentNode !== 0) this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossType, cfg.enemyMix, startAtBoss);
     this.music?.start(0.34);
 
@@ -363,7 +363,7 @@ export class GameScene extends Phaser.Scene {
     this.gameEventUnsubs.push(() => this.events.off('levelComplete', onLevelComplete));
 
     if (this.currentNode === 0) {
-      const requested = import.meta.env.DEV ? Number(new URLSearchParams(window.location.search).get('encounter')) : 0;
+      const requested = devParams().encounter ?? 0;
       const startAtEncounter = requested >= 1 && requested <= 3 && Number.isInteger(requested) ? requested - 1 : undefined;
       this.surfaceMission = new SurfaceMission(this, startAtBoss, startAtEncounter);
     }
@@ -376,6 +376,22 @@ export class GameScene extends Phaser.Scene {
     this.events.emit('rapidAmmoChange', this.player.rapidAmmo, this.player.rapidAmmoMax);
     this.events.emit('scoreChange', this.score);
 
+    this.markDevReady();
+  }
+
+  /** Dev harness hook (tools/shots): optionally freeze, then flag the scene as ready. */
+  private markDevReady(): void {
+    if (!import.meta.env.DEV) return;
+    const w = window as unknown as { __moonsecReady?: boolean };
+    w.__moonsecReady = false;
+    const freeze = devParams().freeze;
+    if (freeze === undefined) { w.__moonsecReady = true; return; }
+    this.time.delayedCall(freeze, () => {
+      this.physics.world.pause();
+      this.tweens.pauseAll();
+      this.time.timeScale = 0;
+      w.__moonsecReady = true;
+    });
   }
 
   update(time: number, delta: number): void {

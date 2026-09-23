@@ -5,6 +5,7 @@ import type { MissionObjective } from '../systems/SurfaceMission';
 import type { GameScene } from './GameScene';
 import type { PlayerUpgradeId } from '../entities/Player';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
+import { devParams } from '../dev/devParams';
 import { GAME_W, GAME_H, RADAR_X, RADAR_Y, RADAR_SCREEN_RADIUS } from '../constants';
 
 // ── Tactical HUD design tokens ────────────────────────────────────────────
@@ -264,7 +265,7 @@ export class UIScene extends Phaser.Scene {
     //    SPACE / ENTER / H / ESC to dismiss it. The overlay pauses the game.
     if (this.registry.get('firstBoot') === true) {
       this.registry.set('firstBoot', false);
-      if (game.currentNode !== 0) this.openControlsOverlay();
+      if (game.currentNode !== 0 && !devParams().noGuide) this.openControlsOverlay();
     }
   }
 
