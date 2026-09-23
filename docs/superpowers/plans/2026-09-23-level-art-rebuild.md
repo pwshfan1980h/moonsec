@@ -47,8 +47,12 @@ Trade Lanes freight art (later, with its level).
    (`dressLevel`). Relays are a kit prop and follow the terrain; ground units spawn on the
    ground, snipers take the decks. Legacy props, background domes and ambient life are skipped
    for text-map levels.
-5. **Parallax backdrop** — 3–4 layers built from the same kit: far ridgeline + Earth, distant
-   dome clusters and masts, mid-ground silos and gantries, near rocks/foreground occluders.
+5. **Parallax backdrop** ✅ — `src/world/backdrop.ts` (`SurfaceBackdrop`, text-map levels): a
+   per-pixel lit Earth (terminator, clouds, ice, night-side city lights, limb scattering), then
+   tileable strips at 2×: far highlands (fx 0.06), distant colony skyline — domes, silos,
+   masts, blocks, cranes with lit windows (fx 0.16), near regolith hills with boulders
+   (fx 0.38). Strips sink as the camera climbs. The legacy Earth, crater strip and background
+   domes are skipped for text-map levels. Foreground occluders are parked for step 6.
 6. **Set pieces + props** — hand-placed decorative assemblies (wrecked lander, antenna farm,
    cargo crawler), pickups redrawn in the kit.
 7. Roll the kit out to the other missions, one per pass.

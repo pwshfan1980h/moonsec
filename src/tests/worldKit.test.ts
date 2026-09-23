@@ -72,3 +72,24 @@ describe('world kit art', () => {
     }
   });
 });
+
+describe('surface backdrop', () => {
+  const colours = (r: { data: Uint8Array }) => {
+    for (let i = 0; i < r.data.length; i += 4) if (r.data[i + 3]) expect(isPaletteColor([r.data[i], r.data[i + 1], r.data[i + 2]])).toBe(true);
+  };
+
+  it('draws Earth and every strip in palette colours', async () => {
+    const { EARTH_SPEC, backdropStrips } = await import('../world/backdrop');
+    colours(rasterizePart(EARTH_SPEC, 'n', { outline: false }));
+    for (const s of backdropStrips()) colours(rasterizePart(s.spec, 'n', { outline: false }));
+  });
+
+  it('tiles strips seamlessly: the crest height matches across the wrap', async () => {
+    const { backdropStrips } = await import('../world/backdrop');
+    for (const s of backdropStrips()) {
+      const r = rasterizePart(s.spec, 'n', { outline: false });
+      const top = (x: number) => { for (let y = 0; y < r.height; y++) if (r.data[(y * r.width + x) * 4 + 3]) return y; return r.height; };
+      expect(Math.abs(top(0) - top(r.width - 1)), s.key).toBeLessThanOrEqual(3);
+    }
+  });
+});

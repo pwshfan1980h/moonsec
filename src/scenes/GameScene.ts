@@ -21,6 +21,7 @@ import type { PickupType } from '../systems/PickupSystem';
 import { CollisionRegistry } from '../collisions/CollisionRegistry';
 import { EnvironmentalLife } from '../systems/EnvironmentalLife';
 import { dressLevel } from '../world/dressing';
+import { SurfaceBackdrop } from '../world/backdrop';
 import { drawTradeLaneArt, makeFreightLiftTexture } from '../systems/TradeLaneArt';
 import { FlightNavigation } from '../systems/FlightNavigation';
 import { devParams } from '../dev/devParams';
@@ -71,6 +72,7 @@ export class GameScene extends Phaser.Scene {
   private pickupSystem?: PickupSystem;
   private gameEventUnsubs: Array<() => void> = [];
   private bgStars?: Phaser.GameObjects.TileSprite;
+  private backdrop?: SurfaceBackdrop;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
   terrain!: TerrainProbe;
   private trainOffset = 0;
@@ -117,6 +119,7 @@ export class GameScene extends Phaser.Scene {
     this.gameEventUnsubs = [];
     this.isBossDead      = false;
     this.bgStars         = undefined;
+    this.backdrop        = undefined;
     this.bgTerrain       = undefined;
     this.groundLayer     = undefined;
     this.debugLog?.destroy();
@@ -799,7 +802,8 @@ export class GameScene extends Phaser.Scene {
       this.makeBackgroundDomes();
     }
 
-    if (this.activeConfig?.nodeIndex === 0) this.makeSurfaceSignature();
+    if (this.activeConfig?.template.map) this.backdrop = new SurfaceBackdrop(this);
+    else if (this.activeConfig?.nodeIndex === 0) this.makeSurfaceSignature();
   }
 
   private showRadioTransmission(speaker: string, message: string, warning = false): void {
@@ -1072,6 +1076,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.bgStars)   this.bgStars.setTilePosition(snapVpx(sx * 0.05), 0);
     if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20), 0);
+    this.backdrop?.update(sx);
   }
 
   private makeTilemapGround(mapData: number[][], tilesetKey = 'industrial-tileset'): void {

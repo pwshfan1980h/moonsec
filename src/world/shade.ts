@@ -127,3 +127,28 @@ export function dome(
     }
   }
 }
+
+/** Smooth 3D value noise in 0..1 (trilinear over hashed lattice points). */
+export function noise3(x: number, y: number, z: number, seed = 0): number {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const fx = x - xi, fy = y - yi, fz = z - zi;
+  const s = (t: number) => t * t * (3 - 2 * t);
+  const u = s(fx), v = s(fy), w = s(fz);
+  const h = (a: number, b: number, c: number) => hash(a + c * 131, b - c * 71, seed + c);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const x00 = lerp(h(xi, yi, zi), h(xi + 1, yi, zi), u), x10 = lerp(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), u);
+  const x01 = lerp(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), u), x11 = lerp(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), u);
+  return lerp(lerp(x00, x10, v), lerp(x01, x11, v), w);
+}
+
+/** Fractal 1D noise for ridgelines (0..1), tileable over `period`. */
+export function ridge1(x: number, period: number, seed: number, octaves = 4): number {
+  let sum = 0, amp = 0.5, total = 0;
+  for (let o = 0; o < octaves; o++) {
+    const f = 2 ** o, p = period * f, xf = (x * f) % p;
+    const i = Math.floor(xf), t = xf - i, sm = t * t * (3 - 2 * t);
+    const a = hash(i % p, o, seed), b = hash((i + 1) % p, o, seed);
+    sum += amp * (a + (b - a) * sm); total += amp; amp *= 0.5;
+  }
+  return sum / total;
+}
