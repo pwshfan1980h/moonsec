@@ -22,6 +22,7 @@ import { CollisionRegistry } from '../collisions/CollisionRegistry';
 import { EnvironmentalLife } from '../systems/EnvironmentalLife';
 import { dressLevel } from '../world/dressing';
 import { SurfaceBackdrop } from '../world/backdrop';
+import { installReticle } from '../ui/reticle';
 import { drawTradeLaneArt, makeFreightLiftTexture } from '../systems/TradeLaneArt';
 import { FlightNavigation } from '../systems/FlightNavigation';
 import { devParams } from '../dev/devParams';
@@ -285,6 +286,7 @@ export class GameScene extends Phaser.Scene {
     this.worldPipeline = installPipeline(this, this.cameras.main, 'world');
     this.applyGraphics(graphics());
     this.snapCameraTo(this.player.x, this.player.y, 1);
+    installReticle(this);
     const onGraphics = (s: GraphicsSettings) => this.applyGraphics(s);
     this.game.events.on('graphicsChanged', onGraphics);
     this.gameEventUnsubs.push(() => this.game.events.off('graphicsChanged', onGraphics));
