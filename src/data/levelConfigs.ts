@@ -172,6 +172,19 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
   },
 ];
 
+/**
+ * Player spawn in world units (feet position; origin 0.5, 1). Text-map levels use their `S`
+ * cell (feet on the cell's floor); legacy templates use spawnCol/spawnRow or the default ground.
+ */
+export function spawnPoint(config: LevelConfig, defaultGroundY: number): { x: number; y: number } {
+  const s = config.template.map?.spawn;
+  if (s) return { x: s.col * 32 + 16, y: (s.row + 1) * 32 - 5 };
+  return {
+    x: config.spawnCol !== undefined ? config.spawnCol * 32 : 300,
+    y: config.spawnRow !== undefined ? config.spawnRow * 32 - 4 : defaultGroundY - 5,
+  };
+}
+
 // ── Node graph ─────────────────────────────────────────────────────────────
 // nextNodes: nodes unlocked on completion
 // requiredNodes: any one must be completed to unlock this node (OR logic)

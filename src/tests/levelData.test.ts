@@ -9,8 +9,8 @@ import {
   type LevelTemplate,
 } from '../data/levelData';
 
+// Surface Ops is a text map (see levelMap.test.ts); the rest are still legacy templates.
 const TEMPLATES: [string, LevelTemplate, number][] = [
-  ['Surface Ops', TMPL_SURFACE_OPS, 4],
   ['Trade Lanes', TMPL_TRADE_LANES, 10],
   ['Deep Facility', TMPL_DEEP_FACILITY, 4],
   ['Orbital Station', TMPL_ORBITAL, 12],
@@ -26,7 +26,7 @@ describe('authored level layouts', () => {
     expect(template.fixedPlatforms.every(platform => platform.width >= 4)).toBe(true);
   });
 
-  it.each(TEMPLATES)('%s collision geometry does not vary by seed', (_name, template) => {
+  it.each<[string, LevelTemplate, number]>([['Surface Ops', TMPL_SURFACE_OPS, 0], ...TEMPLATES])('%s collision geometry does not vary by seed', (_name, template) => {
     expect(buildMap(template, 1)).toEqual(buildMap(template, 0xDEADBEEF));
   });
 
@@ -37,7 +37,7 @@ describe('authored level layouts', () => {
   });
 
   it('keeps grounded missions continuous through recessed, nonlethal trenches', () => {
-    for (const template of [TMPL_SURFACE_OPS, TMPL_DEEP_FACILITY, TMPL_NEXUS_CORE]) {
+    for (const template of [TMPL_DEEP_FACILITY, TMPL_NEXUS_CORE]) {
       expect(template.hasGround).toBe(true);
       expect(template.fixedGaps.every(gap => gap.depth > 0 && template.groundRow + gap.depth < template.rows)).toBe(true);
     }

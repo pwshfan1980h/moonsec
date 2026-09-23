@@ -1,3 +1,6 @@
+import { parseLevelMap, toTileIndices, type LevelMap } from '../level/levelMap';
+import surfaceOpsMap from './maps/surface-ops.txt?raw';
+
 // Industrial tileset — 6 cols × 4 rows, 32×32 tiles
 // Index layout:
 //   0  1  2  3  4  5   ← row 0 (primary surface tiles)
@@ -40,10 +43,13 @@ export type LevelTemplate = {
   fixedPlatforms:  { col: number; row: number; width: number }[];
   fixedWalls:      { col: number; rowStart: number; height: number }[];
   fixedGaps:       { col: number; width: number; depth: number }[];
+  /** Text-map levels: the grid owns all geometry and the spawn; the fixed* lists stay empty. */
+  map?:            LevelMap;
 };
 
 export function buildMap(tmpl: LevelTemplate, _seed: number): number[][] {
   const T = tmpl.tileK;
+  if (tmpl.map) return toTileIndices(tmpl.map, T);
 
   const map = Array.from({ length: tmpl.rows }, () =>
     Array<number>(tmpl.cols).fill(T.EMPTY),
@@ -109,20 +115,18 @@ export function buildMap(tmpl: LevelTemplate, _seed: number): number[][] {
 
 // ── Level Templates ────────────────────────────────────────────────────────
 
+const SURFACE_OPS_MAP = parseLevelMap(surfaceOpsMap, 'surface-ops.txt');
+
 export const TMPL_SURFACE_OPS: LevelTemplate = {
-  cols: 200, rows: 34,
+  cols: SURFACE_OPS_MAP.cols, rows: SURFACE_OPS_MAP.rows,
   hasGround: true, groundRow: 30, fillBelow: true,
   hasCeiling: false, ceilingRow: 0,
   fixedArenaWalls: false,
   tileK: TILE,
-  fixedPlatforms: [
-    { col: 30,  row: 25, width: 12 }, // training overlook
-    { col: 88,  row: 24, width: 8 },  // low habitat cover; jumpable roof
-    { col: 113, row: 23, width: 8 },  // optional elevated firing position
-    { col: 158, row: 25, width: 10 }, // low cover before the Warden arena
-  ],
+  fixedPlatforms: [],
   fixedWalls: [],
-  fixedGaps: [{ col: 20, width: 4, depth: 2 }, { col: 80, width: 5, depth: 2 }],
+  fixedGaps: [],
+  map: SURFACE_OPS_MAP,
 };
 
 export const TMPL_TRADE_LANES: LevelTemplate = {

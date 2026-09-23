@@ -13,7 +13,7 @@ import { MovingPlatform } from '../entities/MovingPlatform';
 import { PPCRound } from '../entities/PPCRound';
 import { GAME_W, GAME_H, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, GROUND_HEIGHT } from '../constants';
 import { buildMap } from '../data/levelData';
-import { LEVEL_CONFIGS, NODE_GRAPH } from '../data/levelConfigs';
+import { LEVEL_CONFIGS, NODE_GRAPH, spawnPoint } from '../data/levelConfigs';
 import type { LevelConfig } from '../data/levelConfigs';
 import { DebugLog } from '../systems/DebugLog';
 import { PickupSystem } from '../systems/PickupSystem';
@@ -255,12 +255,8 @@ export class GameScene extends Phaser.Scene {
 
     // --- Player ---
     // Origin (0.5, 1) → feet at position y. Start 5px above ground.
-    const spawnCol = this.activeConfig.spawnCol;
-    const spawnX = spawnCol !== undefined ? spawnCol * 32 : 300;
-    const spawnY = this.activeConfig.spawnRow !== undefined
-      ? this.activeConfig.spawnRow * 32 - 4
-      : GROUND_Y - 5;
-    this.player = new Player(this, spawnX, spawnY);
+    const spawn = spawnPoint(this.activeConfig, GROUND_Y);
+    this.player = new Player(this, spawn.x, spawn.y);
     this.add.existing(this.player);
     this.physics.add.existing(this.player);
     this.playerHud = new PlayerHud(this, this.player);

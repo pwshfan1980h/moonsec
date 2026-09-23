@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { buildMap } from '../data/levelData';
+import { decks } from '../level/levelMap';
 
 function distanceToStaticRoute(
   config: (typeof LEVEL_CONFIGS)[number],
@@ -8,7 +9,8 @@ function distanceToStaticRoute(
   y: number,
   halfWidth: number,
 ): number {
-  const routes = config.template.fixedPlatforms.map(platform => ({
+  const platforms = config.template.map ? decks(config.template.map) : config.template.fixedPlatforms;
+  const routes = platforms.map(platform => ({
     left: platform.col * 32,
     right: (platform.col + platform.width) * 32,
     y: platform.row * 32,
@@ -50,8 +52,8 @@ describe('moving-platform campaign budget', () => {
   it('places every configured spawn immediately above solid authored terrain', () => {
     for (const config of LEVEL_CONFIGS) {
       const map = buildMap(config.template, 1);
-      const col = config.spawnCol ?? 9;
-      const rowAboveSurface = config.spawnRow ?? config.template.groundRow - 1;
+      const col = config.template.map?.spawn.col ?? config.spawnCol ?? 9;
+      const rowAboveSurface = config.template.map?.spawn.row ?? config.spawnRow ?? config.template.groundRow - 1;
       expect(map[rowAboveSurface][col], config.label).toBe(-1);
       expect(map[rowAboveSurface + 1][col], config.label).not.toBe(-1);
     }
