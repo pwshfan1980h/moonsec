@@ -65,17 +65,3 @@ export function decks(map: LevelMap): Deck[] {
   });
   return out;
 }
-
-export interface TileIndices { EMPTY: number; SURFACE: number; FILL_A: number; FILL_B: number }
-
-/**
- * Legacy tileset indices for the current tile renderer (replaced by the autotiler in the
- * art rebuild): exposed tops are SURFACE, the cell under a top is FILL_A, deeper is FILL_B.
- */
-export function toTileIndices(map: LevelMap, T: TileIndices): number[][] {
-  return map.cells.map((line, row) => line.map((cell, col) => {
-    if (cell === 'empty') return T.EMPTY;
-    if (cell === 'deck' || !isSolid(map, col, row - 1)) return T.SURFACE;
-    return isSolid(map, col, row - 2) ? T.FILL_B : T.FILL_A;
-  }));
-}

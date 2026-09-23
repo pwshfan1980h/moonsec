@@ -31,10 +31,14 @@ Trade Lanes freight art (later, with its level).
    and radar on the one grid; half-tile cells would need a second collision system. Surface Ops
    has four terraced mounds/ridges; relay columns and the Warden arena stay flat. Later:
    per-column heightfield for true slopes.
-3. **Environment part kit** — a `PartSpec`-style kit for world pieces, rasterised into an atlas
-   like the rig: regolith edge/fill pieces chosen by neighbour mask (autotile), deck plates with
-   trusses, dome shells (chrome ramps: `hull3`→`hull6` with `cyan` reflections), bulkhead doors,
-   silos, containers, gantry legs, pipes, lamps.
+3. **Environment part kit** ✅ — `src/world/`: rasterised at boot with the rig's primitives
+   (`buildWorldTextures`). `shade.ts` does per-pixel light (lambert, chrome environment
+   reflection) onto palette ramps through a 4×4 ordered dither. Terrain (`terrainTiles.ts`,
+   `autotile.ts`): regolith picked by 4-edge mask × 8 variants, deep strata three cells down,
+   truss decks with end caps; Surface Ops now renders with it. Props (`props.ts`, near + far
+   variants, `placeProp`): geodesic chrome storage dome with cargo bulkhead, silo on legs,
+   containers (amber/cold/hull), gantry column + beam, bulkhead, pipe + support, lamp, antenna
+   dish, solar array, boulders S/M/L, crate. Review sheet: `?rigtest=world`.
 4. **Surface Ops redesign** — new `surface-ops.txt`: crater bowls, ridge climbs, a dome
    interior/exterior transition, container stacks as cover, an upper gantry route and a lower
    service trench, the Warden arena in the largest storage dome.

@@ -1,4 +1,5 @@
-import { parseLevelMap, toTileIndices, type LevelMap } from '../level/levelMap';
+import { parseLevelMap, type LevelMap } from '../level/levelMap';
+import { autotile } from '../world/autotile';
 import surfaceOpsMap from './maps/surface-ops.txt?raw';
 
 // Industrial tileset — 6 cols × 4 rows, 32×32 tiles
@@ -49,7 +50,7 @@ export type LevelTemplate = {
 
 export function buildMap(tmpl: LevelTemplate, _seed: number): number[][] {
   const T = tmpl.tileK;
-  if (tmpl.map) return toTileIndices(tmpl.map, T);
+  if (tmpl.map) return autotile(tmpl.map);
 
   const map = Array.from({ length: tmpl.rows }, () =>
     Array<number>(tmpl.cols).fill(T.EMPTY),

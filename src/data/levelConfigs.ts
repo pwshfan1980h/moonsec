@@ -1,4 +1,5 @@
 import { pal } from '../render/palette';
+import { WORLD_TILES_KEY } from '../world/worldTextures';
 import type { LevelTemplate } from './levelData';
 import {
   TMPL_SURFACE_OPS, TMPL_TRADE_LANES, TMPL_DEEP_FACILITY,
@@ -44,7 +45,7 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
   {
     nodeIndex:     0,
     label:         'SURFACE OPS',
-    tilesetKey:    'industrial-tileset',
+    tilesetKey:    WORLD_TILES_KEY,
     bgSkyColor:    pal('void'),
     bgTerrainTint: pal('cyan3'),
     template:      TMPL_SURFACE_OPS,

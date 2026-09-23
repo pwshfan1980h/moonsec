@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { decks, isSolid, parseLevelMap, toTileIndices } from '../level/levelMap';
-import { TILE, TMPL_SURFACE_OPS, buildMap } from '../data/levelData';
+import { decks, isSolid, parseLevelMap } from '../level/levelMap';
+import { TMPL_SURFACE_OPS, buildMap } from '../data/levelData';
 import { LEVEL_CONFIGS, spawnPoint } from '../data/levelConfigs';
 
 const SMALL = `
@@ -30,12 +30,6 @@ describe('parseLevelMap', () => {
     expect(() => parseLevelMap('S.\n..\n##')).toThrow(/not standing/);
     expect(() => parseLevelMap('SS\n##')).toThrow(/more than one/);
   });
-
-  it('derives legacy tile indices from exposure', () => {
-    const tiles = toTileIndices(parseLevelMap('S.\n#=\n#.\n#.'), { EMPTY: -1, SURFACE: 0, FILL_A: 7, FILL_B: 13 });
-    expect(tiles.map((r) => r[0])).toEqual([-1, 0, 7, 13]);
-    expect(tiles[1][1]).toBe(0);
-  });
 });
 
 describe('Surface Ops text map', () => {
@@ -58,9 +52,8 @@ describe('Surface Ops text map', () => {
   it('feeds the tile renderer and physics through buildMap', () => {
     const tiles = buildMap(TMPL_SURFACE_OPS, 1);
     expect(tiles.length).toBe(34);
-    expect(tiles[30][0]).toBe(TILE.SURFACE);
     for (let r = 0; r < map.rows; r++) for (let c = 0; c < map.cols; c++) {
-      expect(tiles[r][c] !== TILE.EMPTY).toBe(isSolid(map, c, r));
+      expect(tiles[r][c] !== -1).toBe(isSolid(map, c, r));
     }
   });
 });

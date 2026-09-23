@@ -23,8 +23,9 @@ function remapFor(variant: PartVariant): (c: PaletteName) => PaletteName {
  * Rasterises a part with a 1 px outline (hull0) around every opaque shape.
  * Pure — used by the atlas build tool and by tests.
  */
-export function rasterizePart(spec: PartSpec, variant: PartVariant = 'n'): Raster {
-  const pad = OUTLINE_PAD;
+export function rasterizePart(spec: PartSpec, variant: PartVariant = 'n', opts: { outline?: boolean } = {}): Raster {
+  const outlined = opts.outline ?? true;
+  const pad = outlined ? OUTLINE_PAD : 0;
   const width = spec.w + pad * 2, height = spec.h + pad * 2;
   const data = new Uint8Array(width * height * 4);
   const map = remapFor(variant);
@@ -65,6 +66,7 @@ export function rasterizePart(spec: PartSpec, variant: PartVariant = 'n'): Raste
   };
   spec.draw(api);
 
+  if (!outlined) return { width, height, data };
   // outline: every transparent pixel touching an opaque one (4-neighbour)
   const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height && data[(y * width + x) * 4 + 3] > 0;
   const outline: number[] = [];

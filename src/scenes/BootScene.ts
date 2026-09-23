@@ -5,6 +5,7 @@ import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { devParams } from '../dev/devParams';
 import { HARROW_BODY } from '../entities/Player';
 import { buildUiTextures } from '../ui/kit/uiTextures';
+import { buildWorldTextures } from '../world/worldTextures';
 import { SegBar, icon } from '../ui/kit/widgets';
 import { loadMuted } from '../systems/audioPrefs';
 
@@ -22,6 +23,7 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     // Fonts, icons and panels are procedural, so the loading screen can use them.
     buildUiTextures(this);
+    buildWorldTextures(this);
     const w = 480, x = (GAME_W - w) / 2, y = Math.round(GAME_H * 0.5 / 2) * 2;
     icon(this, GAME_W / 2, y - 64, 'armor', 4, 'accent');
     const bar = new SegBar(this, x, y, w, 16, 12);
@@ -67,6 +69,13 @@ export class BootScene extends Phaser.Scene {
     this.makeTextures();
 
     this.registry.set('firstBoot', true);
+    if (devParams().rigtest === 'world') {
+      void import('../dev/WorldKitGallery').then(({ WorldKitGallery }) => {
+        this.scene.add('WorldKit', WorldKitGallery, true);
+        this.scene.stop();
+      });
+      return;
+    }
     if (devParams().rigtest === 'foes') {
       void import('../dev/FoeGallery').then(({ FoeGallery }) => {
         this.scene.add('FoeGallery', FoeGallery, true);
