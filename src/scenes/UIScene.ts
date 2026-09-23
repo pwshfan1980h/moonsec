@@ -7,6 +7,8 @@ import type { PlayerUpgradeId } from '../entities/Player';
 import { LEVEL_CONFIGS } from '../data/levelConfigs';
 import { devParams } from '../dev/devParams';
 import { GAME_W, GAME_H, RADAR_X, RADAR_Y, RADAR_SCREEN_RADIUS } from '../constants';
+import { installPipeline, graphics, setGraphics, type CameraPipeline } from '../render/RenderPipeline';
+import { nextPreset, saveGraphicsSettings, toggleView, type GraphicsSettings } from '../render/GraphicsSettings';
 
 // ── Tactical HUD design tokens ────────────────────────────────────────────
 const FONT_MONO     = '"Share Tech Mono", monospace';
@@ -120,6 +122,8 @@ export class UIScene extends Phaser.Scene {
   private pauseFrame!: Phaser.GameObjects.Graphics;
   private pauseText!: Phaser.GameObjects.Text;
   private pauseSub!: Phaser.GameObjects.Text;
+  private pauseGfx!: Phaser.GameObjects.Text;
+  private uiPipeline?: CameraPipeline;
   private paused = false;
 
   // Game-over state
@@ -206,6 +210,24 @@ export class UIScene extends Phaser.Scene {
     this.pauseSub = this.add.text(W / 2, H / 2 + 40, 'ESC TO RESUME     H FOR CONTROLS', {
       fontFamily: FONT_MONO, fontSize: '26px', color: COL.inkDim,
     }).setOrigin(0.5).setDepth(51).setVisible(false);
+    this.pauseGfx = this.add.text(W / 2, H / 2 + 100, '', {
+      fontFamily: FONT_MONO, fontSize: '22px', color: COL.cyanHex,
+    }).setOrigin(0.5).setDepth(51).setVisible(false);
+    this.uiPipeline = installPipeline(this, this.cameras.main, 'ui');
+    const onGfxKey = (next: (s: GraphicsSettings) => GraphicsSettings) => () => {
+      if (!this.paused) return;
+      const s = next(graphics());
+      setGraphics(s);
+      saveGraphicsSettings(s);
+      this.uiPipeline?.apply(s);
+      this.game.events.emit('graphicsChanged', s);
+      this.refreshPauseGfx();
+    };
+    const onPreset = onGfxKey(nextPreset), onView = onGfxKey(toggleView);
+    this.input.keyboard!.on('keydown-G', onPreset);
+    this.input.keyboard!.on('keydown-V', onView);
+    this.keyboardEventUnsubs.push(() => this.input.keyboard?.off('keydown-G', onPreset));
+    this.keyboardEventUnsubs.push(() => this.input.keyboard?.off('keydown-V', onView));
 
     // ── Radar frame (drawn once) ──────────────────────────────────
     this.drawRadarFrame();
@@ -842,6 +864,8 @@ export class UIScene extends Phaser.Scene {
       this.pauseBg.setVisible(true);
       this.pauseText.setVisible(true);
       this.pauseSub.setVisible(true);
+      this.refreshPauseGfx();
+      this.pauseGfx.setVisible(true);
       this.drawPauseFrame();
       this.pauseFrame.setVisible(true);
     } else {
@@ -849,8 +873,14 @@ export class UIScene extends Phaser.Scene {
       this.pauseBg.setVisible(false);
       this.pauseText.setVisible(false);
       this.pauseSub.setVisible(false);
+      this.pauseGfx.setVisible(false);
       this.pauseFrame.setVisible(false);
     }
+  }
+
+  private refreshPauseGfx(): void {
+    const s = graphics();
+    this.pauseGfx.setText(`G  GRAPHICS: ${s.preset.toUpperCase()}     V  VIEW: ${s.view.toUpperCase()}`);
   }
 
   private drawPauseFrame(): void {

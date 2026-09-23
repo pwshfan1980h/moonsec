@@ -4,6 +4,8 @@ import { BootScene } from './scenes/BootScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
+import { FilterRetroNode, RETRO_NODE } from './render/filters/RetroFilter';
+import { palCss } from './render/palette';
 
 if (import.meta.env.DEV) {
   const debugWindow = window as unknown as { __moonsecErrors?: string[] };
@@ -21,7 +23,7 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'game',
   width: GAME_W,
   height: GAME_H,
-  backgroundColor: '#030318',
+  backgroundColor: palCss('void'),
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -39,6 +41,11 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, OverworldScene, GameScene, UIScene],
   pixelArt: true,
   roundPixels: true,
+  render: {
+    // Phaser's RenderNodesConfig typing describes {key, function}, but the manager passes each
+    // value straight to addNodeConstructor (core/Config.js, RenderNodeManager.js), so a constructor is correct.
+    renderNodes: { [RETRO_NODE]: FilterRetroNode as unknown as Phaser.Types.Core.RenderNodesConfig },
+  },
 };
 
 const game = new Phaser.Game(config);

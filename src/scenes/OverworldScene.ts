@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants';
 import { NODE_GRAPH, NODE_SUBTITLES } from '../data/levelConfigs';
+import { installPipeline } from '../render/RenderPipeline';
+import { palCss } from '../render/palette';
 
 type MechType = 'mech' | 'mech4';
 
@@ -61,7 +63,8 @@ export class OverworldScene extends Phaser.Scene {
   create(): void {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
     this.keyboardEventUnsubs = [];
-    this.cameras.main.setBackgroundColor('#010110');
+    this.cameras.main.setBackgroundColor(palCss('void'));
+    installPipeline(this, this.cameras.main, 'ui');
 
     this.selectableNodes = this.getSelectableNodes();
     // Place cursor on currentNode if selectable, else first selectable

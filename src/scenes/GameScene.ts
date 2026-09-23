@@ -21,6 +21,14 @@ import { drawTradeLaneArt, makeFreightLiftTexture } from '../systems/TradeLaneAr
 import { FlightNavigation } from '../systems/FlightNavigation';
 import { devParams } from '../dev/devParams';
 import { HostileCombat } from '../collisions/HostileCombat';
+import { installPipeline, graphics, type CameraPipeline } from '../render/RenderPipeline';
+import { VPX, cameraZoom, type GraphicsSettings } from '../render/GraphicsSettings';
+
+/** Camera frames the mech slightly above its feet. */
+const CAMERA_FEET_OFFSET = 80;
+/** Per-frame (60 fps) follow lerp. */
+const CAMERA_LERP = 0.2;
+const snapVpx = (v: number) => Math.round(v / VPX) * VPX;
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
@@ -49,6 +57,8 @@ export class GameScene extends Phaser.Scene {
   private spawner?: DroneSpawner;
   surfaceMission?: SurfaceMission;
   flightNavigation?: FlightNavigation;
+  private worldPipeline?: CameraPipeline;
+  private camFollow = { x: 0, y: 0 };
   private pickupSystem?: PickupSystem;
   private gameEventUnsubs: Array<() => void> = [];
   private bgStars?: Phaser.GameObjects.TileSprite;
@@ -262,8 +272,12 @@ export class GameScene extends Phaser.Scene {
 
     // --- Camera ---
     this.cameras.main.setBounds(0, -(GAME_H - 120), WORLD_WIDTH, WORLD_HEIGHT + (GAME_H - 120));
-    this.cameras.main.setZoom(1.2);
-    this.cameras.main.startFollow(this.player, false, 0.20, 0.18);
+    this.worldPipeline = installPipeline(this, this.cameras.main, 'world');
+    this.applyGraphics(graphics());
+    this.snapCameraTo(this.player.x, this.player.y, 1);
+    const onGraphics = (s: GraphicsSettings) => this.applyGraphics(s);
+    this.game.events.on('graphicsChanged', onGraphics);
+    this.gameEventUnsubs.push(() => this.game.events.off('graphicsChanged', onGraphics));
 
     // --- Moving platforms (Trade Lanes only) ---
     this.movingPlatforms = this.physics.add.group({ runChildUpdate: true });
@@ -394,9 +408,31 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** Camera zoom and retro filter follow the graphics settings (pause menu: G / V). */
+  private applyGraphics(s: GraphicsSettings): void {
+    this.cameras.main.setZoom(cameraZoom(s));
+    this.worldPipeline?.apply(s);
+  }
+
+  /**
+   * Manual camera follow. The float target is lerped frame-rate independently and the
+   * camera scroll is snapped to the virtual pixel grid so scenery never shimmers under
+   * the retro filter's block snap.
+   */
+  private snapCameraTo(x: number, y: number, t: number): void {
+    const cam = this.cameras.main;
+    const tx = x - cam.width * 0.5;
+    const ty = y - CAMERA_FEET_OFFSET - cam.height * 0.5;
+    this.camFollow.x += (tx - this.camFollow.x) * t;
+    this.camFollow.y += (ty - this.camFollow.y) * t;
+    cam.setScroll(Math.round(this.camFollow.x / VPX) * VPX, Math.round(this.camFollow.y / VPX) * VPX);
+  }
+
   update(time: number, delta: number): void {
     if (this.isGameOver) return;
     this.player.update(time, delta);
+    const k = delta / (1000 / 60);
+    this.snapCameraTo(this.player.x, this.player.y, 1 - Math.pow(1 - CAMERA_LERP, k));
     this.playerHud?.update();
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     this.audio.update({
@@ -631,11 +667,8 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => core.destroy(),
     });
 
-    // Expanding shockwave ring — Graphics with a WebGL glow post-FX
+    // Expanding shockwave ring
     const ring = this.add.graphics().setDepth(22);
-    // postFX requires WebGL; guard so a Canvas fallback still renders the ring cleanly.
-    // Phaser 4 moved/retuned some post-FX typings, so keep this optional at runtime.
-    try { (ring as Phaser.GameObjects.Graphics & { postFX?: { addGlow?: (...args: unknown[]) => unknown } }).postFX?.addGlow?.(0xff8833, 6, 0, false, 0.1, 16); } catch { /* canvas — no glow */ }
     const rs = { r: 8, a: 1 };
     this.tweens.add({
       targets: rs, r: radius, a: 0,
@@ -1077,14 +1110,14 @@ export class GameScene extends Phaser.Scene {
     const sx = this.cameras.main.scrollX;
     if (this.activeConfig.trainEffect) {
       this.trainOffset += delta * 0.12; // ~120 px/s leftward drift
-      if (this.bgStars)   this.bgStars.setTilePosition(sx * 0.05 - this.trainOffset * 0.15, 0);
-      if (this.bgTerrain) this.bgTerrain.setTilePosition(sx * 0.20 - this.trainOffset * 0.55, 0);
-      if (this.bgHaze)    this.bgHaze.setTilePosition(sx * 0.35 - this.trainOffset, 0);
+      if (this.bgStars)   this.bgStars.setTilePosition(snapVpx(sx * 0.05 - this.trainOffset * 0.15), 0);
+      if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20 - this.trainOffset * 0.55), 0);
+      if (this.bgHaze)    this.bgHaze.setTilePosition(snapVpx(sx * 0.35 - this.trainOffset), 0);
       return;
     }
-    if (this.bgStars)   this.bgStars.setTilePosition(sx * 0.05, 0);
-    if (this.bgTerrain) this.bgTerrain.setTilePosition(sx * 0.20, 0);
-    if (this.bgHaze)    this.bgHaze.setTilePosition(sx * 0.35, 0);
+    if (this.bgStars)   this.bgStars.setTilePosition(snapVpx(sx * 0.05), 0);
+    if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20), 0);
+    if (this.bgHaze)    this.bgHaze.setTilePosition(snapVpx(sx * 0.35), 0);
   }
 
   private makeTilemapGround(mapData: number[][], tilesetKey = 'industrial-tileset'): void {
