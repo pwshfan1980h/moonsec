@@ -1,5 +1,7 @@
 import { parseLevelMap, type LevelMap } from '../level/levelMap';
 import { autotile } from '../world/autotile';
+import type { Dressing } from '../world/dressing';
+import { SURFACE_OPS_DRESSING } from './maps/surface-ops.dressing';
 import surfaceOpsMap from './maps/surface-ops.txt?raw';
 
 // Industrial tileset — 6 cols × 4 rows, 32×32 tiles
@@ -46,6 +48,8 @@ export type LevelTemplate = {
   fixedGaps:       { col: number; width: number; depth: number }[];
   /** Text-map levels: the grid owns all geometry and the spawn; the fixed* lists stay empty. */
   map?:            LevelMap;
+  /** Set dressing for text-map levels (src/world/dressing.ts). */
+  dressing?:       readonly Dressing[];
 };
 
 export function buildMap(tmpl: LevelTemplate, _seed: number): number[][] {
@@ -128,6 +132,7 @@ export const TMPL_SURFACE_OPS: LevelTemplate = {
   fixedWalls: [],
   fixedGaps: [],
   map: SURFACE_OPS_MAP,
+  dressing: SURFACE_OPS_DRESSING,
 };
 
 export const TMPL_TRADE_LANES: LevelTemplate = {

@@ -39,9 +39,14 @@ Trade Lanes freight art (later, with its level).
    variants, `placeProp`): geodesic chrome storage dome with cargo bulkhead, silo on legs,
    containers (amber/cold/hull), gantry column + beam, bulkhead, pipe + support, lamp, antenna
    dish, solar array, boulders S/M/L, crate. Review sheet: `?rigtest=world`.
-4. **Surface Ops redesign** — new `surface-ops.txt`: crater bowls, ridge climbs, a dome
-   interior/exterior transition, container stacks as cover, an upper gantry route and a lower
-   service trench, the Warden arena in the largest storage dome.
+4. **Surface Ops redesign** ✅ — new `surface-ops.txt` (zones listed in its header): landing
+   pad, stepped crater, survey plateau, container yard (`C` stacks = solid cover, drawn as
+   containers), habitat dome under an upper gantry route (`=` decks on auto-placed lattice
+   supports), pipe-lined service trench, antenna ridge, and the Warden arena on a plated (`%`)
+   floor inside a giant storage-dome interior. Dressing list: `surface-ops.dressing.ts`
+   (`dressLevel`). Relays are a kit prop and follow the terrain; ground units spawn on the
+   ground, snipers take the decks. Legacy props, background domes and ambient life are skipped
+   for text-map levels.
 5. **Parallax backdrop** — 3–4 layers built from the same kit: far ridgeline + Earth, distant
    dome clusters and masts, mid-ground silos and gantries, near rocks/foreground occluders.
 6. **Set pieces + props** — hand-placed decorative assemblies (wrecked lander, antenna farm,

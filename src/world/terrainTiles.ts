@@ -126,11 +126,43 @@ function deckTile(shape: DeckShape, v: number): PartSpec {
   };
 }
 
-/** Tileset layout: regolith masks × variants, then deep fill variants, then deck shapes × 2. */
+/** Plated floor: machined deck plate over a beam structure; same edge masks as regolith. */
+function plateTile(mask: number, v: number): PartSpec {
+  return {
+    w: T, h: T, px: 0, py: 0,
+    draw: (d) => {
+      d.R(0, 0, T, T, 'hull2');
+      for (const x of [3, 11]) { d.R(x, 0, 2, T, 'hull1'); d.px(x + 2, 4 + v * 5, 'hull4'); d.px(x + 2, 12, 'hull4'); }
+      d.R(0, 8, T, 1, 'hull1');
+      d.R(0, 9, T, 1, 'hull3');
+      const up = mask & EDGE.up, right = mask & EDGE.right, down = mask & EDGE.down, left = mask & EDGE.left;
+      if (up) {
+        for (let x = 0; x < T; x++) {
+          d.px(x, 0, 'hull0'); d.px(x, 1, 'hull5'); d.px(x, 2, 'hull4');
+          d.px(x, 3, (x + v) % 4 === 0 ? 'hull2' : 'hull4'); d.px(x, 4, 'hull3'); d.px(x, 5, 'hull1');
+        }
+        if (v === 1) { d.R(0, 1, 2, 1, 'hull6'); d.R(8, 1, 3, 1, 'hull6'); }
+      }
+      if (left) for (let y = up ? 1 : 0; y < T; y++) { d.px(0, y, 'hull0'); d.px(1, y, y < 6 && up ? 'hull5' : 'hull3'); }
+      if (right) for (let y = up ? 1 : 0; y < T; y++) { d.px(T - 1, y, 'hull0'); d.px(T - 2, y, 'hull1'); }
+      if (down) for (let x = 0; x < T; x++) { d.px(x, T - 1, 'hull0'); d.px(x, T - 2, 'hull1'); }
+    },
+  };
+}
+
+const BLANK: PartSpec = { w: T, h: T, px: 0, py: 0, draw: () => undefined };
+
+/**
+ * Tileset layout: regolith masks × variants, deep fill variants, deck shapes × 2, plate masks × 2,
+ * then one blank tile for solid cells whose art is a placed prop (containers).
+ */
+const DEEP0 = 16 * VARIANTS, DECK0 = DEEP0 + VARIANTS, PLATE0 = DECK0 + 8;
 export const TILE_INDEX = {
   regolith: (mask: number, v: number) => mask * VARIANTS + v,
-  deep: (v: number) => 16 * VARIANTS + v,
-  deck: (shape: DeckShape, v: number) => 16 * VARIANTS + VARIANTS + shape * 2 + v,
+  deep: (v: number) => DEEP0 + v,
+  deck: (shape: DeckShape, v: number) => DECK0 + shape * 2 + v,
+  plate: (mask: number, v: number) => PLATE0 + mask * 2 + v,
+  blank: PLATE0 + 32,
 } as const;
 
 /** Every tile, in tileset order. */
@@ -139,5 +171,7 @@ export function terrainTiles(): PartSpec[] {
   for (let m = 0; m < 16; m++) for (let v = 0; v < VARIANTS; v++) out.push(regolithTile(m, v, false));
   for (let v = 0; v < VARIANTS; v++) out.push(regolithTile(0, v, true));
   for (let s = 0; s < 4; s++) for (let v = 0; v < 2; v++) out.push(deckTile(s as DeckShape, v));
+  for (let m = 0; m < 16; m++) for (let v = 0; v < 2; v++) out.push(plateTile(m, v));
+  out.push(BLANK);
   return out;
 }

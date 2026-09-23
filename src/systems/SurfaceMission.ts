@@ -1,6 +1,7 @@
 import { icon as uiIcon, label as uiLabel } from '../ui/kit/draw';
 import { tc } from '../ui/theme';
 import Phaser from 'phaser';
+import { GAME_W } from '../constants';
 import type { GameScene } from '../scenes/GameScene';
 import { EncounterSchedule, SURFACE_ENCOUNTERS, SURFACE_MAX_ATTACKERS, type SurfaceEnemyRole } from '../data/surfaceMission';
 import type { RiggedHostile } from '../entities/RiggedHostile';
@@ -8,6 +9,9 @@ import { Burrower, Prowler, Ram, Spotter, Stilt, TrainingTarget } from '../entit
 import { Warden } from '../entities/foes/bosses';
 import { HEAL } from '../balance/armor';
 import { pal } from '../render/palette';
+import { placeProp } from '../world/worldTextures';
+import { surfaceY } from '../level/levelMap';
+import { RELAY_SCREEN, WORLD_PROPS } from '../world/props';
 
 export type SurfacePhase = 'training' | 'travel' | 'combat' | 'relay' | 'upgrade' | 'boss-travel' | 'boss' | 'complete';
 export interface MissionObjective { title: string; detail: string; x: number; progress: number; }
@@ -50,28 +54,40 @@ export class SurfaceMission {
     this.unsubs.push(() => scene.events.off('bossKilled', onBossKilled));
     if (scene.ai) Object.assign(scene.ai.tokens.pools, { ranged: SURFACE_MAX_ATTACKERS, melee: 1, artillery: 1 });
     SURFACE_ENCOUNTERS.forEach((e, i) => {
-      const glyph = uiIcon(scene, e.relayX - 20, 780, 'relay', 2, 'inkDim').setDepth(7);
-      const num = uiLabel(scene, e.relayX + 4, 780, String(i + 1).padStart(2, '0'), 'small', 'inkDim').setOrigin(0, 0.5).setDepth(7);
+      const lift = this.floorAt(e.relayX) - 960;
+      placeProp(scene, 'relay', e.relayX, this.floorAt(e.relayX), 5.9); // under the status markers
+      const glyph = uiIcon(scene, e.relayX - 20, 780 + lift, 'relay', 2, 'inkDim').setDepth(7);
+      const num = uiLabel(scene, e.relayX + 4, 780 + lift, String(i + 1).padStart(2, '0'), 'small', 'inkDim').setOrigin(0, 0.5).setDepth(7);
       this.relayLabels.push({ glyph, num });
     });
     if (startAtBoss) {
-      scene.player.setPosition(5200, 950);
+      scene.player.setPosition(5200, this.floorAt(5200) - 10);
       this.encounter = 3;
       this.startBoss();
     } else if (startAtEncounter !== undefined) {
       this.encounter = Phaser.Math.Clamp(startAtEncounter, 0, SURFACE_ENCOUNTERS.length - 1);
       this.phase = 'travel';
-      scene.player.setPosition(SURFACE_ENCOUNTERS[this.encounter].x - 150, 950);
+      const x = SURFACE_ENCOUNTERS[this.encounter].x - 150;
+      scene.player.setPosition(x, this.floorAt(x) - 10);
     } else {
       this.spawnUnit('target', 1450, 800, () => { this.targetDown = true; });
     }
     this.updateObjective();
   }
 
+  /** Top of the terrain under x (relays and teleports follow the ground; 960 is the main floor). */
+  private floorAt(x: number): number {
+    return this.scene.ai?.terrain.surfaceBelow(x, 0) ?? this.scene.getApproxGroundY();
+  }
+
   /** Surface roles are rigged walkers sharing the mission's attack tokens (at most two attack at once). */
   private spawnUnit(role: SurfaceEnemyRole, x: number, _y: number, defeated: () => void): void {
     const s = this.scene;
-    const floor = s.ai?.terrain.surfaceBelow(x, 200) ?? s.getApproxGroundY();
+    // snipers take whatever is highest (gantry decks); everyone else starts on the ground
+    const map = s.levelTemplate.map;
+    const floor = map && role !== 'sniper'
+      ? surfaceY(map, Math.floor(x / 32))
+      : s.ai?.terrain.surfaceBelow(x, 200) ?? s.getApproxGroundY();
     let unit: RiggedHostile;
     switch (role) {
       case 'skirmisher': unit = new Prowler(s, x, floor - 2); break;
@@ -117,7 +133,7 @@ export class SurfaceMission {
         this.scene.events.emit('radioTransmission', 'LUNAR CONTROL', 'Perimeter clear. Hold F at the relay to bring it online.', false);
       }
     } else if (this.phase === 'relay') {
-      const near = Math.abs(player.x - current.relayX) < 130 && player.y > 780;
+      const near = Math.abs(player.x - current.relayX) < 130 && player.y > this.floorAt(current.relayX) - 180;
       this.relayProgress = near && this.interact.isDown ? Math.min(1, this.relayProgress + delta / 1800) : 0;
       this.scene.events.emit('relayProgress', this.relayProgress, near && this.interact.isDown);
       if (this.relayProgress >= 1) {
@@ -146,7 +162,8 @@ export class SurfaceMission {
   private startBoss(): void {
     this.phase = 'boss';
     this.scene.physics.world.setBounds(4900, 0, 1500, 1280);
-    this.scene.cameras.main.setBounds(4800, -960, 1600, 2040);
+    // the arena ends at the world edge (6400); the camera needs a full screen of width to stop on it
+    this.scene.cameras.main.setBounds(6400 - GAME_W, -960, GAME_W, 2040);
     const boss = new Warden(this.scene);
     this.scene.hostileCombat.register(boss);
     this.scene.events.emit('waveStart', 4, 3, 1);
@@ -154,22 +171,24 @@ export class SurfaceMission {
     this.scene.events.emit('radioTransmission', 'LUNAR CONTROL', 'Warden inbound. Jump the ground sweep, dash out of marked columns, then fire at its exposed core.', true);
   }
 
+  /** Relay state on each cabinet's screen (dim, active cyan, online green) plus the uplink progress. */
   private drawRelays(): void {
     const g = this.markers;
     g.clear();
+    const spec = WORLD_PROPS.relay;
     SURFACE_ENCOUNTERS.forEach((e, i) => {
       const online = i < this.encounter || (i === 0 && this.phase === 'upgrade');
+      const floor = this.floorAt(e.relayX);
+      const f = floor - 960;
       const color = online ? pal('green1') : i === this.encounter ? pal('cyan2') : pal('cyan0');
-      g.fillStyle(pal('hull1'), 1); g.fillRect(e.relayX - 28, 850, 56, 110);
-      g.lineStyle(3, color, 1); g.strokeRect(e.relayX - 28, 850, 56, 110);
-      g.fillStyle(color, 1); g.fillRect(e.relayX - 18, 866, 36, 24);
-      g.lineBetween(e.relayX, 850, e.relayX, 815);
-      g.strokeCircle(e.relayX, 820, 12);
+      const sx = e.relayX + (RELAY_SCREEN.x - spec.px) * 2, sy = floor + (RELAY_SCREEN.y - spec.py) * 2;
+      g.fillStyle(color, 1); g.fillRect(sx, sy, RELAY_SCREEN.w * 2, RELAY_SCREEN.h * 2);
+      g.fillStyle(pal('hull0'), 1); for (let y = sy + 2; y < sy + RELAY_SCREEN.h * 2; y += 4) g.fillRect(sx, y, RELAY_SCREEN.w * 2, 2);
       if (i === this.encounter && this.phase === 'relay') {
-        g.lineStyle(2, color, 0.4); g.strokeEllipse(e.relayX, 953, 250, 30);
-        g.fillStyle(pal('hull2'), 1); g.fillRect(e.relayX - 100, 810, 200, 8);
-        g.fillStyle(pal('green1'), 1); g.fillRect(e.relayX - 100, 810, 200 * this.relayProgress, 8);
-        if (this.relayProgress > 0 && this.relayProgress < 1) this.drawUplinkBeam(g, e.relayX, 820);
+        g.lineStyle(2, color, 0.4); g.strokeEllipse(e.relayX, 953 + f, 250, 30);
+        g.fillStyle(pal('hull2'), 1); g.fillRect(e.relayX - 100, 790 + f, 200, 8);
+        g.fillStyle(pal('green1'), 1); g.fillRect(e.relayX - 100, 790 + f, 200 * this.relayProgress, 8);
+        if (this.relayProgress > 0 && this.relayProgress < 1) this.drawUplinkBeam(g, e.relayX - 2, floor - 132);
       }
     });
   }

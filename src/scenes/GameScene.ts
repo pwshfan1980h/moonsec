@@ -20,6 +20,7 @@ import { PickupSystem } from '../systems/PickupSystem';
 import type { PickupType } from '../systems/PickupSystem';
 import { CollisionRegistry } from '../collisions/CollisionRegistry';
 import { EnvironmentalLife } from '../systems/EnvironmentalLife';
+import { dressLevel } from '../world/dressing';
 import { drawTradeLaneArt, makeFreightLiftTexture } from '../systems/TradeLaneArt';
 import { FlightNavigation } from '../systems/FlightNavigation';
 import { devParams } from '../dev/devParams';
@@ -204,9 +205,15 @@ export class GameScene extends Phaser.Scene {
     // Tilemap supplies the actual platform geometry via TMPL fixedPlatforms /
     // extraPlatforms (see buildMap). makeTilemapGround also populates
     // platformData for the radar.
-    this.makeBaseProps();
-    if (nodeIdx === 1) drawTradeLaneArt(this, this.activeConfig.template);
-    new EnvironmentalLife(this, this.activeConfig).create();
+    const tmpl = this.activeConfig.template;
+    if (tmpl.map) {
+      // text-map levels: the world kit replaces the legacy props and ambient life
+      dressLevel(this, tmpl.map, tmpl.dressing ?? []);
+    } else {
+      this.makeBaseProps();
+      if (nodeIdx === 1) drawTradeLaneArt(this, tmpl);
+      new EnvironmentalLife(this, this.activeConfig).create();
+    }
 
     // --- Physics groups ---
     this.playerBullets = this.physics.add.group({
@@ -786,10 +793,11 @@ export class GameScene extends Phaser.Scene {
     }
     terrainGfx.generateTexture('bgTerrain', GAME_W, 200);
     terrainGfx.destroy();
-    this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerrain')
-      .setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
-
-    this.makeBackgroundDomes();
+    if (!this.activeConfig?.template.map) {
+      this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerrain')
+        .setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
+      this.makeBackgroundDomes();
+    }
 
     if (this.activeConfig?.nodeIndex === 0) this.makeSurfaceSignature();
   }

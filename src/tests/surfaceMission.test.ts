@@ -34,6 +34,7 @@ function sceneFixture() {
     hostileCombat: { register: vi.fn() },
     spawnFloatingText: vi.fn(),
     getApproxGroundY: () => 960,
+    levelTemplate: {},
   };
   return { scene, events, player, key };
 }

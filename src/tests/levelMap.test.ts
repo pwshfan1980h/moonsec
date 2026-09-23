@@ -38,7 +38,7 @@ describe('Surface Ops text map', () => {
   it('is the full 200 x 34 mission with a continuous floor at row 30', () => {
     expect([map.cols, map.rows]).toEqual([200, 34]);
     expect(TMPL_SURFACE_OPS.groundRow).toBe(30);
-    const floor = map.cells[30].filter((c) => c === 'solid').length;
+    const floor = map.cells[30].filter((c) => c === 'solid' || c === 'plate').length;
     expect(floor).toBeGreaterThan(map.cols * 0.8);
     for (let c = 0; c < map.cols; c++) expect(map.cells.some((row) => row[c] !== 'empty'), `col ${c}`).toBe(true);
   });

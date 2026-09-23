@@ -93,7 +93,8 @@ function drawSilo(d: DrawApi): void {
   d.R(7, 22, 2, 10, 'amber1'); d.R(7, 34, 2, 3, 'amber1'); d.R(9, 22, 1, 15, 'amber0');
 }
 
-// ── shipping container ──────────────────────────────────────────────────────
+// ── shipping container: exactly one 4×2-cell map block (64×32 native) ─────────
+export const CONTAINER_W = 64, CONTAINER_H = 32;
 const CONTAINER_RAMPS: Record<'amber' | 'cold' | 'hull', readonly PaletteName[]> = {
   amber: ['hull1', 'regolith0', 'amber0', 'amber1'],
   cold: ['cold0', 'cold1', 'cold2', 'hull5'],
@@ -102,7 +103,7 @@ const CONTAINER_RAMPS: Record<'amber' | 'cold' | 'hull', readonly PaletteName[]>
 
 function drawContainer(tone: keyof typeof CONTAINER_RAMPS): (d: DrawApi) => void {
   const r = CONTAINER_RAMPS[tone];
-  const W = 48, H = 24;
+  const W = CONTAINER_W, H = CONTAINER_H;
   return (d) => {
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const rib = x % 4 < 2 ? 0.14 : -0.1;
@@ -113,8 +114,8 @@ function drawContainer(tone: keyof typeof CONTAINER_RAMPS): (d: DrawApi) => void
     for (const [cx, cy] of [[0, 0], [W - 3, 0], [0, H - 3], [W - 3, H - 3]]) { d.R(cx, cy, 3, 3, 'hull3'); d.px(cx + 1, cy + 1, 'hull0'); }
     // door end with lock rods and handles
     d.R(W - 10, 2, 1, H - 4, 'hull1');
-    for (const lx of [W - 7, W - 4]) { d.R(lx, 2, 1, H - 4, 'hull5'); d.R(lx - 1, 11, 3, 2, 'hull4'); }
-    d.R(4, 5, 8, 1, 'hull6'); d.R(4, 7, 5, 1, 'hull6'); d.R(14, 5, 2, 3, 'hull6');
+    for (const lx of [W - 7, W - 4]) { d.R(lx, 2, 1, H - 4, 'hull5'); d.R(lx - 1, 14, 3, 2, 'hull4'); }
+    d.R(5, 6, 10, 1, 'hull6'); d.R(5, 8, 6, 1, 'hull6'); d.R(17, 6, 2, 3, 'hull6');
   };
 }
 
@@ -129,6 +130,19 @@ function drawGantryColumn(d: DrawApi): void {
   }
   plate(d, 0, 0, W, 3, 'hull4', 'hull5', 'hull2');
   plate(d, 0, H - 3, W, 3, 'hull3', 'hull4', 'hull1');
+}
+
+/** One 16-native-tall lattice bay; stack to any height (anchored top-left). */
+function drawGantrySegment(d: DrawApi): void {
+  const W = 14;
+  for (const x of [0, W - 3]) { d.R(x, 0, 3, 16, 'hull3'); d.R(x, 0, 1, 16, 'hull4'); d.R(x + 2, 0, 1, 16, 'hull1'); }
+  line(d, 3, 1, W - 4, 15, 'hull2'); line(d, W - 4, 1, 3, 15, 'hull2');
+  d.R(0, 0, W, 2, 'hull3'); d.R(0, 0, W, 1, 'hull4');
+}
+
+function drawGantryFoot(d: DrawApi): void {
+  plate(d, 0, 0, 20, 4, 'hull3', 'hull4', 'hull1');
+  d.px(2, 2, 'hull5'); d.px(17, 2, 'hull5');
 }
 
 function drawGantryBeam(d: DrawApi): void {
@@ -164,6 +178,32 @@ function drawPipeSupport(d: DrawApi): void {
   d.R(4, 6, 2, 14, 'hull3'); d.R(4, 6, 1, 14, 'hull4');
   d.R(0, 0, 10, 2, 'hull3'); d.R(0, 0, 2, 7, 'hull3'); d.R(8, 0, 2, 7, 'hull2'); d.R(0, 0, 10, 1, 'hull4');
   plate(d, 1, 18, 8, 2, 'hull3', 'hull4', 'hull1');
+}
+
+// ── mission relay: equipment cabinet, mast, dish; the screen recess is lit by the mission ──
+/** Screen recess in native pixels, relative to the prop's top-left. */
+export const RELAY_SCREEN = { x: 6, y: 24, w: 16, h: 10 } as const;
+
+function drawRelay(d: DrawApi): void {
+  const W = 28, H = 72;
+  // mast + dish
+  d.R(13, 6, 2, 12, 'hull3'); d.R(13, 6, 1, 12, 'hull4');
+  const cx = 12, cy = 6, R = 6;
+  for (let y = cy - R; y <= cy + R; y++) for (let x = cx - R; x <= cx + R; x++) {
+    const out = (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2, inner = (x + 0.5 - cx - 3) ** 2 + (y + 0.5 - cy + 3) ** 2;
+    if (out > R * R || inner < R * R) continue;
+    d.px(x, y, Math.sqrt(inner) - R < 1.2 ? 'hull5' : 'hull3');
+  }
+  line(d, cx + 1, cy - 1, cx + 5, cy - 5, 'hull4'); d.px(cx + 5, cy - 5, 'cyan2');
+  // cabinet
+  plate(d, 0, 17, W, H - 17, 'hull3', 'hull5', 'hull1');
+  d.R(2, 19, W - 4, 2, 'hull2');
+  d.R(RELAY_SCREEN.x - 1, RELAY_SCREEN.y - 1, RELAY_SCREEN.w + 2, RELAY_SCREEN.h + 2, 'hull1');
+  d.R(RELAY_SCREEN.x, RELAY_SCREEN.y, RELAY_SCREEN.w, RELAY_SCREEN.h, 'hull0');
+  for (let y = 40; y < H - 8; y += 4) { d.R(4, y, 9, 2, 'hull1'); d.R(4, y + 2, 9, 1, 'hull4'); }
+  d.R(16, 40, 8, 20, 'hull2'); d.R(16, 40, 8, 1, 'hull4'); d.R(22, 48, 1, 4, 'hull5');
+  for (let x = 0; x < W; x++) d.R(x, H - 5, 1, 3, ((x >> 2) & 1) ? 'amber1' : 'hull0');
+  plate(d, -1, H - 2, W + 2, 2, 'hull2', 'hull3', 'hull0');
 }
 
 // ── lamp post ────────────────────────────────────────────────────────────────
@@ -237,10 +277,13 @@ function drawCrate(d: DrawApi): void {
 export const WORLD_PROPS: PartSet = {
   dome: { w: DOME_W, h: DOME_H, px: DOME_W / 2, py: DOME_H, draw: drawDome },
   silo: { w: 32, h: 76, px: 16, py: 76, draw: drawSilo },
-  containerAmber: { w: 48, h: 24, px: 24, py: 24, draw: drawContainer('amber') },
-  containerCold: { w: 48, h: 24, px: 24, py: 24, draw: drawContainer('cold') },
-  containerHull: { w: 48, h: 24, px: 24, py: 24, draw: drawContainer('hull') },
+  containerAmber: { w: CONTAINER_W, h: CONTAINER_H, px: CONTAINER_W / 2, py: CONTAINER_H, draw: drawContainer('amber') },
+  containerCold: { w: CONTAINER_W, h: CONTAINER_H, px: CONTAINER_W / 2, py: CONTAINER_H, draw: drawContainer('cold') },
+  containerHull: { w: CONTAINER_W, h: CONTAINER_H, px: CONTAINER_W / 2, py: CONTAINER_H, draw: drawContainer('hull') },
   gantryColumn: { w: 14, h: 96, px: 7, py: 96, draw: drawGantryColumn },
+  /** Anchored top-left: stack downward to build a support of any height. */
+  gantrySegment: { w: 14, h: 16, px: 0, py: 0, draw: drawGantrySegment },
+  gantryFoot: { w: 20, h: 4, px: 10, py: 4, draw: drawGantryFoot },
   /** Anchored top-left: lay beams end to end. */
   gantryBeam: { w: 64, h: 12, px: 0, py: 0, draw: drawGantryBeam },
   bulkhead: { w: 30, h: 44, px: 15, py: 44, draw: drawBulkhead },
@@ -248,6 +291,7 @@ export const WORLD_PROPS: PartSet = {
   pipe: { w: 32, h: 8, px: 0, py: 0, draw: drawPipe },
   pipeSupport: { w: 10, h: 20, px: 5, py: 20, draw: drawPipeSupport },
   lamp: { w: 8, h: 44, px: 4, py: 44, draw: drawLamp },
+  relay: { w: 28, h: 72, px: 14, py: 72, draw: drawRelay },
   antenna: { w: 30, h: 92, px: 15, py: 92, draw: drawAntenna },
   solar: { w: 44, h: 30, px: 22, py: 30, draw: drawSolar },
   boulderS: { w: 10, h: 7, px: 5, py: 7, draw: drawBoulder(10, 7, 1) },
