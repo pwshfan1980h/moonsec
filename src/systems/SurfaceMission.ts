@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
-import { SurfaceEnemy } from '../entities/SurfaceEnemy';
-import { SurfaceWarden } from '../entities/SurfaceWarden';
 import { EncounterSchedule, SURFACE_ENCOUNTERS, SURFACE_MAX_ATTACKERS, type SurfaceEnemyRole } from '../data/surfaceMission';
+import type { RiggedHostile } from '../entities/RiggedHostile';
+import { Burrower, Prowler, Ram, Spotter, Stilt, TrainingTarget } from '../entities/foes/surface';
+import { Warden } from '../entities/foes/bosses';
 import { HEAL } from '../balance/armor';
 import { pal } from '../render/palette';
 
@@ -16,7 +17,6 @@ export class SurfaceMission {
   objective: MissionObjective = { title: '', detail: '', x: 650, progress: 0 };
   private actions = new Set<string>();
   private targetDown = false;
-  private attackers = new Set<SurfaceEnemy>();
   private schedule?: EncounterSchedule;
   private interact: Phaser.Input.Keyboard.Key;
   private relayProgress = 0;
@@ -46,6 +46,7 @@ export class SurfaceMission {
     };
     scene.events.on('bossKilled', onBossKilled);
     this.unsubs.push(() => scene.events.off('bossKilled', onBossKilled));
+    if (scene.ai) Object.assign(scene.ai.tokens.pools, { ranged: SURFACE_MAX_ATTACKERS, melee: 1, artillery: 1 });
     SURFACE_ENCOUNTERS.forEach((e, i) => {
       this.relayLabels.push(scene.add.text(e.relayX, 780, `${String(i + 1).padStart(2, '0')} / ${e.name}`, {
         fontFamily: '"Share Tech Mono", monospace', fontSize: '20px', color: '#aac3d0',
@@ -66,36 +67,22 @@ export class SurfaceMission {
     this.updateObjective();
   }
 
-  private spawnUnit(role: SurfaceEnemyRole, x: number, y: number, defeated: () => void): void {
-    const unit = new SurfaceEnemy(this.scene, x, y, role,
-      enemy => {
-        if (this.attackers.has(enemy)) return true;
-        if (this.attackers.size >= SURFACE_MAX_ATTACKERS) return false;
-        this.attackers.add(enemy); return true;
-      }, enemy => this.attackers.delete(enemy), defeated,
-    );
-    this.connectDamage(unit);
-  }
-
-  private connectDamage(unit: SurfaceEnemy | SurfaceWarden): void {
-    const scene = this.scene;
-    const hit = (a: unknown, b: unknown, missile: boolean) => {
-      const shot = (a === unit ? b : a) as Phaser.Physics.Arcade.Image;
-      if (!shot.active || !unit.active) return;
-      const x = shot.x, y = shot.y;
-      shot.setActive(false).setVisible(false);
-      if (shot.body) (shot.body as Phaser.Physics.Arcade.Body).enable = false;
-      if (missile) shot.setData('hitTarget', true);
-      const rapid = shot.texture.key === 'bullet-rapid';
-      const damage = missile ? 4 : (shot.getData('damage') as number | undefined) ?? 1;
-      unit.takeDamage(unit instanceof SurfaceWarden && rapid ? 0.5 : damage);
-      scene.spawnBulletImpact(x, y, 'enemy');
-      scene.audio.play(missile ? 'explosion' : 'hit');
-      if (missile) scene.spawnMissileBlast(x, y, { primary: unit });
-    };
-    const bullets = scene.physics.add.overlap(scene.playerBullets, unit, (a, b) => hit(a, b, false));
-    const missiles = scene.physics.add.overlap(scene.missiles, unit, (a, b) => hit(a, b, true));
-    unit.once(Phaser.GameObjects.Events.DESTROY, () => { bullets.destroy(); missiles.destroy(); });
+  /** Surface roles are rigged walkers sharing the mission's attack tokens (at most two attack at once). */
+  private spawnUnit(role: SurfaceEnemyRole, x: number, _y: number, defeated: () => void): void {
+    const s = this.scene;
+    const floor = s.ai?.terrain.surfaceBelow(x, 200) ?? s.getApproxGroundY();
+    let unit: RiggedHostile;
+    switch (role) {
+      case 'skirmisher': unit = new Prowler(s, x, floor - 2); break;
+      case 'sniper': unit = new Spotter(s, x, floor - 2); break;
+      case 'charger': unit = new Ram(s, x, floor - 2); break;
+      case 'stilt': unit = new Stilt(s, x, floor - 2); break;
+      case 'burrower': unit = new Burrower(s, x, floor); break;
+      default: unit = new TrainingTarget(s, x, floor - 2); break;
+    }
+    unit.onKilled = defeated;
+    s.hostileCombat.register(unit);
+    if (role !== 'target') s.spawnFloatingText(x, floor - 140, 'INCOMING', '#ffb347', { fontSize: '20px' });
   }
 
   update(_time: number, delta: number): void {
@@ -157,8 +144,8 @@ export class SurfaceMission {
     this.phase = 'boss';
     this.scene.physics.world.setBounds(4900, 0, 1500, 1280);
     this.scene.cameras.main.setBounds(4800, -960, 1600, 2040);
-    const boss = new SurfaceWarden(this.scene);
-    this.connectDamage(boss);
+    const boss = new Warden(this.scene);
+    this.scene.hostileCombat.register(boss);
     this.scene.events.emit('waveStart', 4, 3, 1);
     this.scene.events.emit('dronesRemaining', 1);
     this.scene.events.emit('radioTransmission', 'LUNAR CONTROL', 'Warden inbound. Jump the ground sweep, dash out of marked columns, then fire at its exposed core.', true);
@@ -226,7 +213,6 @@ export class SurfaceMission {
 
   destroy(): void {
     for (const off of this.unsubs) off();
-    this.attackers.clear();
     this.markers.destroy();
     this.relayLabels.forEach(label => label.destroy());
   }

@@ -156,6 +156,16 @@ describe('AttackTokens', () => {
     expect(tokens.count('ranged')).toBe(0);
   });
 
+  it('keeps a released slot closed for the recovery time', () => {
+    const tokens = new AttackTokens({ melee: 1, ranged: 1, artillery: 1, bomb: 1 }, 5, { ranged: 1 });
+    const a = {}, b = {};
+    expect(tokens.acquire(a, 'ranged', 0)).toBe(true);
+    tokens.update(0.5);
+    tokens.release(a);
+    expect(tokens.acquire(b, 'ranged', 1.2)).toBe(false);
+    expect(tokens.acquire(b, 'ranged', 1.6)).toBe(true);
+  });
+
   it('puts flank slots behind the player, above the floor', () => {
     const p = { x: 1000, y: 800 };
     for (let i = 0; i < 3; i++) {

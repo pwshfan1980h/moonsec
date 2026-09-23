@@ -1,4 +1,7 @@
 import { HARROW_PARTS } from './harrow';
+import { FOE_PARTS } from './foes';
+import { FOE_GROUND_PARTS } from './foesGround';
+import { FOE_BOSS_PARTS } from './foesBoss';
 import type { PartSet } from './types';
 
 /**
@@ -7,6 +10,7 @@ import type { PartSet } from './types';
  */
 export const RIG_PARTS: Record<string, PartSet> = {
   harrow: HARROW_PARTS,
+  foe: { ...FOE_PARTS, ...FOE_GROUND_PARTS, ...FOE_BOSS_PARTS },
 };
 
 export const RIG_ATLAS_KEY = 'rig';

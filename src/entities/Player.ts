@@ -180,6 +180,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   get isDead(): boolean { return this.dead; }
+  /** Surge dash in progress (shakes off latched mites, ignores hits). */
+  get surging(): boolean { return this.scene.time.now < this.surgeUntil; }
+  /** Jump jets firing (their blast also shakes off latched mites). */
+  get jetting(): boolean { return this.thrusting; }
+  /** World velocity, for enemies that lead their shots. */
+  get velocity(): { x: number; y: number } { const b = this.body as Phaser.Physics.Arcade.Body; return { x: b.velocity.x, y: b.velocity.y }; }
 
   update(time: number, delta: number): void {
     if (this.dead) return;

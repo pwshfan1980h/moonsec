@@ -9,12 +9,18 @@ export const ARMOR_BASE = 5 * ARMOR_SCALE;
 /** Damage dealt to the player, in armor points. */
 export const DAMAGE = {
   droneBullet: 1 * ARMOR_SCALE,
+  /** One round of a squad burst: a full burst lands about half a legacy hit. */
+  burstRound: ARMOR_SCALE / 4,
+  /** One round of a strafing run. */
+  strafeRound: ARMOR_SCALE / 4,
   sniperBullet: 1 * ARMOR_SCALE,
   bossProjectile: 1 * ARMOR_SCALE,
   swarmling: 1 * ARMOR_SCALE,
   charger: 1 * ARMOR_SCALE,
   wardenSweep: 1 * ARMOR_SCALE,
   bomber: 2 * ARMOR_SCALE,
+  /** One bomb of a MANTA stick of three. */
+  stickBomb: 1 * ARMOR_SCALE,
   mine: 2 * ARMOR_SCALE,
   tankShell: 2 * ARMOR_SCALE,
   ppcRound: 3 * ARMOR_SCALE,

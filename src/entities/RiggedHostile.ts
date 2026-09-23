@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { DamageProfile, Hostile } from '../collisions/HostileCombat';
-import { RigView, type RigSource } from '../rig/view/RigView';
+import { RigView, type RigSource, type RigViewEffects } from '../rig/view/RigView';
 import { RigFx } from '../rig/view/RigFx';
 import type { SocketPose } from '../rig/pose';
 import { VPX } from '../render/GraphicsSettings';
@@ -59,6 +59,8 @@ export abstract class RiggedHostile extends Phaser.Physics.Arcade.Sprite impleme
   readonly radar: { kind: RadarKind; isBoss: boolean };
   readonly view: RigView;
   protected dying = false;
+  /** Called once when the enemy is killed (not when the scene tears down). */
+  onKilled?: () => void;
   protected aiState = 'HOVER';
   private readonly parts: Phaser.GameObjects.GameObject[] = [];
 
@@ -88,8 +90,11 @@ export abstract class RiggedHostile extends Phaser.Physics.Arcade.Sprite impleme
     const dt = Math.min(delta, 50) / 1000;
     if (!this.dying) this.think(dt, time);
     this.animate(dt, time);
-    this.view.sync(this.x, this.y + this.rigOffsetY(), this.facing, this.rig);
+    this.view.sync(this.x, this.y + this.rigOffsetY(), this.facing, this.rig, this.viewFx());
   }
+
+  /** Per-frame silhouette effects (base tint for boss variants, etc.). */
+  protected viewFx(): RigViewEffects { return {}; }
 
   /** World y of the rig origin relative to the sprite (feet vs centre). */
   protected rigOffsetY(): number { return 0; }
@@ -134,11 +139,45 @@ export abstract class RiggedHostile extends Phaser.Physics.Arcade.Sprite impleme
     fx.spark(c.x, c.y, 10);
     this.view.shatter(this.deathTint());
     this.scene.events.emit('droneKilled', this.x, this.y);
+    this.onKilled?.();
     this.scene.ai?.tokens.release(this);
     this.scene.time.delayedCall(60, () => this.destroy());
   }
 
   protected deathTint(): PaletteName { return 'hull3'; }
+
+  /**
+   * Heavy/boss death: a chain of cook-off explosions across the body, then the parts
+   * scatter. `event` is what the kill reports ('droneKilled' or 'bossKilled').
+   */
+  dieStaged(o: { booms: number; event?: 'droneKilled' | 'bossKilled'; spacingMs?: number }): void {
+    if (this.dying) return;
+    this.dying = true;
+    this.aiState = 'DEATH';
+    (this.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.scene.ai?.tokens.release(this);
+    const fx = enemyFx(this.scene);
+    const spacing = o.spacingMs ?? 260;
+    const w = this.opts.bodyW, h = this.opts.bodyH;
+    for (let i = 0; i < o.booms; i++) {
+      this.scene.time.delayedCall(i * spacing, () => {
+        if (!this.scene) return;
+        const x = this.x + (Math.random() - 0.5) * w, y = this.y - (this.opts.originY === 1 ? h / 2 : 0) + (Math.random() - 0.5) * h;
+        this.scene.spawnExplosion(x, y);
+        this.scene.air?.explosion(x, y, i === o.booms - 1);
+        fx.chips(x, y, 3); fx.flame(x, y, 4);
+        this.rig.flash = 0.05;
+        this.scene.cameras.main.shake(120, 0.004);
+      });
+    }
+    this.scene.time.delayedCall(o.booms * spacing, () => {
+      if (!this.scene) return;
+      this.view.shatter(this.deathTint(), 1200);
+      this.scene.events.emit(o.event ?? 'droneKilled', this.x, this.y);
+      this.onKilled?.();
+      this.destroy();
+    });
+  }
 
   destroy(fromScene?: boolean): void {
     this.scene?.ai?.tokens.release(this);

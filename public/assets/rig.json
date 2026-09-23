@@ -1,8 +1,168 @@
 {
  "frames": {
-  "harrow/torso@e": {
+  "foe/ward_hull@e": {
    "frame": {
     "x": 1,
+    "y": 1,
+    "w": 60,
+    "h": 30
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 60,
+    "h": 30
+   },
+   "sourceSize": {
+    "w": 60,
+    "h": 30
+   }
+  },
+  "foe/ward_hull@f": {
+   "frame": {
+    "x": 62,
+    "y": 1,
+    "w": 60,
+    "h": 30
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 60,
+    "h": 30
+   },
+   "sourceSize": {
+    "w": 60,
+    "h": 30
+   }
+  },
+  "foe/ward_hull@fe": {
+   "frame": {
+    "x": 123,
+    "y": 1,
+    "w": 60,
+    "h": 30
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 60,
+    "h": 30
+   },
+   "sourceSize": {
+    "w": 60,
+    "h": 30
+   }
+  },
+  "foe/ward_hull@n": {
+   "frame": {
+    "x": 184,
+    "y": 1,
+    "w": 60,
+    "h": 30
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 60,
+    "h": 30
+   },
+   "sourceSize": {
+    "w": 60,
+    "h": 30
+   }
+  },
+  "foe/bul_shield@e": {
+   "frame": {
+    "x": 245,
+    "y": 1,
+    "w": 8,
+    "h": 26
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 26
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 26
+   }
+  },
+  "foe/bul_shield@f": {
+   "frame": {
+    "x": 254,
+    "y": 1,
+    "w": 8,
+    "h": 26
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 26
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 26
+   }
+  },
+  "foe/bul_shield@fe": {
+   "frame": {
+    "x": 263,
+    "y": 1,
+    "w": 8,
+    "h": 26
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 26
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 26
+   }
+  },
+  "foe/bul_shield@n": {
+   "frame": {
+    "x": 272,
+    "y": 1,
+    "w": 8,
+    "h": 26
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 26
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 26
+   }
+  },
+  "harrow/torso@e": {
+   "frame": {
+    "x": 281,
     "y": 1,
     "w": 38,
     "h": 25
@@ -22,7 +182,7 @@
   },
   "harrow/torso@f": {
    "frame": {
-    "x": 40,
+    "x": 320,
     "y": 1,
     "w": 38,
     "h": 25
@@ -42,7 +202,7 @@
   },
   "harrow/torso@fe": {
    "frame": {
-    "x": 79,
+    "x": 359,
     "y": 1,
     "w": 38,
     "h": 25
@@ -62,7 +222,7 @@
   },
   "harrow/torso@n": {
    "frame": {
-    "x": 118,
+    "x": 398,
     "y": 1,
     "w": 38,
     "h": 25
@@ -80,10 +240,170 @@
     "h": 25
    }
   },
+  "foe/nexus_hull@e": {
+   "frame": {
+    "x": 437,
+    "y": 1,
+    "w": 44,
+    "h": 24
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 24
+   },
+   "sourceSize": {
+    "w": 44,
+    "h": 24
+   }
+  },
+  "foe/nexus_hull@f": {
+   "frame": {
+    "x": 1,
+    "y": 32,
+    "w": 44,
+    "h": 24
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 24
+   },
+   "sourceSize": {
+    "w": 44,
+    "h": 24
+   }
+  },
+  "foe/nexus_hull@fe": {
+   "frame": {
+    "x": 46,
+    "y": 32,
+    "w": 44,
+    "h": 24
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 24
+   },
+   "sourceSize": {
+    "w": 44,
+    "h": 24
+   }
+  },
+  "foe/nexus_hull@n": {
+   "frame": {
+    "x": 91,
+    "y": 32,
+    "w": 44,
+    "h": 24
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 24
+   },
+   "sourceSize": {
+    "w": 44,
+    "h": 24
+   }
+  },
+  "foe/brood_hull@e": {
+   "frame": {
+    "x": 136,
+    "y": 32,
+    "w": 48,
+    "h": 20
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 48,
+    "h": 20
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 20
+   }
+  },
+  "foe/brood_hull@f": {
+   "frame": {
+    "x": 185,
+    "y": 32,
+    "w": 48,
+    "h": 20
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 48,
+    "h": 20
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 20
+   }
+  },
+  "foe/brood_hull@fe": {
+   "frame": {
+    "x": 234,
+    "y": 32,
+    "w": 48,
+    "h": 20
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 48,
+    "h": 20
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 20
+   }
+  },
+  "foe/brood_hull@n": {
+   "frame": {
+    "x": 283,
+    "y": 32,
+    "w": 48,
+    "h": 20
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 48,
+    "h": 20
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 20
+   }
+  },
   "harrow/antenna@e": {
    "frame": {
-    "x": 157,
-    "y": 1,
+    "x": 332,
+    "y": 32,
     "w": 5,
     "h": 19
    },
@@ -102,8 +422,8 @@
   },
   "harrow/antenna@f": {
    "frame": {
-    "x": 163,
-    "y": 1,
+    "x": 338,
+    "y": 32,
     "w": 5,
     "h": 19
    },
@@ -122,8 +442,8 @@
   },
   "harrow/antenna@fe": {
    "frame": {
-    "x": 169,
-    "y": 1,
+    "x": 344,
+    "y": 32,
     "w": 5,
     "h": 19
    },
@@ -142,8 +462,8 @@
   },
   "harrow/antenna@n": {
    "frame": {
-    "x": 175,
-    "y": 1,
+    "x": 350,
+    "y": 32,
     "w": 5,
     "h": 19
    },
@@ -160,10 +480,810 @@
     "h": 19
    }
   },
-  "harrow/cannon@e": {
+  "foe/bul_hull@e": {
+   "frame": {
+    "x": 356,
+    "y": 32,
+    "w": 28,
+    "h": 18
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 28,
+    "h": 18
+   },
+   "sourceSize": {
+    "w": 28,
+    "h": 18
+   }
+  },
+  "foe/bul_hull@f": {
+   "frame": {
+    "x": 385,
+    "y": 32,
+    "w": 28,
+    "h": 18
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 28,
+    "h": 18
+   },
+   "sourceSize": {
+    "w": 28,
+    "h": 18
+   }
+  },
+  "foe/bul_hull@fe": {
+   "frame": {
+    "x": 414,
+    "y": 32,
+    "w": 28,
+    "h": 18
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 28,
+    "h": 18
+   },
+   "sourceSize": {
+    "w": 28,
+    "h": 18
+   }
+  },
+  "foe/bul_hull@n": {
+   "frame": {
+    "x": 443,
+    "y": 32,
+    "w": 28,
+    "h": 18
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 28,
+    "h": 18
+   },
+   "sourceSize": {
+    "w": 28,
+    "h": 18
+   }
+  },
+  "foe/burr_body@e": {
+   "frame": {
+    "x": 472,
+    "y": 32,
+    "w": 18,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 16
+   }
+  },
+  "foe/burr_body@f": {
+   "frame": {
+    "x": 491,
+    "y": 32,
+    "w": 18,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 16
+   }
+  },
+  "foe/burr_body@fe": {
+   "frame": {
+    "x": 1,
+    "y": 57,
+    "w": 18,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 16
+   }
+  },
+  "foe/burr_body@n": {
+   "frame": {
+    "x": 20,
+    "y": 57,
+    "w": 18,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 16
+   }
+  },
+  "foe/heron_body@e": {
+   "frame": {
+    "x": 39,
+    "y": 57,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/heron_body@f": {
+   "frame": {
+    "x": 58,
+    "y": 57,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/heron_body@fe": {
+   "frame": {
+    "x": 77,
+    "y": 57,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/heron_body@n": {
+   "frame": {
+    "x": 96,
+    "y": 57,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/long_hull@e": {
+   "frame": {
+    "x": 115,
+    "y": 57,
+    "w": 30,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 30,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 30,
+    "h": 14
+   }
+  },
+  "foe/long_hull@f": {
+   "frame": {
+    "x": 146,
+    "y": 57,
+    "w": 30,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 30,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 30,
+    "h": 14
+   }
+  },
+  "foe/long_hull@fe": {
+   "frame": {
+    "x": 177,
+    "y": 57,
+    "w": 30,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 30,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 30,
+    "h": 14
+   }
+  },
+  "foe/long_hull@n": {
+   "frame": {
+    "x": 208,
+    "y": 57,
+    "w": 30,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 30,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 30,
+    "h": 14
+   }
+  },
+  "foe/ram_hull@e": {
+   "frame": {
+    "x": 239,
+    "y": 57,
+    "w": 29,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 14
+   }
+  },
+  "foe/ram_hull@f": {
+   "frame": {
+    "x": 269,
+    "y": 57,
+    "w": 29,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 14
+   }
+  },
+  "foe/ram_hull@fe": {
+   "frame": {
+    "x": 299,
+    "y": 57,
+    "w": 29,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 14
+   }
+  },
+  "foe/ram_hull@n": {
+   "frame": {
+    "x": 329,
+    "y": 57,
+    "w": 29,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 14
+   }
+  },
+  "foe/stilt_gondola@e": {
+   "frame": {
+    "x": 359,
+    "y": 57,
+    "w": 20,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 14
+   }
+  },
+  "foe/stilt_gondola@f": {
+   "frame": {
+    "x": 380,
+    "y": 57,
+    "w": 20,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 14
+   }
+  },
+  "foe/stilt_gondola@fe": {
+   "frame": {
+    "x": 401,
+    "y": 57,
+    "w": 20,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 14
+   }
+  },
+  "foe/stilt_gondola@n": {
+   "frame": {
+    "x": 422,
+    "y": 57,
+    "w": 20,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 14
+   }
+  },
+  "foe/ward_shutter@e": {
+   "frame": {
+    "x": 443,
+    "y": 57,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/ward_shutter@f": {
+   "frame": {
+    "x": 462,
+    "y": 57,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/ward_shutter@fe": {
+   "frame": {
+    "x": 481,
+    "y": 57,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/ward_shutter@n": {
+   "frame": {
+    "x": 1,
+    "y": 74,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "foe/nexus_head@e": {
+   "frame": {
+    "x": 20,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/nexus_head@f": {
+   "frame": {
+    "x": 43,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/nexus_head@fe": {
+   "frame": {
+    "x": 66,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/nexus_head@n": {
+   "frame": {
+    "x": 89,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/ward_dish@e": {
+   "frame": {
+    "x": 112,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/ward_dish@f": {
+   "frame": {
+    "x": 135,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/ward_dish@fe": {
+   "frame": {
+    "x": 158,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/ward_dish@n": {
    "frame": {
     "x": 181,
-    "y": 1,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/wasp_body@e": {
+   "frame": {
+    "x": 204,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/wasp_body@f": {
+   "frame": {
+    "x": 227,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/wasp_body@fe": {
+   "frame": {
+    "x": 250,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "foe/wasp_body@n": {
+   "frame": {
+    "x": 273,
+    "y": 74,
+    "w": 22,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 13
+   }
+  },
+  "harrow/cannon@e": {
+   "frame": {
+    "x": 296,
+    "y": 74,
     "w": 27,
     "h": 13
    },
@@ -182,8 +1302,8 @@
   },
   "harrow/cannon@f": {
    "frame": {
-    "x": 209,
-    "y": 1,
+    "x": 324,
+    "y": 74,
     "w": 27,
     "h": 13
    },
@@ -202,8 +1322,8 @@
   },
   "harrow/cannon@fe": {
    "frame": {
-    "x": 237,
-    "y": 1,
+    "x": 352,
+    "y": 74,
     "w": 27,
     "h": 13
    },
@@ -222,8 +1342,8 @@
   },
   "harrow/cannon@n": {
    "frame": {
-    "x": 265,
-    "y": 1,
+    "x": 380,
+    "y": 74,
     "w": 27,
     "h": 13
    },
@@ -242,8 +1362,8 @@
   },
   "harrow/gatling@e": {
    "frame": {
-    "x": 293,
-    "y": 1,
+    "x": 408,
+    "y": 74,
     "w": 22,
     "h": 13
    },
@@ -262,8 +1382,8 @@
   },
   "harrow/gatling@f": {
    "frame": {
-    "x": 316,
-    "y": 1,
+    "x": 431,
+    "y": 74,
     "w": 22,
     "h": 13
    },
@@ -282,8 +1402,8 @@
   },
   "harrow/gatling@fe": {
    "frame": {
-    "x": 339,
-    "y": 1,
+    "x": 454,
+    "y": 74,
     "w": 22,
     "h": 13
    },
@@ -302,8 +1422,8 @@
   },
   "harrow/gatling@n": {
    "frame": {
-    "x": 362,
-    "y": 1,
+    "x": 477,
+    "y": 74,
     "w": 22,
     "h": 13
    },
@@ -320,10 +1440,170 @@
     "h": 13
    }
   },
+  "foe/prow_hull@e": {
+   "frame": {
+    "x": 1,
+    "y": 89,
+    "w": 16,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 12
+   }
+  },
+  "foe/prow_hull@f": {
+   "frame": {
+    "x": 18,
+    "y": 89,
+    "w": 16,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 12
+   }
+  },
+  "foe/prow_hull@fe": {
+   "frame": {
+    "x": 35,
+    "y": 89,
+    "w": 16,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 12
+   }
+  },
+  "foe/prow_hull@n": {
+   "frame": {
+    "x": 52,
+    "y": 89,
+    "w": 16,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 12
+   }
+  },
+  "foe/spot_body@e": {
+   "frame": {
+    "x": 69,
+    "y": 89,
+    "w": 14,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 12
+   }
+  },
+  "foe/spot_body@f": {
+   "frame": {
+    "x": 84,
+    "y": 89,
+    "w": 14,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 12
+   }
+  },
+  "foe/spot_body@fe": {
+   "frame": {
+    "x": 99,
+    "y": 89,
+    "w": 14,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 12
+   }
+  },
+  "foe/spot_body@n": {
+   "frame": {
+    "x": 114,
+    "y": 89,
+    "w": 14,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 12
+   }
+  },
   "harrow/thigh@e": {
    "frame": {
-    "x": 385,
-    "y": 1,
+    "x": 129,
+    "y": 89,
     "w": 21,
     "h": 12
    },
@@ -342,8 +1622,8 @@
   },
   "harrow/thigh@f": {
    "frame": {
-    "x": 407,
-    "y": 1,
+    "x": 151,
+    "y": 89,
     "w": 21,
     "h": 12
    },
@@ -362,8 +1642,8 @@
   },
   "harrow/thigh@fe": {
    "frame": {
-    "x": 429,
-    "y": 1,
+    "x": 173,
+    "y": 89,
     "w": 21,
     "h": 12
    },
@@ -382,8 +1662,8 @@
   },
   "harrow/thigh@n": {
    "frame": {
-    "x": 451,
-    "y": 1,
+    "x": 195,
+    "y": 89,
     "w": 21,
     "h": 12
    },
@@ -400,10 +1680,330 @@
     "h": 12
    }
   },
+  "foe/burr_drill@e": {
+   "frame": {
+    "x": 217,
+    "y": 89,
+    "w": 10,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 11
+   }
+  },
+  "foe/burr_drill@f": {
+   "frame": {
+    "x": 228,
+    "y": 89,
+    "w": 10,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 11
+   }
+  },
+  "foe/burr_drill@fe": {
+   "frame": {
+    "x": 239,
+    "y": 89,
+    "w": 10,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 11
+   }
+  },
+  "foe/burr_drill@n": {
+   "frame": {
+    "x": 250,
+    "y": 89,
+    "w": 10,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 11
+   }
+  },
+  "foe/hornet_body@e": {
+   "frame": {
+    "x": 261,
+    "y": 89,
+    "w": 29,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 11
+   }
+  },
+  "foe/hornet_body@f": {
+   "frame": {
+    "x": 291,
+    "y": 89,
+    "w": 29,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 11
+   }
+  },
+  "foe/hornet_body@fe": {
+   "frame": {
+    "x": 321,
+    "y": 89,
+    "w": 29,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 11
+   }
+  },
+  "foe/hornet_body@n": {
+   "frame": {
+    "x": 351,
+    "y": 89,
+    "w": 29,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 11
+   }
+  },
+  "foe/ward_arm@e": {
+   "frame": {
+    "x": 381,
+    "y": 89,
+    "w": 34,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 11
+   }
+  },
+  "foe/ward_arm@f": {
+   "frame": {
+    "x": 416,
+    "y": 89,
+    "w": 34,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 11
+   }
+  },
+  "foe/ward_arm@fe": {
+   "frame": {
+    "x": 451,
+    "y": 89,
+    "w": 34,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 11
+   }
+  },
+  "foe/ward_arm@n": {
+   "frame": {
+    "x": 1,
+    "y": 102,
+    "w": 34,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 11
+   }
+  },
+  "foe/ward_thigh@e": {
+   "frame": {
+    "x": 36,
+    "y": 102,
+    "w": 24,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 11
+   }
+  },
+  "foe/ward_thigh@f": {
+   "frame": {
+    "x": 61,
+    "y": 102,
+    "w": 24,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 11
+   }
+  },
+  "foe/ward_thigh@fe": {
+   "frame": {
+    "x": 86,
+    "y": 102,
+    "w": 24,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 11
+   }
+  },
+  "foe/ward_thigh@n": {
+   "frame": {
+    "x": 111,
+    "y": 102,
+    "w": 24,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 11
+   }
+  },
   "harrow/pod@e": {
    "frame": {
-    "x": 473,
-    "y": 1,
+    "x": 136,
+    "y": 102,
     "w": 16,
     "h": 11
    },
@@ -422,8 +2022,8 @@
   },
   "harrow/pod@f": {
    "frame": {
-    "x": 490,
-    "y": 1,
+    "x": 153,
+    "y": 102,
     "w": 16,
     "h": 11
    },
@@ -442,8 +2042,8 @@
   },
   "harrow/pod@fe": {
    "frame": {
-    "x": 1,
-    "y": 27,
+    "x": 170,
+    "y": 102,
     "w": 16,
     "h": 11
    },
@@ -462,8 +2062,8 @@
   },
   "harrow/pod@n": {
    "frame": {
-    "x": 18,
-    "y": 27,
+    "x": 187,
+    "y": 102,
     "w": 16,
     "h": 11
    },
@@ -480,10 +2080,170 @@
     "h": 11
    }
   },
+  "foe/manta_body@e": {
+   "frame": {
+    "x": 204,
+    "y": 102,
+    "w": 32,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 10
+   }
+  },
+  "foe/manta_body@f": {
+   "frame": {
+    "x": 237,
+    "y": 102,
+    "w": 32,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 10
+   }
+  },
+  "foe/manta_body@fe": {
+   "frame": {
+    "x": 270,
+    "y": 102,
+    "w": 32,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 10
+   }
+  },
+  "foe/manta_body@n": {
+   "frame": {
+    "x": 303,
+    "y": 102,
+    "w": 32,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 10
+   }
+  },
+  "foe/nexus_pod@e": {
+   "frame": {
+    "x": 336,
+    "y": 102,
+    "w": 14,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 10
+   }
+  },
+  "foe/nexus_pod@f": {
+   "frame": {
+    "x": 351,
+    "y": 102,
+    "w": 14,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 10
+   }
+  },
+  "foe/nexus_pod@fe": {
+   "frame": {
+    "x": 366,
+    "y": 102,
+    "w": 14,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 10
+   }
+  },
+  "foe/nexus_pod@n": {
+   "frame": {
+    "x": 381,
+    "y": 102,
+    "w": 14,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 10
+   }
+  },
   "harrow/shin@e": {
    "frame": {
-    "x": 35,
-    "y": 27,
+    "x": 396,
+    "y": 102,
     "w": 25,
     "h": 10
    },
@@ -502,8 +2262,8 @@
   },
   "harrow/shin@f": {
    "frame": {
-    "x": 61,
-    "y": 27,
+    "x": 422,
+    "y": 102,
     "w": 25,
     "h": 10
    },
@@ -522,8 +2282,8 @@
   },
   "harrow/shin@fe": {
    "frame": {
-    "x": 87,
-    "y": 27,
+    "x": 448,
+    "y": 102,
     "w": 25,
     "h": 10
    },
@@ -542,8 +2302,8 @@
   },
   "harrow/shin@n": {
    "frame": {
-    "x": 113,
-    "y": 27,
+    "x": 474,
+    "y": 102,
     "w": 25,
     "h": 10
    },
@@ -560,10 +2320,410 @@
     "h": 10
    }
   },
+  "foe/jackal_body@e": {
+   "frame": {
+    "x": 1,
+    "y": 114,
+    "w": 20,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 9
+   }
+  },
+  "foe/jackal_body@f": {
+   "frame": {
+    "x": 22,
+    "y": 114,
+    "w": 20,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 9
+   }
+  },
+  "foe/jackal_body@fe": {
+   "frame": {
+    "x": 43,
+    "y": 114,
+    "w": 20,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 9
+   }
+  },
+  "foe/jackal_body@n": {
+   "frame": {
+    "x": 64,
+    "y": 114,
+    "w": 20,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 9
+   }
+  },
+  "foe/manta_bomb@e": {
+   "frame": {
+    "x": 85,
+    "y": 114,
+    "w": 7,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 9
+   }
+  },
+  "foe/manta_bomb@f": {
+   "frame": {
+    "x": 93,
+    "y": 114,
+    "w": 7,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 9
+   }
+  },
+  "foe/manta_bomb@fe": {
+   "frame": {
+    "x": 101,
+    "y": 114,
+    "w": 7,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 9
+   }
+  },
+  "foe/manta_bomb@n": {
+   "frame": {
+    "x": 109,
+    "y": 114,
+    "w": 7,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 9
+   }
+  },
+  "foe/scut_head@e": {
+   "frame": {
+    "x": 117,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/scut_head@f": {
+   "frame": {
+    "x": 131,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/scut_head@fe": {
+   "frame": {
+    "x": 145,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/scut_head@n": {
+   "frame": {
+    "x": 159,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/tick_body@e": {
+   "frame": {
+    "x": 173,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/tick_body@f": {
+   "frame": {
+    "x": 187,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/tick_body@fe": {
+   "frame": {
+    "x": 201,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/tick_body@n": {
+   "frame": {
+    "x": 215,
+    "y": 114,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "foe/ward_shin@e": {
+   "frame": {
+    "x": 229,
+    "y": 114,
+    "w": 26,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 26,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 26,
+    "h": 9
+   }
+  },
+  "foe/ward_shin@f": {
+   "frame": {
+    "x": 256,
+    "y": 114,
+    "w": 26,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 26,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 26,
+    "h": 9
+   }
+  },
+  "foe/ward_shin@fe": {
+   "frame": {
+    "x": 283,
+    "y": 114,
+    "w": 26,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 26,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 26,
+    "h": 9
+   }
+  },
+  "foe/ward_shin@n": {
+   "frame": {
+    "x": 310,
+    "y": 114,
+    "w": 26,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 26,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 26,
+    "h": 9
+   }
+  },
   "harrow/barrelsA@e": {
    "frame": {
-    "x": 139,
-    "y": 27,
+    "x": 337,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -582,8 +2742,8 @@
   },
   "harrow/barrelsA@f": {
    "frame": {
-    "x": 157,
-    "y": 27,
+    "x": 355,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -602,8 +2762,8 @@
   },
   "harrow/barrelsA@fe": {
    "frame": {
-    "x": 175,
-    "y": 27,
+    "x": 373,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -622,8 +2782,8 @@
   },
   "harrow/barrelsA@n": {
    "frame": {
-    "x": 193,
-    "y": 27,
+    "x": 391,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -642,8 +2802,8 @@
   },
   "harrow/barrelsB@e": {
    "frame": {
-    "x": 211,
-    "y": 27,
+    "x": 409,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -662,8 +2822,8 @@
   },
   "harrow/barrelsB@f": {
    "frame": {
-    "x": 229,
-    "y": 27,
+    "x": 427,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -682,8 +2842,8 @@
   },
   "harrow/barrelsB@fe": {
    "frame": {
-    "x": 247,
-    "y": 27,
+    "x": 445,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -702,8 +2862,8 @@
   },
   "harrow/barrelsB@n": {
    "frame": {
-    "x": 265,
-    "y": 27,
+    "x": 463,
+    "y": 114,
     "w": 17,
     "h": 9
    },
@@ -722,8 +2882,8 @@
   },
   "harrow/flashBig@e": {
    "frame": {
-    "x": 283,
-    "y": 27,
+    "x": 481,
+    "y": 114,
     "w": 11,
     "h": 9
    },
@@ -742,8 +2902,8 @@
   },
   "harrow/flashBig@f": {
    "frame": {
-    "x": 295,
-    "y": 27,
+    "x": 493,
+    "y": 114,
     "w": 11,
     "h": 9
    },
@@ -762,8 +2922,8 @@
   },
   "harrow/flashBig@fe": {
    "frame": {
-    "x": 307,
-    "y": 27,
+    "x": 1,
+    "y": 124,
     "w": 11,
     "h": 9
    },
@@ -782,8 +2942,8 @@
   },
   "harrow/flashBig@n": {
    "frame": {
-    "x": 319,
-    "y": 27,
+    "x": 13,
+    "y": 124,
     "w": 11,
     "h": 9
    },
@@ -802,8 +2962,8 @@
   },
   "harrow/plate@e": {
    "frame": {
-    "x": 331,
-    "y": 27,
+    "x": 25,
+    "y": 124,
     "w": 10,
     "h": 9
    },
@@ -822,8 +2982,8 @@
   },
   "harrow/plate@f": {
    "frame": {
-    "x": 342,
-    "y": 27,
+    "x": 36,
+    "y": 124,
     "w": 10,
     "h": 9
    },
@@ -842,8 +3002,8 @@
   },
   "harrow/plate@fe": {
    "frame": {
-    "x": 353,
-    "y": 27,
+    "x": 47,
+    "y": 124,
     "w": 10,
     "h": 9
    },
@@ -862,8 +3022,8 @@
   },
   "harrow/plate@n": {
    "frame": {
-    "x": 364,
-    "y": 27,
+    "x": 58,
+    "y": 124,
     "w": 10,
     "h": 9
    },
@@ -880,10 +3040,330 @@
     "h": 9
    }
   },
+  "foe/brood_pod@e": {
+   "frame": {
+    "x": 69,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/brood_pod@f": {
+   "frame": {
+    "x": 80,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/brood_pod@fe": {
+   "frame": {
+    "x": 91,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/brood_pod@n": {
+   "frame": {
+    "x": 102,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/bul_thigh@e": {
+   "frame": {
+    "x": 113,
+    "y": 124,
+    "w": 17,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 8
+   }
+  },
+  "foe/bul_thigh@f": {
+   "frame": {
+    "x": 131,
+    "y": 124,
+    "w": 17,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 8
+   }
+  },
+  "foe/bul_thigh@fe": {
+   "frame": {
+    "x": 149,
+    "y": 124,
+    "w": 17,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 8
+   }
+  },
+  "foe/bul_thigh@n": {
+   "frame": {
+    "x": 167,
+    "y": 124,
+    "w": 17,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 8
+   }
+  },
+  "foe/scut_seg@e": {
+   "frame": {
+    "x": 185,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/scut_seg@f": {
+   "frame": {
+    "x": 196,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/scut_seg@fe": {
+   "frame": {
+    "x": 207,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/scut_seg@n": {
+   "frame": {
+    "x": 218,
+    "y": 124,
+    "w": 10,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 8
+   }
+  },
+  "foe/ward_foot@e": {
+   "frame": {
+    "x": 229,
+    "y": 124,
+    "w": 20,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 8
+   }
+  },
+  "foe/ward_foot@f": {
+   "frame": {
+    "x": 250,
+    "y": 124,
+    "w": 20,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 8
+   }
+  },
+  "foe/ward_foot@fe": {
+   "frame": {
+    "x": 271,
+    "y": 124,
+    "w": 20,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 8
+   }
+  },
+  "foe/ward_foot@n": {
+   "frame": {
+    "x": 292,
+    "y": 124,
+    "w": 20,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 20,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 20,
+    "h": 8
+   }
+  },
   "harrow/core@e": {
    "frame": {
-    "x": 375,
-    "y": 27,
+    "x": 313,
+    "y": 124,
     "w": 9,
     "h": 8
    },
@@ -902,8 +3382,8 @@
   },
   "harrow/core@f": {
    "frame": {
-    "x": 385,
-    "y": 27,
+    "x": 323,
+    "y": 124,
     "w": 9,
     "h": 8
    },
@@ -922,8 +3402,8 @@
   },
   "harrow/core@fe": {
    "frame": {
-    "x": 395,
-    "y": 27,
+    "x": 333,
+    "y": 124,
     "w": 9,
     "h": 8
    },
@@ -942,8 +3422,8 @@
   },
   "harrow/core@n": {
    "frame": {
-    "x": 405,
-    "y": 27,
+    "x": 343,
+    "y": 124,
     "w": 9,
     "h": 8
    },
@@ -962,8 +3442,8 @@
   },
   "harrow/foot@e": {
    "frame": {
-    "x": 415,
-    "y": 27,
+    "x": 353,
+    "y": 124,
     "w": 17,
     "h": 8
    },
@@ -982,8 +3462,8 @@
   },
   "harrow/foot@f": {
    "frame": {
-    "x": 433,
-    "y": 27,
+    "x": 371,
+    "y": 124,
     "w": 17,
     "h": 8
    },
@@ -1002,8 +3482,8 @@
   },
   "harrow/foot@fe": {
    "frame": {
-    "x": 451,
-    "y": 27,
+    "x": 389,
+    "y": 124,
     "w": 17,
     "h": 8
    },
@@ -1022,8 +3502,8 @@
   },
   "harrow/foot@n": {
    "frame": {
-    "x": 469,
-    "y": 27,
+    "x": 407,
+    "y": 124,
     "w": 17,
     "h": 8
    },
@@ -1040,10 +3520,570 @@
     "h": 8
    }
   },
-  "harrow/barrel@e": {
+  "foe/bul_mortar@e": {
+   "frame": {
+    "x": 425,
+    "y": 124,
+    "w": 16,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 7
+   }
+  },
+  "foe/bul_mortar@f": {
+   "frame": {
+    "x": 442,
+    "y": 124,
+    "w": 16,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 7
+   }
+  },
+  "foe/bul_mortar@fe": {
+   "frame": {
+    "x": 459,
+    "y": 124,
+    "w": 16,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 7
+   }
+  },
+  "foe/bul_mortar@n": {
+   "frame": {
+    "x": 476,
+    "y": 124,
+    "w": 16,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 7
+   }
+  },
+  "foe/bul_shin@e": {
    "frame": {
     "x": 1,
-    "y": 39,
+    "y": 134,
+    "w": 19,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 7
+   }
+  },
+  "foe/bul_shin@f": {
+   "frame": {
+    "x": 21,
+    "y": 134,
+    "w": 19,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 7
+   }
+  },
+  "foe/bul_shin@fe": {
+   "frame": {
+    "x": 41,
+    "y": 134,
+    "w": 19,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 7
+   }
+  },
+  "foe/bul_shin@n": {
+   "frame": {
+    "x": 61,
+    "y": 134,
+    "w": 19,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 7
+   }
+  },
+  "foe/hornet_wing@e": {
+   "frame": {
+    "x": 81,
+    "y": 134,
+    "w": 21,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 21,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 21,
+    "h": 7
+   }
+  },
+  "foe/hornet_wing@f": {
+   "frame": {
+    "x": 103,
+    "y": 134,
+    "w": 21,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 21,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 21,
+    "h": 7
+   }
+  },
+  "foe/hornet_wing@fe": {
+   "frame": {
+    "x": 125,
+    "y": 134,
+    "w": 21,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 21,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 21,
+    "h": 7
+   }
+  },
+  "foe/hornet_wing@n": {
+   "frame": {
+    "x": 147,
+    "y": 134,
+    "w": 21,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 21,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 21,
+    "h": 7
+   }
+  },
+  "foe/long_gun@e": {
+   "frame": {
+    "x": 169,
+    "y": 134,
+    "w": 24,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 7
+   }
+  },
+  "foe/long_gun@f": {
+   "frame": {
+    "x": 194,
+    "y": 134,
+    "w": 24,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 7
+   }
+  },
+  "foe/long_gun@fe": {
+   "frame": {
+    "x": 219,
+    "y": 134,
+    "w": 24,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 7
+   }
+  },
+  "foe/long_gun@n": {
+   "frame": {
+    "x": 244,
+    "y": 134,
+    "w": 24,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 24,
+    "h": 7
+   }
+  },
+  "foe/manta_wing@e": {
+   "frame": {
+    "x": 269,
+    "y": 134,
+    "w": 25,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 25,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 25,
+    "h": 7
+   }
+  },
+  "foe/manta_wing@f": {
+   "frame": {
+    "x": 295,
+    "y": 134,
+    "w": 25,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 25,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 25,
+    "h": 7
+   }
+  },
+  "foe/manta_wing@fe": {
+   "frame": {
+    "x": 321,
+    "y": 134,
+    "w": 25,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 25,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 25,
+    "h": 7
+   }
+  },
+  "foe/manta_wing@n": {
+   "frame": {
+    "x": 347,
+    "y": 134,
+    "w": 25,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 25,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 25,
+    "h": 7
+   }
+  },
+  "foe/mite_body@e": {
+   "frame": {
+    "x": 373,
+    "y": 134,
+    "w": 9,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 7
+   }
+  },
+  "foe/mite_body@f": {
+   "frame": {
+    "x": 383,
+    "y": 134,
+    "w": 9,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 7
+   }
+  },
+  "foe/mite_body@fe": {
+   "frame": {
+    "x": 393,
+    "y": 134,
+    "w": 9,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 7
+   }
+  },
+  "foe/mite_body@n": {
+   "frame": {
+    "x": 403,
+    "y": 134,
+    "w": 9,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 7
+   }
+  },
+  "foe/wasp_pod@e": {
+   "frame": {
+    "x": 413,
+    "y": 134,
+    "w": 10,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 7
+   }
+  },
+  "foe/wasp_pod@f": {
+   "frame": {
+    "x": 424,
+    "y": 134,
+    "w": 10,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 7
+   }
+  },
+  "foe/wasp_pod@fe": {
+   "frame": {
+    "x": 435,
+    "y": 134,
+    "w": 10,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 7
+   }
+  },
+  "foe/wasp_pod@n": {
+   "frame": {
+    "x": 446,
+    "y": 134,
+    "w": 10,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 7
+   }
+  },
+  "harrow/barrel@e": {
+   "frame": {
+    "x": 457,
+    "y": 134,
     "w": 26,
     "h": 7
    },
@@ -1062,8 +4102,8 @@
   },
   "harrow/barrel@f": {
    "frame": {
-    "x": 28,
-    "y": 39,
+    "x": 484,
+    "y": 134,
     "w": 26,
     "h": 7
    },
@@ -1082,8 +4122,8 @@
   },
   "harrow/barrel@fe": {
    "frame": {
-    "x": 55,
-    "y": 39,
+    "x": 1,
+    "y": 142,
     "w": 26,
     "h": 7
    },
@@ -1102,8 +4142,8 @@
   },
   "harrow/barrel@n": {
    "frame": {
-    "x": 82,
-    "y": 39,
+    "x": 28,
+    "y": 142,
     "w": 26,
     "h": 7
    },
@@ -1120,10 +4160,1530 @@
     "h": 7
    }
   },
+  "foe/bul_foot@e": {
+   "frame": {
+    "x": 55,
+    "y": 142,
+    "w": 14,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 6
+   }
+  },
+  "foe/bul_foot@f": {
+   "frame": {
+    "x": 70,
+    "y": 142,
+    "w": 14,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 6
+   }
+  },
+  "foe/bul_foot@fe": {
+   "frame": {
+    "x": 85,
+    "y": 142,
+    "w": 14,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 6
+   }
+  },
+  "foe/bul_foot@n": {
+   "frame": {
+    "x": 100,
+    "y": 142,
+    "w": 14,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 6
+   }
+  },
+  "foe/heron_pod@e": {
+   "frame": {
+    "x": 115,
+    "y": 142,
+    "w": 8,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 6
+   }
+  },
+  "foe/heron_pod@f": {
+   "frame": {
+    "x": 124,
+    "y": 142,
+    "w": 8,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 6
+   }
+  },
+  "foe/heron_pod@fe": {
+   "frame": {
+    "x": 133,
+    "y": 142,
+    "w": 8,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 6
+   }
+  },
+  "foe/heron_pod@n": {
+   "frame": {
+    "x": 142,
+    "y": 142,
+    "w": 8,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 6
+   }
+  },
+  "foe/long_thigh@e": {
+   "frame": {
+    "x": 151,
+    "y": 142,
+    "w": 18,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 6
+   }
+  },
+  "foe/long_thigh@f": {
+   "frame": {
+    "x": 170,
+    "y": 142,
+    "w": 18,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 6
+   }
+  },
+  "foe/long_thigh@fe": {
+   "frame": {
+    "x": 189,
+    "y": 142,
+    "w": 18,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 6
+   }
+  },
+  "foe/long_thigh@n": {
+   "frame": {
+    "x": 208,
+    "y": 142,
+    "w": 18,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 6
+   }
+  },
+  "foe/prow_thigh@e": {
+   "frame": {
+    "x": 227,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/prow_thigh@f": {
+   "frame": {
+    "x": 241,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/prow_thigh@fe": {
+   "frame": {
+    "x": 255,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/prow_thigh@n": {
+   "frame": {
+    "x": 269,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/ram_thigh@e": {
+   "frame": {
+    "x": 283,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/ram_thigh@f": {
+   "frame": {
+    "x": 297,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/ram_thigh@fe": {
+   "frame": {
+    "x": 311,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/ram_thigh@n": {
+   "frame": {
+    "x": 325,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/stilt_gun@e": {
+   "frame": {
+    "x": 339,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/stilt_gun@f": {
+   "frame": {
+    "x": 353,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/stilt_gun@fe": {
+   "frame": {
+    "x": 367,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/stilt_gun@n": {
+   "frame": {
+    "x": 381,
+    "y": 142,
+    "w": 13,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 6
+   }
+  },
+  "foe/brood_door@e": {
+   "frame": {
+    "x": 395,
+    "y": 142,
+    "w": 17,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 5
+   }
+  },
+  "foe/brood_door@f": {
+   "frame": {
+    "x": 413,
+    "y": 142,
+    "w": 17,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 5
+   }
+  },
+  "foe/brood_door@fe": {
+   "frame": {
+    "x": 431,
+    "y": 142,
+    "w": 17,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 5
+   }
+  },
+  "foe/brood_door@n": {
+   "frame": {
+    "x": 449,
+    "y": 142,
+    "w": 17,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 5
+   }
+  },
+  "foe/heron_boom@e": {
+   "frame": {
+    "x": 467,
+    "y": 142,
+    "w": 34,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 5
+   }
+  },
+  "foe/heron_boom@f": {
+   "frame": {
+    "x": 1,
+    "y": 150,
+    "w": 34,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 5
+   }
+  },
+  "foe/heron_boom@fe": {
+   "frame": {
+    "x": 36,
+    "y": 150,
+    "w": 34,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 5
+   }
+  },
+  "foe/heron_boom@n": {
+   "frame": {
+    "x": 71,
+    "y": 150,
+    "w": 34,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 34,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 34,
+    "h": 5
+   }
+  },
+  "foe/jackal_fin@e": {
+   "frame": {
+    "x": 106,
+    "y": 150,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/jackal_fin@f": {
+   "frame": {
+    "x": 117,
+    "y": 150,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/jackal_fin@fe": {
+   "frame": {
+    "x": 128,
+    "y": 150,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/jackal_fin@n": {
+   "frame": {
+    "x": 139,
+    "y": 150,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/long_shin@e": {
+   "frame": {
+    "x": 150,
+    "y": 150,
+    "w": 22,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 5
+   }
+  },
+  "foe/long_shin@f": {
+   "frame": {
+    "x": 173,
+    "y": 150,
+    "w": 22,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 5
+   }
+  },
+  "foe/long_shin@fe": {
+   "frame": {
+    "x": 196,
+    "y": 150,
+    "w": 22,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 5
+   }
+  },
+  "foe/long_shin@n": {
+   "frame": {
+    "x": 219,
+    "y": 150,
+    "w": 22,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 5
+   }
+  },
+  "foe/prow_foot@e": {
+   "frame": {
+    "x": 242,
+    "y": 150,
+    "w": 9,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 5
+   }
+  },
+  "foe/prow_foot@f": {
+   "frame": {
+    "x": 252,
+    "y": 150,
+    "w": 9,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 5
+   }
+  },
+  "foe/prow_foot@fe": {
+   "frame": {
+    "x": 262,
+    "y": 150,
+    "w": 9,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 5
+   }
+  },
+  "foe/prow_foot@n": {
+   "frame": {
+    "x": 272,
+    "y": 150,
+    "w": 9,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 5
+   }
+  },
+  "foe/prow_gun@e": {
+   "frame": {
+    "x": 282,
+    "y": 150,
+    "w": 14,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 5
+   }
+  },
+  "foe/prow_gun@f": {
+   "frame": {
+    "x": 297,
+    "y": 150,
+    "w": 14,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 5
+   }
+  },
+  "foe/prow_gun@fe": {
+   "frame": {
+    "x": 312,
+    "y": 150,
+    "w": 14,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 5
+   }
+  },
+  "foe/prow_gun@n": {
+   "frame": {
+    "x": 327,
+    "y": 150,
+    "w": 14,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 5
+   }
+  },
+  "foe/prow_shin@e": {
+   "frame": {
+    "x": 342,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/prow_shin@f": {
+   "frame": {
+    "x": 358,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/prow_shin@fe": {
+   "frame": {
+    "x": 374,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/prow_shin@n": {
+   "frame": {
+    "x": 390,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/ram_shin@e": {
+   "frame": {
+    "x": 406,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/ram_shin@f": {
+   "frame": {
+    "x": 422,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/ram_shin@fe": {
+   "frame": {
+    "x": 438,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/ram_shin@n": {
+   "frame": {
+    "x": 454,
+    "y": 150,
+    "w": 15,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 5
+   }
+  },
+  "foe/spot_gun@e": {
+   "frame": {
+    "x": 470,
+    "y": 150,
+    "w": 29,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 5
+   }
+  },
+  "foe/spot_gun@f": {
+   "frame": {
+    "x": 1,
+    "y": 156,
+    "w": 29,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 5
+   }
+  },
+  "foe/spot_gun@fe": {
+   "frame": {
+    "x": 31,
+    "y": 156,
+    "w": 29,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 5
+   }
+  },
+  "foe/spot_gun@n": {
+   "frame": {
+    "x": 61,
+    "y": 156,
+    "w": 29,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 29,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 29,
+    "h": 5
+   }
+  },
+  "foe/stilt_foot@e": {
+   "frame": {
+    "x": 91,
+    "y": 156,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/stilt_foot@f": {
+   "frame": {
+    "x": 102,
+    "y": 156,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/stilt_foot@fe": {
+   "frame": {
+    "x": 113,
+    "y": 156,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/stilt_foot@n": {
+   "frame": {
+    "x": 124,
+    "y": 156,
+    "w": 10,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 5
+   }
+  },
+  "foe/stilt_shin@e": {
+   "frame": {
+    "x": 135,
+    "y": 156,
+    "w": 40,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 40,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 40,
+    "h": 5
+   }
+  },
+  "foe/stilt_shin@f": {
+   "frame": {
+    "x": 176,
+    "y": 156,
+    "w": 40,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 40,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 40,
+    "h": 5
+   }
+  },
+  "foe/stilt_shin@fe": {
+   "frame": {
+    "x": 217,
+    "y": 156,
+    "w": 40,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 40,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 40,
+    "h": 5
+   }
+  },
+  "foe/stilt_shin@n": {
+   "frame": {
+    "x": 258,
+    "y": 156,
+    "w": 40,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 40,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 40,
+    "h": 5
+   }
+  },
+  "foe/stilt_thigh@e": {
+   "frame": {
+    "x": 299,
+    "y": 156,
+    "w": 36,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 36,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 36,
+    "h": 5
+   }
+  },
+  "foe/stilt_thigh@f": {
+   "frame": {
+    "x": 336,
+    "y": 156,
+    "w": 36,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 36,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 36,
+    "h": 5
+   }
+  },
+  "foe/stilt_thigh@fe": {
+   "frame": {
+    "x": 373,
+    "y": 156,
+    "w": 36,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 36,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 36,
+    "h": 5
+   }
+  },
+  "foe/stilt_thigh@n": {
+   "frame": {
+    "x": 410,
+    "y": 156,
+    "w": 36,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 36,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 36,
+    "h": 5
+   }
+  },
+  "foe/wasp_gun@e": {
+   "frame": {
+    "x": 447,
+    "y": 156,
+    "w": 13,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 5
+   }
+  },
+  "foe/wasp_gun@f": {
+   "frame": {
+    "x": 461,
+    "y": 156,
+    "w": 13,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 5
+   }
+  },
+  "foe/wasp_gun@fe": {
+   "frame": {
+    "x": 475,
+    "y": 156,
+    "w": 13,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 5
+   }
+  },
+  "foe/wasp_gun@n": {
+   "frame": {
+    "x": 489,
+    "y": 156,
+    "w": 13,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 5
+   }
+  },
   "harrow/flashSmall@e": {
    "frame": {
-    "x": 109,
-    "y": 39,
+    "x": 503,
+    "y": 156,
     "w": 6,
     "h": 5
    },
@@ -1142,8 +5702,8 @@
   },
   "harrow/flashSmall@f": {
    "frame": {
-    "x": 116,
-    "y": 39,
+    "x": 1,
+    "y": 162,
     "w": 6,
     "h": 5
    },
@@ -1162,8 +5722,8 @@
   },
   "harrow/flashSmall@fe": {
    "frame": {
-    "x": 123,
-    "y": 39,
+    "x": 8,
+    "y": 162,
     "w": 6,
     "h": 5
    },
@@ -1182,8 +5742,8 @@
   },
   "harrow/flashSmall@n": {
    "frame": {
-    "x": 130,
-    "y": 39,
+    "x": 15,
+    "y": 162,
     "w": 6,
     "h": 5
    },
@@ -1202,8 +5762,8 @@
   },
   "harrow/lid@e": {
    "frame": {
-    "x": 137,
-    "y": 39,
+    "x": 22,
+    "y": 162,
     "w": 16,
     "h": 5
    },
@@ -1222,8 +5782,8 @@
   },
   "harrow/lid@f": {
    "frame": {
-    "x": 154,
-    "y": 39,
+    "x": 39,
+    "y": 162,
     "w": 16,
     "h": 5
    },
@@ -1242,8 +5802,8 @@
   },
   "harrow/lid@fe": {
    "frame": {
-    "x": 171,
-    "y": 39,
+    "x": 56,
+    "y": 162,
     "w": 16,
     "h": 5
    },
@@ -1262,8 +5822,8 @@
   },
   "harrow/lid@n": {
    "frame": {
-    "x": 188,
-    "y": 39,
+    "x": 73,
+    "y": 162,
     "w": 16,
     "h": 5
    },
@@ -1279,13 +5839,653 @@
     "w": 16,
     "h": 5
    }
+  },
+  "foe/hornet_gun@e": {
+   "frame": {
+    "x": 90,
+    "y": 162,
+    "w": 11,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 11,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 11,
+    "h": 4
+   }
+  },
+  "foe/hornet_gun@f": {
+   "frame": {
+    "x": 102,
+    "y": 162,
+    "w": 11,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 11,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 11,
+    "h": 4
+   }
+  },
+  "foe/hornet_gun@fe": {
+   "frame": {
+    "x": 114,
+    "y": 162,
+    "w": 11,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 11,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 11,
+    "h": 4
+   }
+  },
+  "foe/hornet_gun@n": {
+   "frame": {
+    "x": 126,
+    "y": 162,
+    "w": 11,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 11,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 11,
+    "h": 4
+   }
+  },
+  "foe/mite_wing@e": {
+   "frame": {
+    "x": 138,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
+  },
+  "foe/mite_wing@f": {
+   "frame": {
+    "x": 146,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
+  },
+  "foe/mite_wing@fe": {
+   "frame": {
+    "x": 154,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
+  },
+  "foe/mite_wing@n": {
+   "frame": {
+    "x": 162,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
+  },
+  "foe/scut_leg@e": {
+   "frame": {
+    "x": 170,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/scut_leg@f": {
+   "frame": {
+    "x": 180,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/scut_leg@fe": {
+   "frame": {
+    "x": 190,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/scut_leg@n": {
+   "frame": {
+    "x": 200,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/spot_leg2@e": {
+   "frame": {
+    "x": 210,
+    "y": 162,
+    "w": 19,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 4
+   }
+  },
+  "foe/spot_leg2@f": {
+   "frame": {
+    "x": 230,
+    "y": 162,
+    "w": 19,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 4
+   }
+  },
+  "foe/spot_leg2@fe": {
+   "frame": {
+    "x": 250,
+    "y": 162,
+    "w": 19,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 4
+   }
+  },
+  "foe/spot_leg2@n": {
+   "frame": {
+    "x": 270,
+    "y": 162,
+    "w": 19,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 4
+   }
+  },
+  "foe/spot_leg@e": {
+   "frame": {
+    "x": 290,
+    "y": 162,
+    "w": 17,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 4
+   }
+  },
+  "foe/spot_leg@f": {
+   "frame": {
+    "x": 308,
+    "y": 162,
+    "w": 17,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 4
+   }
+  },
+  "foe/spot_leg@fe": {
+   "frame": {
+    "x": 326,
+    "y": 162,
+    "w": 17,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 4
+   }
+  },
+  "foe/spot_leg@n": {
+   "frame": {
+    "x": 344,
+    "y": 162,
+    "w": 17,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_a@e": {
+   "frame": {
+    "x": 362,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_a@f": {
+   "frame": {
+    "x": 372,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_a@fe": {
+   "frame": {
+    "x": 382,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_a@n": {
+   "frame": {
+    "x": 392,
+    "y": 162,
+    "w": 9,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_b@e": {
+   "frame": {
+    "x": 402,
+    "y": 162,
+    "w": 10,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_b@f": {
+   "frame": {
+    "x": 413,
+    "y": 162,
+    "w": 10,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_b@fe": {
+   "frame": {
+    "x": 424,
+    "y": 162,
+    "w": 10,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 4
+   }
+  },
+  "foe/tick_leg_b@n": {
+   "frame": {
+    "x": 435,
+    "y": 162,
+    "w": 10,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 4
+   }
+  },
+  "foe/wasp_tail@e": {
+   "frame": {
+    "x": 446,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
+  },
+  "foe/wasp_tail@f": {
+   "frame": {
+    "x": 454,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
+  },
+  "foe/wasp_tail@fe": {
+   "frame": {
+    "x": 462,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
+  },
+  "foe/wasp_tail@n": {
+   "frame": {
+    "x": 470,
+    "y": 162,
+    "w": 7,
+    "h": 4
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 4
+   },
+   "sourceSize": {
+    "w": 7,
+    "h": 4
+   }
   }
  },
  "meta": {
   "image": "rig.png",
   "size": {
    "w": 512,
-   "h": 64
+   "h": 256
   },
   "scale": "1",
   "format": "RGBA8888"

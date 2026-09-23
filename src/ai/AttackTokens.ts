@@ -12,12 +12,20 @@ interface Hold { kind: TokenKind; since: number; priority: number }
  */
 export class AttackTokens {
   private readonly holders = new Map<object, Hold>();
+  /** Slots cooling down after a release: [kind, free-again time]. */
+  private cooling: [TokenKind, number][] = [];
+  private clock = 0;
 
-  constructor(public pools: Record<TokenKind, number>, public timeout = 5) {}
+  /**
+   * @param recovery seconds a slot stays closed after its holder releases it, so volleys
+   *   from a crowd are spaced out instead of chaining back-to-back.
+   */
+  constructor(public pools: Record<TokenKind, number>, public timeout = 5, public recovery: Partial<Record<TokenKind, number>> = {}) {}
 
   count(kind: TokenKind): number {
     let n = 0;
     for (const h of this.holders.values()) if (h.kind === kind) n++;
+    for (const [k] of this.cooling) if (k === kind) n++;
     return n;
   }
 
@@ -27,6 +35,7 @@ export class AttackTokens {
   }
 
   acquire(holder: object, kind: TokenKind, now: number, priority = 0): boolean {
+    this.expireCooling(now);
     const mine = this.holders.get(holder);
     if (mine?.kind === kind) return true;
     if (mine) this.holders.delete(holder);
@@ -45,14 +54,26 @@ export class AttackTokens {
     return false;
   }
 
-  release(holder: object): void { this.holders.delete(holder); }
-
-  /** Drops tokens held longer than the timeout. */
-  update(now: number): void {
-    for (const [h, v] of this.holders) if (now - v.since > this.timeout) this.holders.delete(h);
+  release(holder: object): void {
+    const h = this.holders.get(holder);
+    if (!h) return;
+    this.holders.delete(holder);
+    const r = this.recovery[h.kind] ?? 0;
+    if (r > 0) this.cooling.push([h.kind, this.clock + r]);
   }
 
-  clear(): void { this.holders.clear(); }
+  /** Drops tokens held longer than the timeout and reopens recovered slots. */
+  update(now: number): void {
+    for (const [h, v] of this.holders) if (now - v.since > this.timeout) this.holders.delete(h);
+    this.expireCooling(now);
+  }
+
+  clear(): void { this.holders.clear(); this.cooling = []; }
+
+  private expireCooling(now: number): void {
+    this.clock = Math.max(this.clock, now);
+    if (this.cooling.length) this.cooling = this.cooling.filter(([, t]) => t > this.clock);
+  }
 }
 
 /**

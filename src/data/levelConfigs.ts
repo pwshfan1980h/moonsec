@@ -3,7 +3,7 @@ import {
   TMPL_SURFACE_OPS, TMPL_TRADE_LANES, TMPL_DEEP_FACILITY,
   TMPL_ORBITAL, TMPL_NEXUS_CORE,
 } from './levelData';
-import type { BossType } from '../entities/NexusBoss';
+import type { BossType } from '../entities/foes/bosses';
 
 export type MusicTheme  = 'surface' | 'trade-lanes' | 'deep-facility' | 'orbital' | 'nexus-core';
 export type EnemyMix    = 'balanced' | 'aerial' | 'ground-heavy' | 'elite' | 'boss-rush';

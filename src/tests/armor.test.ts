@@ -6,7 +6,10 @@ describe('armor scale', () => {
     expect(ARMOR_BASE).toBe(100);
     expect(Math.ceil(ARMOR_BASE / DAMAGE.droneBullet)).toBe(5);
     expect(Math.ceil(ARMOR_BASE / DAMAGE.ppcRound)).toBe(2);
-    for (const v of [...Object.values(DAMAGE), ...Object.values(HEAL)]) expect(v % ARMOR_SCALE).toBe(0);
+    // single hits are whole legacy points; burst/strafe rounds are fractions of one
+    for (const [k, v] of Object.entries(DAMAGE)) if (!k.endsWith('Round')) expect(v % ARMOR_SCALE).toBe(0);
+    for (const v of Object.values(HEAL)) expect(v % ARMOR_SCALE).toBe(0);
+    expect(DAMAGE.burstRound * 2).toBeLessThanOrEqual(DAMAGE.droneBullet);
   });
 
   it('grades damage stages at 50 / 25 / 10 inclusive', () => {

@@ -413,6 +413,9 @@ export class GameScene extends Phaser.Scene {
     this.atmosphere?.applySettings(s);
   }
 
+  /** The active level's map template (ground, ceiling, rows). */
+  get levelTemplate() { return this.activeConfig.template; }
+
   /** Mission atmosphere (dust, fog, shafts, heat haze); FX sources feed it. */
   get air(): Atmosphere | undefined { return this.atmosphere; }
 

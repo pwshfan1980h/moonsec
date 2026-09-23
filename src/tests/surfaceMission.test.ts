@@ -4,13 +4,16 @@ import { EncounterSchedule, SURFACE_ENCOUNTERS, wardenDamage } from '../data/sur
 
 const state = vi.hoisted(() => ({ units: [] as any[] }));
 vi.mock('phaser', () => ({ default: { Input: { Keyboard: { KeyCodes: { F: 70 } } }, Math: { Clamp: (v: number, min: number, max: number) => Math.max(min, Math.min(v, max)) }, GameObjects: { Events: { DESTROY: 'destroy' } } } }));
-vi.mock('../entities/SurfaceEnemy', () => ({ SurfaceEnemy: class {
-  active = true;
-  constructor(_scene: unknown, public x: number, public y: number, public role: string, public acquire: any, public release: any, public defeated: any) { state.units.push(this); }
-  once() { return this; }
-  kill() { if (this.active) { this.active = false; this.release(this); this.defeated(); } }
-} }));
-vi.mock('../entities/SurfaceWarden', () => ({ SurfaceWarden: class { once() { return this; } } }));
+vi.mock('../entities/foes/surface', () => {
+  class Unit {
+    active = true;
+    onKilled?: () => void;
+    constructor(_scene: unknown, public x: number, public y: number) { state.units.push(this); }
+    kill() { if (this.active) { this.active = false; this.onKilled?.(); } }
+  }
+  return { Prowler: Unit, Spotter: Unit, Ram: Unit, Stilt: Unit, Burrower: Unit, TrainingTarget: Unit };
+});
+vi.mock('../entities/foes/bosses', () => ({ Warden: class {} }));
 import { SurfaceMission } from '../systems/SurfaceMission';
 
 function sceneFixture() {
@@ -28,6 +31,9 @@ function sceneFixture() {
     add: { graphics, text: label }, audio: { play: vi.fn() },
     physics: { add: { overlap: () => ({ destroy: vi.fn() }) }, world: { setBounds: vi.fn() } },
     cameras: { main: { setBounds: vi.fn() } },
+    hostileCombat: { register: vi.fn() },
+    spawnFloatingText: vi.fn(),
+    getApproxGroundY: () => 960,
   };
   return { scene, events, player, key };
 }

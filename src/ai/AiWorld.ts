@@ -6,7 +6,9 @@ import { GroundNav } from './GroundNav';
 import type { Noise, Vec } from './Perception';
 
 /** Per-mission defaults for how many enemies may attack at once. */
-export const DEFAULT_TOKENS: Record<TokenKind, number> = { melee: 2, ranged: 3, artillery: 1, bomb: 1 };
+export const DEFAULT_TOKENS: Record<TokenKind, number> = { melee: 1, ranged: 2, artillery: 1, bomb: 1 };
+/** Seconds a slot stays closed after an attack ends. */
+export const TOKEN_RECOVERY: Partial<Record<TokenKind, number>> = { ranged: 1, melee: 1.5, artillery: 2, bomb: 2 };
 
 /**
  * Everything enemy brains share about the level: terrain, flight and ground navigation,
@@ -24,7 +26,7 @@ export class AiWorld {
   constructor(readonly terrain: TerrainProbe, readonly nav: FlightNavigation, tokenPools: Partial<Record<TokenKind, number>> = {}) {
     this.cover = new CoverMap(terrain);
     this.ground = new GroundNav(terrain);
-    this.tokens = new AttackTokens({ ...DEFAULT_TOKENS, ...tokenPools });
+    this.tokens = new AttackTokens({ ...DEFAULT_TOKENS, ...tokenPools }, 5, TOKEN_RECOVERY);
   }
 
   update(dt: number): void {

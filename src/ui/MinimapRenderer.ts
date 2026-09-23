@@ -1,7 +1,6 @@
 import { radarColor, type RadarKind } from '../entities/RiggedHostile';
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
-import type { Drone } from '../entities/Drone';
 import {
   RADAR_WORLD_RADIUS,
   RADAR_SCREEN_RADIUS,
@@ -111,11 +110,11 @@ export class MinimapRenderer {
 
     // ── 5. Enemy blips ────────────────────────────────────────────
     // Find missile lock candidate (nearest active drone within MISSILE_SEEK_RANGE of player)
-    let lockTarget: Drone | null = null;
+    let lockTarget: Phaser.Physics.Arcade.Sprite & { getState(): string } | null = null;
     let lockDist = MISSILE_SEEK_RANGE;
 
     game.drones.getChildren().forEach((go) => {
-      const drone = go as unknown as Drone;
+      const drone = go as unknown as Phaser.Physics.Arcade.Sprite & { getState(): string };
       if (!drone.active) return;
       const d = Phaser.Math.Distance.Between(px, py, drone.x, drone.y);
       if (d < lockDist) { lockDist = d; lockTarget = drone; }
@@ -124,7 +123,7 @@ export class MinimapRenderer {
     const currentInRange = new Set<object>();
 
     game.drones.getChildren().forEach((go) => {
-      const drone = go as unknown as Drone;
+      const drone = go as unknown as Phaser.Physics.Arcade.Sprite & { getState(): string };
       if (!drone.active) return;
       if (typeof drone.getState !== 'function') return;
 

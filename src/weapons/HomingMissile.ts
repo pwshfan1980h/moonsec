@@ -1,8 +1,6 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import type { Player } from '../entities/Player';
-import { NexusBoss } from '../entities/NexusBoss';
-import { ShieldedTank } from '../entities/ShieldedTank';
 import { WORLD_WIDTH, MISSILE_SEEK_RANGE } from '../constants';
 
 const COOLDOWN = 5000; // ms
@@ -128,7 +126,7 @@ export class HomingMissile {
       const target = go as MissileTarget;
       if (!target.active) return;
       // Always prefer the boss — escorts are closer but the player wants missiles on the boss
-      if (go instanceof NexusBoss || (go as unknown as { isBoss?: boolean }).isBoss) {
+      if ((go as unknown as { isBoss?: boolean }).isBoss) {
         nearest = target;
         bestDist = 0; // zero so no escort can displace it
         return;
@@ -139,9 +137,7 @@ export class HomingMissile {
     };
 
     this.scene.drones.getChildren().forEach(consider);
-    this.scene.tanks.getChildren().forEach((go) => {
-      if (go instanceof ShieldedTank) consider(go);
-    });
+    this.scene.tanks.getChildren().forEach(consider);
 
     return nearest;
   }

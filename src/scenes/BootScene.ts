@@ -49,29 +49,6 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas('rig', 'assets/rig.png', 'assets/rig.json');
 
 
-    // Enemy drones as spritesheets (fixed-size frames, simpler)
-    this.load.spritesheet('drone-red', 'assets/Viper-sheet.png', {
-      frameWidth: 34, frameHeight: 24,
-    });
-    this.load.spritesheet('drone-green', 'assets/Hornet-sheet.png', {
-      frameWidth: 30, frameHeight: 25,
-    });
-    this.load.spritesheet('kodiak', 'assets/Kodiak-sheet.png', {
-      frameWidth: 37, frameHeight: 30,
-    });
-    this.load.spritesheet('sentinel', 'assets/Sentinel-sheet.png', {
-      frameWidth: 37, frameHeight: 29,
-    });
-    this.load.spritesheet('juggernaut', 'assets/Juggernaut-sheet.png', {
-      frameWidth: 80, frameHeight: 72,
-    });
-    this.load.spritesheet('nexus', 'assets/Nexus-sheet.png', {
-      frameWidth: 25, frameHeight: 27,
-    });
-    this.load.spritesheet('dart', 'assets/Dart-sheet.png', {
-      frameWidth: 28, frameHeight: 24,
-    });
-
     // Tilemap tilesets
     this.load.image('industrial-tileset',        'assets/industrial-tileset.png');
     this.load.image('industrial-tileset-blue',   'assets/industrial-tileset-blue.png');
@@ -87,59 +64,18 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
 
-    // Drone animations (manual with prefixed keys to avoid conflicts)
-    this.buildDroneAnims('drone-red');
-    this.buildDroneAnims('drone-green');
-    this.buildDroneAnims('kodiak');
-
-    // Sentinel — 4 standard animations (same layout as Viper/Hornet)
-    this.buildDroneAnims('sentinel');
-
-    // Juggernaut boss — same 15-frame layout as drones
-    this.buildDroneAnims('juggernaut');
-
-    // Dart — StunDart kamikaze (same 4-anim layout)
-    this.buildDroneAnims('dart');
-
-    // Nexus Boss — 5 animations, built inline (non-standard layout)
-    const fps = (ms: number) => Math.round(1000 / ms);
-    this.anims.create({
-      key: 'nexus-hover',
-      frames: this.anims.generateFrameNumbers('nexus', { start: 0, end: 3 }),
-      frameRate: fps(120),
-      repeat: -1,
-      yoyo: true,
-    });
-    this.anims.create({
-      key: 'nexus-charge',
-      frames: this.anims.generateFrameNumbers('nexus', { start: 4, end: 6 }),
-      frameRate: fps(100),
-      repeat: -1,
-      yoyo: true,
-    });
-    this.anims.create({
-      key: 'nexus-attack',
-      frames: this.anims.generateFrameNumbers('nexus', { start: 7, end: 10 }),
-      frameRate: fps(80),
-      repeat: 0,
-    });
-    this.anims.create({
-      key: 'nexus-hurt',
-      frames: this.anims.generateFrameNumbers('nexus', { start: 11, end: 12 }),
-      frameRate: fps(100),
-      repeat: 0,
-    });
-    this.anims.create({
-      key: 'nexus-death',
-      frames: this.anims.generateFrameNumbers('nexus', { start: 13, end: 17 }),
-      frameRate: fps(120),
-      repeat: 0,
-    });
 
     // Procedural bullet/effect textures
     this.makeTextures();
 
     this.registry.set('firstBoot', true);
+    if (devParams().rigtest === 'foes') {
+      void import('../dev/FoeGallery').then(({ FoeGallery }) => {
+        this.scene.add('FoeGallery', FoeGallery, true);
+        this.scene.stop();
+      });
+      return;
+    }
     if (devParams().rigtest) {
       void import('../dev/RigTestScene').then(({ RigTestScene }) => {
         this.scene.add('RigTest', RigTestScene, true);
@@ -149,35 +85,6 @@ export class BootScene extends Phaser.Scene {
     }
     this.scene.start('Game', { level: bootLevel(), totalScore: 0, completedNodes: [] });
     this.scene.launch('UI');
-  }
-
-  private buildDroneAnims(key: string): void {
-    const fps = (ms: number) => Math.round(1000 / ms);
-
-    this.anims.create({
-      key: `${key}-hover`,
-      frames: this.anims.generateFrameNumbers(key, { frames: [0, 1, 2, 3, 2, 1] }),
-      frameRate: fps(150),
-      repeat: -1,
-    });
-    this.anims.create({
-      key: `${key}-attack`,
-      frames: this.anims.generateFrameNumbers(key, { start: 4, end: 7 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-    this.anims.create({
-      key: `${key}-hurt`,
-      frames: this.anims.generateFrameNumbers(key, { start: 8, end: 9 }),
-      frameRate: 12,
-      repeat: 0,
-    });
-    this.anims.create({
-      key: `${key}-death`,
-      frames: this.anims.generateFrameNumbers(key, { start: 10, end: 14 }),
-      frameRate: 8,
-      repeat: 0,
-    });
   }
 
   private makeTextures(): void {

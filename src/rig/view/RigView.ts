@@ -19,6 +19,8 @@ export interface RigViewEffects {
   dark?: number;
   /** World y of a repair scanline; parts crossing it light up. */
   scanY?: number;
+  /** Resting multiply tint (boss variants). */
+  baseTint?: PaletteName;
 }
 
 /**
@@ -45,7 +47,8 @@ export class RigView {
     const fill = src.flash > 0 ? pal('cyan3') : undefined;
     const multiply = src.tint > 0 ? pal('hostile1')
       : src.glow > 0 && this.frameCounter % 6 < 3 ? pal(src.glowColor)
-      : fx.dark && fx.dark > 0.3 ? pal('hull3') : undefined;
+      : fx.dark && fx.dark > 0.3 ? pal('hull3')
+      : fx.baseTint ? pal(fx.baseTint) : undefined;
     for (let i = 0; i < parts.length; i++) {
       const p = parts[i];
       let img = this.images[i];

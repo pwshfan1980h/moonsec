@@ -1,9 +1,9 @@
-export type SurfaceEnemyRole = 'skirmisher' | 'sniper' | 'charger' | 'target';
+export type SurfaceEnemyRole = 'skirmisher' | 'sniper' | 'charger' | 'stilt' | 'burrower' | 'target';
 
 export const SURFACE_ENCOUNTERS: { x: number; relayX: number; name: string; roles: SurfaceEnemyRole[] }[] = [
   { x: 1700, relayX: 2100, name: 'SURVEY RELAY', roles: ['skirmisher', 'skirmisher', 'sniper'] },
-  { x: 3000, relayX: 3500, name: 'HABITAT RELAY', roles: ['skirmisher', 'charger', 'sniper', 'skirmisher'] },
-  { x: 4300, relayX: 4800, name: 'UPLINK RELAY', roles: ['charger', 'skirmisher', 'sniper', 'charger', 'skirmisher'] },
+  { x: 3000, relayX: 3500, name: 'HABITAT RELAY', roles: ['skirmisher', 'charger', 'sniper', 'burrower', 'skirmisher'] },
+  { x: 4300, relayX: 4800, name: 'UPLINK RELAY', roles: ['charger', 'skirmisher', 'stilt', 'sniper', 'charger', 'skirmisher'] },
 ];
 export const SURFACE_BOSS_X = 5650;
 export const SURFACE_MAX_ACTIVE = 4;
