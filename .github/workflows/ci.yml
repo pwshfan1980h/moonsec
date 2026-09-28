@@ -32,6 +32,9 @@ jobs:
 
       - run: npm run build
 
+      - name: Prepare and verify link previews
+        run: python3 tools/prepare_social.py dist
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
