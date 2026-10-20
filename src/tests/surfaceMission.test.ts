@@ -25,10 +25,10 @@ function sceneFixture() {
   const label = () => { const t: any = { body: { enable: true } }; for (const k of ['setVisible', 'setOrigin', 'setDepth', 'setText', 'setColor', 'setTint', 'setScale', 'setFrame', 'setLetterSpacing', 'setLineSpacing', 'destroy']) t[k] = () => t; return t; };
   const key = { isDown: false };
   const events = new EventEmitter();
-  const player = { x: 300, y: 950, jetpackMaxFuel: 2200, heal: vi.fn(), refillRapidAmmo: vi.fn(), restoreJetpackFuel: vi.fn(), setPosition: vi.fn() };
+  const player = { body: { right: 1712 }, x: 300, y: 950, jetpackMaxFuel: 2200, heal: vi.fn(), refillRapidAmmo: vi.fn(), restoreJetpackFuel: vi.fn(), setPosition: vi.fn() };
   const scene: any = {
     player, events, input: { keyboard: { addKey: () => key } },
-    add: { rectangle: label, graphics, text: label, image: label, bitmapText: label }, audio: { play: vi.fn() },
+    add: { zone: label, rectangle: label, graphics, text: label, image: label, bitmapText: label }, audio: { play: vi.fn() },
     physics: { add: { existing: vi.fn(), collider: vi.fn(() => ({ destroy: vi.fn() })), overlap: () => ({ destroy: vi.fn() }) }, world: { setBounds: vi.fn() } },
     cameras: { main: { setBounds: vi.fn() } },
     hostileCombat: { register: vi.fn() },
@@ -115,7 +115,7 @@ describe('Surface Ops mission sequence', () => {
 
 
 describe('opening range gate', () => {
-  it('holds the camera and gives one contextual hint per approach, then releases on all checks', () => {
+  it('holds the camera and gives one contextual hint per contact visit, then releases on all checks', () => {
     state.units = [];
     const { scene, player, events } = sceneFixture();
     const mission = new SurfaceMission(scene);
@@ -124,13 +124,22 @@ describe('opening range gate', () => {
     expect(mission.cameraTargetX(1700, 1920, 1.5)).toBe(1184);
     player.x = 1600;
     mission.update(0, 16);
+    expect(scene.spawnFloatingText).not.toHaveBeenCalled();
+    const contact = scene.physics.add.collider.mock.calls[0][2];
+    contact();
+    mission.update(1, 16);
     expect(scene.spawnFloatingText.mock.calls[0][2]).toContain('SPACE');
+    player.body.right = 1320; mission.update(1000, 16);
+    player.body.right = 1712; contact(); mission.update(2000, 16);
+    expect(scene.spawnFloatingText).toHaveBeenCalledTimes(1);
+    contact();
     mission.update(20000, 16);
     expect(scene.spawnFloatingText).toHaveBeenCalledTimes(1);
     events.emit('pilotAction', 'jump');
-    player.x = 1300; mission.update(21000, 16);
-    player.x = 1600; mission.update(22000, 16);
+    player.x = 1300; player.body.right = 1320; mission.update(21000, 16);
+    player.x = 1692; player.body.right = 1712; contact(); mission.update(22000, 16);
     expect(scene.spawnFloatingText.mock.calls[1][2]).toContain('SHIFT');
+    expect(scene.spawnFloatingText.mock.calls[1][2]).not.toContain('SPACE');
     events.emit('pilotAction', 'dash');
     mission.update(23000, 16);
     expect(mission.phase).toBe('training');

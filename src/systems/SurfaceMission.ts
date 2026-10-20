@@ -1,4 +1,4 @@
-import { OpeningGate, OPENING_GATE_X } from './OpeningGate';
+import { OpeningGate } from './OpeningGate';
 import { icon as uiIcon, label as uiLabel } from '../ui/kit/draw';
 import { tc } from '../ui/theme';
 import Phaser from 'phaser';
@@ -72,7 +72,7 @@ export class SurfaceMission {
       const x = SURFACE_ENCOUNTERS[this.encounter].x - 150;
       scene.player.setPosition(x, this.floorAt(x) - 10);
     } else {
-      this.openingGate = new OpeningGate(scene, this.floorAt(OPENING_GATE_X));
+      this.openingGate = new OpeningGate(scene);
       this.spawnUnit('target', 1450, 800, () => { this.targetDown = true; });
     }
     this.updateObjective();
@@ -164,9 +164,12 @@ export class SurfaceMission {
       this.startBoss();
     }
     if (this.phase === 'training') {
-      const reminder = !this.actions.has('jump') ? 'SYSTEMS CHECK: SPACE TO JUMP'
-        : !this.actions.has('dash') ? 'SYSTEMS CHECK: SHIFT TO DASH'
-        : 'DESTROY THE RANGE TARGET - AIM + FIRE';
+      const remaining = [
+        ...(!this.actions.has('jump') ? ['SPACE TO JUMP'] : []),
+        ...(!this.actions.has('dash') ? ['SHIFT TO DASH'] : []),
+        ...(!this.targetDown ? ['AIM + FIRE AT THE TARGET'] : []),
+      ];
+      const reminder = 'COMPLETE TRAINING TO CONTINUE\n' + remaining.join('\n');
       this.openingGate?.update(time, reminder);
     }
     this.drawRelays();
