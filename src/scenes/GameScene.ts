@@ -423,7 +423,8 @@ export class GameScene extends Phaser.Scene {
    */
   private snapCameraTo(x: number, y: number, t: number): void {
     const cam = this.cameras.main;
-    const tx = x - cam.width * 0.5;
+    const targetX = this.surfaceMission?.cameraTargetX(x, cam.width, cam.zoom) ?? x;
+    const tx = targetX - cam.width * 0.5;
     const ty = y - CAMERA_FEET_OFFSET - cam.height * 0.5;
     this.camFollow.x += (tx - this.camFollow.x) * t;
     this.camFollow.y += (ty - this.camFollow.y) * t;

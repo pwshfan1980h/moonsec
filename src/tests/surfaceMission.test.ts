@@ -22,14 +22,14 @@ function sceneFixture() {
     for (const key of ['setDepth', 'clear', 'fillStyle', 'fillRect', 'lineStyle', 'strokeRect', 'lineBetween', 'strokeCircle', 'strokeEllipse', 'destroy']) g[key] = () => g;
     return g;
   };
-  const label = () => { const t: any = {}; for (const k of ['setOrigin', 'setDepth', 'setText', 'setColor', 'setTint', 'setScale', 'setFrame', 'setLetterSpacing', 'setLineSpacing', 'destroy']) t[k] = () => t; return t; };
+  const label = () => { const t: any = { body: { enable: true } }; for (const k of ['setVisible', 'setOrigin', 'setDepth', 'setText', 'setColor', 'setTint', 'setScale', 'setFrame', 'setLetterSpacing', 'setLineSpacing', 'destroy']) t[k] = () => t; return t; };
   const key = { isDown: false };
   const events = new EventEmitter();
   const player = { x: 300, y: 950, jetpackMaxFuel: 2200, heal: vi.fn(), refillRapidAmmo: vi.fn(), restoreJetpackFuel: vi.fn(), setPosition: vi.fn() };
   const scene: any = {
     player, events, input: { keyboard: { addKey: () => key } },
-    add: { graphics, text: label, image: label, bitmapText: label }, audio: { play: vi.fn() },
-    physics: { add: { overlap: () => ({ destroy: vi.fn() }) }, world: { setBounds: vi.fn() } },
+    add: { rectangle: label, graphics, text: label, image: label, bitmapText: label }, audio: { play: vi.fn() },
+    physics: { add: { existing: vi.fn(), collider: vi.fn(() => ({ destroy: vi.fn() })), overlap: () => ({ destroy: vi.fn() }) }, world: { setBounds: vi.fn() } },
     cameras: { main: { setBounds: vi.fn() } },
     hostileCombat: { register: vi.fn() },
     spawnFloatingText: vi.fn(),
@@ -110,5 +110,46 @@ describe('Surface Ops mission sequence', () => {
     expect(events.listenerCount('pilotAction')).toBe(0);
     expect(events.listenerCount('upgradeChosen')).toBe(0);
     expect(events.listenerCount('bossKilled')).toBe(0);
+  });
+});
+
+
+describe('opening range gate', () => {
+  it('holds the camera and gives one contextual hint per approach, then releases on all checks', () => {
+    state.units = [];
+    const { scene, player, events } = sceneFixture();
+    const mission = new SurfaceMission(scene);
+    expect(scene.physics.add.collider).toHaveBeenCalledTimes(1);
+    expect(mission.cameraTargetX(1700, 1920, 1)).toBe(960);
+    expect(mission.cameraTargetX(1700, 1920, 1.5)).toBe(1184);
+    player.x = 1600;
+    mission.update(0, 16);
+    expect(scene.spawnFloatingText.mock.calls[0][2]).toContain('SPACE');
+    mission.update(20000, 16);
+    expect(scene.spawnFloatingText).toHaveBeenCalledTimes(1);
+    events.emit('pilotAction', 'jump');
+    player.x = 1300; mission.update(21000, 16);
+    player.x = 1600; mission.update(22000, 16);
+    expect(scene.spawnFloatingText.mock.calls[1][2]).toContain('SHIFT');
+    events.emit('pilotAction', 'dash');
+    mission.update(23000, 16);
+    expect(mission.phase).toBe('training');
+    state.units[0].kill();
+    mission.update(24000, 16);
+    expect(mission.phase).toBe('travel');
+    expect(mission.cameraTargetX(1700, 1920, 1)).toBe(1700);
+    expect(scene.physics.add.collider.mock.results[0].value.destroy).toHaveBeenCalledTimes(1);
+    mission.destroy();
+    expect(scene.physics.add.collider.mock.results[0].value.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not restrict encounter or boss debug starts', () => {
+    for (const boss of [false, true]) {
+      const { scene } = sceneFixture();
+      const mission = new SurfaceMission(scene, boss, boss ? undefined : 1);
+      expect(scene.physics.add.collider).not.toHaveBeenCalled();
+      expect(mission.cameraTargetX(5200, 1920, 1)).toBe(5200);
+      mission.destroy();
+    }
   });
 });

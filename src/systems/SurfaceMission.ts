@@ -1,3 +1,4 @@
+import { OpeningGate, OPENING_GATE_X } from './OpeningGate';
 import { icon as uiIcon, label as uiLabel } from '../ui/kit/draw';
 import { tc } from '../ui/theme';
 import Phaser from 'phaser';
@@ -21,6 +22,7 @@ export class SurfaceMission {
   phase: SurfacePhase = 'training';
   encounter = 0;
   objective: MissionObjective = { title: '', detail: '', x: 650, progress: 0 };
+  private openingGate?: OpeningGate;
   private actions = new Set<string>();
   private targetDown = false;
   private schedule?: EncounterSchedule;
@@ -70,6 +72,7 @@ export class SurfaceMission {
       const x = SURFACE_ENCOUNTERS[this.encounter].x - 150;
       scene.player.setPosition(x, this.floorAt(x) - 10);
     } else {
+      this.openingGate = new OpeningGate(scene, this.floorAt(OPENING_GATE_X));
       this.spawnUnit('target', 1450, 800, () => { this.targetDown = true; });
     }
     this.updateObjective();
@@ -102,12 +105,17 @@ export class SurfaceMission {
     if (role !== 'target') s.spawnFloatingText(x, floor - 140, '', 'warn', { icon: 'hazard', rise: 40, duration: 900 });
   }
 
-  update(_time: number, delta: number): void {
+  cameraTargetX(x: number, width: number, zoom: number): number {
+    return this.openingGate?.cameraTarget(x, width, zoom) ?? x;
+  }
+
+  update(time: number, delta: number): void {
     const player = this.scene.player;
     const current = SURFACE_ENCOUNTERS[this.encounter];
     if (this.phase === 'training') {
       if (this.actions.has('jump') && this.actions.has('dash') && this.targetDown) {
         this.phase = 'travel';
+        this.openingGate?.open();
         this.scene.events.emit('radioTransmission', 'LUNAR CONTROL', 'Systems checked. Restore the survey relay ahead. Q repairs damaged armor; avoid fire while healing.', false);
       }
     } else if (this.phase === 'travel' && player.x >= current.x - 260) {
@@ -154,6 +162,12 @@ export class SurfaceMission {
       }
     } else if (this.phase === 'boss-travel' && player.x >= 5150) {
       this.startBoss();
+    }
+    if (this.phase === 'training') {
+      const reminder = !this.actions.has('jump') ? 'SYSTEMS CHECK: SPACE TO JUMP'
+        : !this.actions.has('dash') ? 'SYSTEMS CHECK: SHIFT TO DASH'
+        : 'DESTROY THE RANGE TARGET - AIM + FIRE';
+      this.openingGate?.update(time, reminder);
     }
     this.drawRelays();
     this.updateObjective();
@@ -235,6 +249,7 @@ export class SurfaceMission {
 
   destroy(): void {
     for (const off of this.unsubs) off();
+    this.openingGate?.destroy();
     this.markers.destroy();
     this.relayLabels.forEach((l) => { l.glyph.destroy(); l.num.destroy(); });
   }

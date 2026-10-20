@@ -1,3 +1,4 @@
+import { EARTH_RADIUS, EARTH_SUN, ORBITAL_DERELICTS } from './orbitalDerelicts';
 import Phaser from 'phaser';
 import { GAME_W } from '../constants';
 import type { PaletteName } from '../render/palette';
@@ -12,8 +13,8 @@ import { hash, lambert, line, noise3, ramp, ridge1 } from './shade';
  */
 
 // ── Earth ──────────────────────────────────────────────────────────────────────
-const EARTH_R = 56;
-const SUN = (() => { const v = [-0.72, -0.34, 0.6]; const n = Math.hypot(...v); return v.map((c) => c / n); })();
+const EARTH_R = EARTH_RADIUS;
+const SUN = EARTH_SUN;
 const OCEAN: readonly PaletteName[] = ['cold0', 'cold1', 'cold2', 'cyan1'];
 const LAND: readonly PaletteName[] = ['regolith0', 'regolith1', 'regolith2', 'hull5'];
 const CLOUD: readonly PaletteName[] = ['hull4', 'hull5', 'hull6', 'cyan3'];
@@ -243,6 +244,8 @@ export class SurfaceBackdrop {
   constructor(scene: Phaser.Scene) {
     texture(scene, 'bg-earth', EARTH_SPEC);
     scene.add.image(1240, 250, 'bg-earth').setScale(2).setScrollFactor(0.02).setDepth(1.05);
+    texture(scene, 'bg-orbital-derelicts', ORBITAL_DERELICTS);
+    scene.add.image(1240, 250, 'bg-orbital-derelicts').setScale(2).setScrollFactor(0.02).setDepth(1.06);
     const strips: [Strip, number, number, number, number][] = [
       // strip, fx, fy, bottom (world y at rest), depth
       [highlands(), 0.06, 0.05, 1010, 1.2],
