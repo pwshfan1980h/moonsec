@@ -235,7 +235,7 @@ function texture(scene: Phaser.Scene, key: string, spec: PartSpec): void {
 interface Layer { sprite: Phaser.GameObjects.TileSprite; fx: number }
 
 /**
- * Surface backdrop: Earth plus three parallax strips. `fx` is horizontal parallax (0 = fixed to
+ * Surface backdrop: viewport-fixed Earth/orbit plus landscape parallax strips. `fx` is horizontal parallax (0 = fixed to
  * the screen, 1 = the world); strips also sink a little as the camera climbs (scroll factor y).
  */
 export class SurfaceBackdrop {
@@ -243,9 +243,9 @@ export class SurfaceBackdrop {
 
   constructor(scene: Phaser.Scene) {
     texture(scene, 'bg-earth', EARTH_SPEC);
-    scene.add.image(1240, 250, 'bg-earth').setScale(2).setScrollFactor(0.02).setDepth(1.05);
+    scene.add.image(1240, 250, 'bg-earth').setScale(2).setScrollFactor(0).setDepth(1.05);
     texture(scene, 'bg-orbital-derelicts', ORBITAL_DERELICTS);
-    scene.add.image(1240, 250, 'bg-orbital-derelicts').setScale(2).setScrollFactor(0.02).setDepth(1.06);
+    scene.add.image(1240, 250, 'bg-orbital-derelicts').setScale(2).setScrollFactor(0).setDepth(1.06);
     const strips: [Strip, number, number, number, number][] = [
       // strip, fx, fy, bottom (world y at rest), depth
       [highlands(), 0.06, 0.05, 1010, 1.2],

@@ -818,14 +818,13 @@ export class GameScene extends Phaser.Scene {
   // rather than generic "industrial night."
   private makeSurfaceSignature(): void {
     // ── Earth ──
-    // scrollFactor 0.04 keeps it nearly locked to the sky but drifts a little
-    // so depth reads correctly against the faster dome layers.
+    // Celestial objects stay fixed to the viewport; only the lunar landscape has parallax.
     const earthX = 360;
     const earthY = 95;
     const R = 88;
     const earth = this.add.graphics()
       .setDepth(1.1)
-      .setScrollFactor(0.04)
+      .setScrollFactor(0)
       .setPosition(earthX, earthY);
 
     // Soft atmosphere halo — 6 rings, outer-most is dimmest. Layered this way
@@ -1070,14 +1069,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateParallax(delta: number): void {
+    // Stars remain viewport-fixed, including on the train; scroll only terrain layers.
     const sx = this.cameras.main.scrollX;
     if (this.activeConfig.trainEffect) {
       this.trainOffset += delta * 0.12; // ~120 px/s leftward drift
-      if (this.bgStars)   this.bgStars.setTilePosition(snapVpx(sx * 0.05 - this.trainOffset * 0.15), 0);
       if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20 - this.trainOffset * 0.55), 0);
       return;
     }
-    if (this.bgStars)   this.bgStars.setTilePosition(snapVpx(sx * 0.05), 0);
     if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20), 0);
     this.backdrop?.update(sx);
   }
