@@ -72,7 +72,6 @@ export class GameScene extends Phaser.Scene {
   private camFollow = { x: 0, y: 0 };
   private pickupSystem?: PickupSystem;
   private gameEventUnsubs: Array<() => void> = [];
-  private bgStars?: Phaser.GameObjects.TileSprite;
   private backdrop?: SurfaceBackdrop;
   private bgTerrain?: Phaser.GameObjects.TileSprite;
   terrain!: TerrainProbe;
@@ -119,7 +118,6 @@ export class GameScene extends Phaser.Scene {
     this.prevHp       = 0;
     this.gameEventUnsubs = [];
     this.isBossDead      = false;
-    this.bgStars         = undefined;
     this.backdrop        = undefined;
     this.bgTerrain       = undefined;
     this.groundLayer     = undefined;
@@ -778,8 +776,8 @@ export class GameScene extends Phaser.Scene {
     }
     starsGfx.generateTexture('bgStars', GAME_W, GROUND_Y);
     starsGfx.destroy();
-    this.bgStars = this.add.tileSprite(GAME_W / 2, GROUND_Y / 2, GAME_W, GROUND_Y, 'bgStars')
-      .setDepth(1).setScrollFactor(0);
+    // Celestial, so fixed to the viewport with no parallax: a plain image, nothing tiles or scrolls it.
+    this.add.image(GAME_W / 2, GROUND_Y / 2, 'bgStars').setDepth(1).setScrollFactor(0);
 
     // Layer 2: crater terrain silhouette (200px tall, bottom edge at GROUND_Y)
     // Craters are cut into the bottom edge using arc() — darker color overlaid on baseline.
@@ -803,129 +801,13 @@ export class GameScene extends Phaser.Scene {
       this.bgTerrain = this.add.tileSprite(GAME_W / 2, GROUND_Y, GAME_W, 200, 'bgTerrain')
         .setDepth(2).setOrigin(0.5, 1).setScrollFactor(0);
       this.makeBackgroundDomes();
+    } else {
+      this.backdrop = new SurfaceBackdrop(this);
     }
-
-    if (this.activeConfig?.template.map) this.backdrop = new SurfaceBackdrop(this);
-    else if (this.activeConfig?.nodeIndex === 0) this.makeSurfaceSignature();
   }
 
   private showRadioTransmission(speaker: string, message: string, warning = false): void {
     this.events.emit('radioTransmission', speaker, message, warning);
-  }
-
-  // Surface-Ops-only sky signature: Earth on the horizon, twinkling stars,
-  // and slow moon-dust drift at ground level. Makes node 0 read as "lunar"
-  // rather than generic "industrial night."
-  private makeSurfaceSignature(): void {
-    // ── Earth ──
-    // Celestial objects stay fixed to the viewport; only the lunar landscape has parallax.
-    const earthX = 360;
-    const earthY = 95;
-    const R = 88;
-    const earth = this.add.graphics()
-      .setDepth(1.1)
-      .setScrollFactor(0)
-      .setPosition(earthX, earthY);
-
-    // Soft atmosphere halo — 6 rings, outer-most is dimmest. Layered this way
-    // so the edge reads as light scattering instead of a hard outline.
-    for (let i = 6; i >= 1; i--) {
-      earth.fillStyle(pal('hull5'), 0.05 * i);
-      earth.fillCircle(0, 0, R + i * 3);
-    }
-
-    // Ocean with limb darkening — successive rings brighten toward the
-    // sunlit core, offset slightly up-left so the center of brightness
-    // sits on the implied-sun side.
-    earth.fillStyle(pal('cold0'), 1); earth.fillCircle(0, 0, R);
-    earth.fillStyle(pal('cold1'), 1); earth.fillCircle(-2, -2, R - 6);
-    earth.fillStyle(pal('cyan0'), 1); earth.fillCircle(-4, -4, R - 14);
-    earth.fillStyle(pal('cold2'), 1); earth.fillCircle(-6, -6, R - 26);
-
-    // Polar ice caps (ellipses inside the disc)
-    earth.fillStyle(pal('cyan3'), 0.60);
-    earth.fillEllipse(0, -R * 0.88, R * 0.90, R * 0.22);
-    earth.fillEllipse(0,  R * 0.88, R * 0.80, R * 0.18);
-
-    // Continents — stylized polygon landmasses. Points hand-tuned so all
-    // vertices sit inside the ocean disc (max radius ~44 vs R=88) and the
-    // silhouette reads as land, not overlapping paint blobs.
-    const continents: number[][] = [
-      [-38, -26, -20, -34, -8, -20, -16, -4, -4, 12, -12, 26, -28, 20, -40, 4, -44, -8],
-      [10, -28, 30, -22, 42, -10, 40, 10, 26, 24, 14, 20, 4, 4, 16, -8, 2, -16],
-      [20, 36, 32, 38, 38, 46, 28, 48, 18, 44],
-    ];
-    earth.fillStyle(pal('green0'), 1);
-    for (const flat of continents) {
-      const pts: Phaser.Math.Vector2[] = [];
-      for (let i = 0; i < flat.length; i += 2) {
-        pts.push(new Phaser.Math.Vector2(flat[i], flat[i + 1]));
-      }
-      earth.fillPoints(pts, true);
-    }
-
-    // Interior land highlights — brighter green dots to suggest lit terrain
-    earth.fillStyle(pal('regolith2'), 0.75);
-    earth.fillCircle(-30, -16, 5);
-    earth.fillCircle(26,  -6, 5);
-    earth.fillCircle(34,   8, 4);
-    earth.fillCircle(-16, 18, 4);
-    earth.fillCircle(28,  42, 3);
-
-    // Cloud bands — thin stretched ellipses at varying latitudes,
-    // two alpha tiers so some bands read as high-cirrus wisps.
-    earth.fillStyle(pal('cyan3'), 0.22);
-    earth.fillEllipse(-16, -46, 44, 6);
-    earth.fillEllipse( 12, -12, 56, 6);
-    earth.fillEllipse(-30,  36, 40, 6);
-    earth.fillEllipse( 28,  22, 34, 5);
-    earth.fillStyle(pal('cyan3'), 0.42);
-    earth.fillEllipse(  4, -38, 28, 3);
-    earth.fillEllipse(-12,   4, 22, 3);
-    earth.fillEllipse( 22,  48, 20, 3);
-
-    // Terminator — feathered dark side via stacked slice fills with
-    // increasing offset, producing a soft gradient instead of a hard line.
-    for (let i = 0; i < 5; i++) {
-      const alpha = 0.12 + i * 0.05;
-      earth.fillStyle(pal('void'), alpha);
-      earth.beginPath();
-      earth.slice(i * 3, i * 2, R - i * 2, -Math.PI * 0.18, Math.PI * 0.82, false);
-      earth.fillPath();
-    }
-
-    // Specular rim — two stacked arcs on sunlit edge for a brighter hit
-    earth.lineStyle(1.5, pal('cyan3'), 0.75);
-    earth.beginPath();
-    earth.arc(0, 0, R - 0.5, Math.PI * 1.0, Math.PI * 1.55, false);
-    earth.strokePath();
-    earth.lineStyle(1, pal('cyan3'), 0.45);
-    earth.beginPath();
-    earth.arc(0, 0, R - 1, Math.PI * 1.12, Math.PI * 1.40, false);
-    earth.strokePath();
-
-    // ── Twinkling stars ──
-    // Fixed screen-space dots that tween alpha independently. Kept small (28)
-    // so the existing static starfield stays dominant — these are accents.
-    for (let i = 0; i < 28; i++) {
-      const sx = Phaser.Math.Between(20, GAME_W - 20);
-      const sy = Phaser.Math.Between(10, 200);
-      // Avoid overlapping the Earth disc
-      if (Phaser.Math.Distance.Between(sx, sy, earthX, earthY) < R + 12) continue;
-      const star = this.add.rectangle(sx, sy, 2, 2, pal('cyan3'), 1)
-        .setDepth(1.05)
-        .setScrollFactor(0);
-      this.tweens.add({
-        targets:  star,
-        alpha:    { from: 0.2, to: 1 },
-        duration: Phaser.Math.Between(900, 2400),
-        delay:    Phaser.Math.Between(0, 2000),
-        yoyo:     true,
-        repeat:   -1,
-        ease:     'Sine.InOut',
-      });
-    }
-
   }
 
   private makeBackgroundDomes(): void {
@@ -1070,13 +952,17 @@ export class GameScene extends Phaser.Scene {
 
   private updateParallax(delta: number): void {
     // Stars remain viewport-fixed, including on the train; scroll only terrain layers.
-    const sx = this.cameras.main.scrollX;
+    // snapCameraTo stores the raw follow target and Phaser clamps it to the camera bounds only in
+    // preRender, so clamp here too: the layers must track the scroll that is actually drawn, or they
+    // slide while the camera is pinned at a world edge or in the boss arena.
+    const cam = this.cameras.main;
+    const sx = cam.clampX(cam.scrollX);
+    let drift = 0;
     if (this.activeConfig.trainEffect) {
       this.trainOffset += delta * 0.12; // ~120 px/s leftward drift
-      if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20 - this.trainOffset * 0.55), 0);
-      return;
+      drift = this.trainOffset * 0.55;
     }
-    if (this.bgTerrain) this.bgTerrain.setTilePosition(snapVpx(sx * 0.20), 0);
+    this.bgTerrain?.setTilePosition(snapVpx(sx * 0.20 - drift), 0);
     this.backdrop?.update(sx);
   }
 

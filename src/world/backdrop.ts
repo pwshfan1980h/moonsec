@@ -242,10 +242,13 @@ export class SurfaceBackdrop {
   private readonly layers: Layer[] = [];
 
   constructor(scene: Phaser.Scene) {
-    texture(scene, 'bg-earth', EARTH_SPEC);
-    scene.add.image(1240, 250, 'bg-earth').setScale(2).setScrollFactor(0).setDepth(1.05);
-    texture(scene, 'bg-orbital-derelicts', ORBITAL_DERELICTS);
-    scene.add.image(1240, 250, 'bg-orbital-derelicts').setScale(2).setScrollFactor(0).setDepth(1.06);
+    // The orbit texture bakes Earth's occlusion around its own centre, so both images must share
+    // one centre, scale and (zero) scroll factor.
+    const sky: [string, PartSpec, number][] = [['bg-earth', EARTH_SPEC, 1.05], ['bg-orbital-derelicts', ORBITAL_DERELICTS, 1.06]];
+    for (const [key, spec, depth] of sky) {
+      texture(scene, key, spec);
+      scene.add.image(1240, 250, key).setScale(2).setScrollFactor(0).setDepth(depth);
+    }
     const strips: [Strip, number, number, number, number][] = [
       // strip, fx, fy, bottom (world y at rest), depth
       [highlands(), 0.06, 0.05, 1010, 1.2],

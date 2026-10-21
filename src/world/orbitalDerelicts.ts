@@ -23,7 +23,7 @@ export function earthOccludes(x: number, y: number, z: number): boolean {
 const METAL: readonly PaletteName[] = ['void', 'cold0', 'hull1', 'hull3', 'hull5', 'hull6'];
 const PANEL: readonly PaletteName[] = ['void', 'cold0', 'cold1', 'cold2', 'cyan1'];
 
-/** Baked once, sharing Earth's pixel scale and parallax. No emissive lamps on these wrecks. */
+/** Baked once, sharing Earth's centre, pixel scale and viewport-fixed placement. No emissive lamps on these wrecks. */
 export const ORBITAL_DERELICTS: PartSpec = {
   w: 360, h: 260, px: 180, py: 130,
   draw(d) {
