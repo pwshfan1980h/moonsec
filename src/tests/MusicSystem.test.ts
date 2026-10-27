@@ -1,60 +1,31 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MUSIC_THEMES, MusicSystem, musicIntensityForWave } from '../systems/MusicSystem';
+import { COMBAT_THRESHOLD, MusicSystem, musicIntensityForWave } from '../systems/MusicSystem';
+import { MUSIC_TRACKS } from '../systems/audioAssets';
 
-class FakeAudioParam {
-  value = 0;
-  setValueAtTime(value: number): void { this.value = value; }
-  linearRampToValueAtTime(value: number): void { this.value = value; }
-  exponentialRampToValueAtTime(value: number): void { this.value = value; }
-  setTargetAtTime(value: number): void { this.value = value; }
-  cancelScheduledValues(): void {}
-}
-
-class FakeAudioNode {
-  connect(): this { return this; }
-  disconnect(): void {}
-}
-
-class FakeGain extends FakeAudioNode { gain = new FakeAudioParam(); }
-class FakeFilter extends FakeAudioNode { type = ''; frequency = new FakeAudioParam(); }
-class FakePanner extends FakeAudioNode { pan = new FakeAudioParam(); }
-class FakeOscillator extends FakeAudioNode {
-  type = '';
-  frequency = new FakeAudioParam();
-  detune = new FakeAudioParam();
-  onended: (() => void) | null = null;
-  start(): void {}
-  stop(): void {}
-}
-class FakeBufferSource extends FakeAudioNode {
-  buffer: unknown;
-  start(): void {}
-  stop(): void {}
-}
-
-class FakeAudioContext {
+class FakeAudio {
+  static made: FakeAudio[] = [];
+  loop = false;
+  preload = '';
+  volume = 0;
+  muted = false;
+  paused = true;
   currentTime = 0;
-  state: AudioContextState = 'suspended';
-  sampleRate = 100;
-  destination = new FakeAudioNode();
-  resume = vi.fn(async () => { this.state = 'running'; });
-  close = vi.fn(async () => { this.state = 'closed'; });
-  createGain(): GainNode { return new FakeGain() as never; }
-  createDynamicsCompressor(): DynamicsCompressorNode {
-    return Object.assign(new FakeAudioNode(), {
-      threshold: new FakeAudioParam(), knee: new FakeAudioParam(), ratio: new FakeAudioParam(),
-      attack: new FakeAudioParam(), release: new FakeAudioParam(),
-    }) as never;
-  }
-  createConvolver(): ConvolverNode { return Object.assign(new FakeAudioNode(), { buffer: null }) as never; }
-  createBuffer(_channels: number, length: number): AudioBuffer {
-    const channels = [new Float32Array(length), new Float32Array(length)];
-    return { numberOfChannels: 2, getChannelData: (index: number) => channels[index] } as never;
-  }
-  createBiquadFilter(): BiquadFilterNode { return new FakeFilter() as never; }
-  createOscillator(): OscillatorNode { return new FakeOscillator() as never; }
-  createStereoPanner(): StereoPannerNode { return new FakePanner() as never; }
-  createBufferSource(): AudioBufferSourceNode { return new FakeBufferSource() as never; }
+  constructor(public src: string) { FakeAudio.made.push(this); }
+  canPlayType(): string { return 'probably'; }
+  play(): Promise<void> { this.paused = false; return Promise.resolve(); }
+  pause(): void { this.paused = true; }
+  load(): void {}
+  removeAttribute(name: string): void { if (name === 'src') this.src = ''; }
+}
+
+const sound = { mute: false } as never as Phaser.Sound.BaseSoundManager;
+const track = (file: string) => FakeAudio.made.find((a) => a.src?.endsWith(`/${file}.ogg`))!;
+
+function setup(): void {
+  vi.useFakeTimers();
+  FakeAudio.made = [];
+  vi.stubGlobal('Audio', FakeAudio);
+  vi.stubGlobal('window', Object.assign(globalThis, { addEventListener: vi.fn(), removeEventListener: vi.fn() }));
 }
 
 afterEach(() => {
@@ -62,78 +33,76 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('MusicSystem arrangement data', () => {
-  it('defines a complete four-bar phrase for every mission', () => {
-    expect(Object.keys(MUSIC_THEMES)).toHaveLength(5);
-    for (const theme of Object.values(MUSIC_THEMES)) {
-      expect(theme.bass).toHaveLength(32);
-      expect(theme.motif).toHaveLength(32);
-      expect(theme.bossAccent).toHaveLength(32);
-      expect(theme.bossAccent.some(frequency => frequency > 0)).toBe(true);
-      expect(theme.bossAccent).not.toEqual(theme.motif);
-      expect(theme.chords).toHaveLength(4);
-      expect(theme.chords.every(chord => chord.length === 4)).toBe(true);
+describe('music arrangement', () => {
+  it('gives every mission a calm, combat and boss track', () => {
+    expect(Object.keys(MUSIC_TRACKS)).toHaveLength(5);
+    for (const t of Object.values(MUSIC_TRACKS)) {
+      expect(new Set([t.explore, t.combat, t.boss]).size).toBe(3);
     }
   });
 
-  it('keeps scheduled pattern steps inside the phrase', () => {
-    for (const theme of Object.values(MUSIC_THEMES)) {
-      const scheduled = [...theme.kickSteps, ...theme.snareSteps, ...theme.hatSteps];
-      expect(scheduled.every(step => Number.isInteger(step) && step >= 0 && step < 32)).toBe(true);
-      expect(new Set(theme.kickSteps).size).toBe(theme.kickSteps.length);
-      expect(new Set(theme.snareSteps).size).toBe(theme.snareSteps.length);
-      expect(new Set(theme.hatSteps).size).toBe(theme.hatSteps.length);
-    }
-  });
-
-  it('gives every theme musical space and a safe scheduler tempo', () => {
-    for (const theme of Object.values(MUSIC_THEMES)) {
-      expect(theme.step).toBeGreaterThanOrEqual(0.18);
-      expect(theme.step).toBeLessThanOrEqual(0.35);
-      expect(theme.space).toBeGreaterThanOrEqual(0.08);
-      expect(theme.space).toBeLessThanOrEqual(0.25);
-      expect(theme.padFilter).toBeGreaterThan(150);
-      expect(theme.padFilter).toBeLessThan(1200);
-    }
-  });
-
-  it('ramps normal-wave intensity monotonically without exceeding the mix ceiling', () => {
+  it('ramps normal-wave intensity monotonically, every wave reaching the combat layer', () => {
     const intensities = [1, 2, 3, 4, 5].map(wave => musicIntensityForWave(wave, 5));
     expect(intensities).toEqual([0.22, 0.36, 0.5, 0.64, 0.78]);
+    expect(intensities.every((i) => i >= COMBAT_THRESHOLD)).toBe(true);
     expect(musicIntensityForWave(-10, 5)).toBe(0.22);
     expect(musicIntensityForWave(99, 5)).toBe(0.78);
   });
+});
 
-  it('starts, schedules, enters boss mode, and closes its audio context', async () => {
-    vi.useFakeTimers();
-    const context = new FakeAudioContext();
-    function MockAudioContext(): FakeAudioContext { return context; }
-    vi.stubGlobal('AudioContext', MockAudioContext);
-    vi.stubGlobal('window', globalThis);
+describe('MusicSystem streaming', () => {
+  it('starts calm, crossfades to combat and boss, and ducks under radio', () => {
+    setup();
+    const music = MusicSystem.forTheme(sound, 'surface');
+    music.start(0.5);
+    vi.advanceTimersByTime(3000);
+    const explore = track('surface-explore'), combat = track('surface-combat'), boss = track('boss');
+    expect(explore.loop).toBe(true);
+    expect(explore.volume).toBeCloseTo(0.5);
+    expect(combat.paused).toBe(true);
 
-    const music = new MusicSystem('surface');
     music.setIntensity(0.5);
-    music.start();
-    expect(context.resume).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(3000);
+    expect(music.layer).toBe('combat');
+    expect(combat.volume).toBeCloseTo(0.5);
+    expect(explore.volume).toBe(0);
+    expect(explore.paused).toBe(true); // silent layers stop streaming
+
+    music.setDucked(true);
+    vi.advanceTimersByTime(1000);
+    expect(combat.volume).toBeLessThan(0.25);
+    music.setDucked(false);
 
     music.setBossMode();
-    vi.advanceTimersByTime(100);
+    music.setIntensity(0); // the boss track holds until the mission ends
+    vi.advanceTimersByTime(3000);
+    expect(music.layer).toBe('boss');
+    expect(boss.volume).toBeCloseTo(0.5);
     music.destroy();
-    vi.advanceTimersByTime(1100);
-    await Promise.resolve();
-    expect(context.close).toHaveBeenCalledTimes(1);
   });
 
-  it('closes its audio context even when destroyed before start', async () => {
-    vi.useFakeTimers();
-    const context = new FakeAudioContext();
-    function MockAudioContext(): FakeAudioContext { return context; }
-    vi.stubGlobal('AudioContext', MockAudioContext);
-    vi.stubGlobal('window', globalThis);
+  it('follows the global mute and plays a one-shot sting over fading loops', () => {
+    setup();
+    const muted = { mute: true } as never as Phaser.Sound.BaseSoundManager;
+    const music = MusicSystem.forTheme(muted, 'orbital');
+    music.start();
+    vi.advanceTimersByTime(100);
+    expect(track('orbital-explore').muted).toBe(true);
+    music.playSting('victory');
+    vi.advanceTimersByTime(3000);
+    expect(track('victory').loop).toBe(false);
+    expect(track('victory').paused).toBe(false);
+    expect(track('orbital-explore').volume).toBe(0);
+    music.destroy();
+  });
 
-    new MusicSystem('orbital').destroy();
-    vi.runAllTimers();
-    await Promise.resolve();
-    expect(context.close).toHaveBeenCalledTimes(1);
+  it('releases its streams on destroy, even before start', () => {
+    setup();
+    MusicSystem.title(sound).destroy();
+    const music = MusicSystem.forTheme(sound, 'nexus-core');
+    music.start();
+    music.destroy();
+    vi.advanceTimersByTime(1000);
+    expect(FakeAudio.made.filter((a) => a.src !== undefined).every((a) => a.src === '' && a.paused)).toBe(true);
   });
 });

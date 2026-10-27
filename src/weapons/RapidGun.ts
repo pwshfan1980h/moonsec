@@ -25,7 +25,7 @@ export class RapidGun {
       // Dry-fire: soft click, rate-limited so holding RMB doesn't machine-gun the sfx
       if (time - this.lastDryClick > 450) {
         this.lastDryClick = time;
-        this.scene.audio.playAt('hit', { rate: 0.7, detune: -900, volume: 0.25 });
+        this.scene.audio.play('dry-fire');
       }
       return false;
     }

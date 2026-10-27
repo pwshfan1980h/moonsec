@@ -8,6 +8,8 @@ import { SurfaceMission } from '../systems/SurfaceMission';
 import { DroneSpawner } from '../systems/DroneSpawner';
 import { AudioSystem } from '../systems/AudioSystem';
 import { MusicSystem, musicIntensityForWave } from '../systems/MusicSystem';
+import { RadioSystem } from '../systems/RadioSystem';
+import { STREAK_REACTIONS } from '../data/radioScript';
 import { PlayerHud } from '../ui/PlayerHud';
 import { MovingPlatform } from '../entities/MovingPlatform';
 import { PPCRound } from '../entities/PPCRound';
@@ -54,6 +56,7 @@ export class GameScene extends Phaser.Scene {
   audio!: AudioSystem;
   hostileCombat!: HostileCombat;
   private music: MusicSystem | null = null;
+  radio!: RadioSystem;
   private playerHud?: PlayerHud;
   score = 0;
   platformData: { x: number; y: number; w: number }[] = [];
@@ -104,14 +107,6 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
 
-    // Fade out title music if it carried through the transition
-    for (const m of this.sound.getAll('music-title') as Phaser.Sound.WebAudioSound[]) {
-      if (m.isPlaying) {
-        this.tweens.add({ targets: m, volume: 0, duration: 800, ease: 'Linear',
-          onComplete: () => m.stop() });
-      }
-    }
-
     // Reset state that persists across scene.restart() (instance is reused, not reconstructed)
     this.isGameOver   = false;
     this.killStreak   = 0;
@@ -133,11 +128,14 @@ export class GameScene extends Phaser.Scene {
       : GAME_H + 200; // off-screen — mines/tanks won't spawn
 
     this.music?.destroy();
-    this.music = new MusicSystem(this.activeConfig.musicTheme);
-    // music starts when title is dismissed
+    this.music = MusicSystem.forTheme(this.sound, this.activeConfig.musicTheme);
 
-    this.audio?.destroy(); // close old AudioContext before creating new one
-    this.audio = new AudioSystem(this.sound);
+    this.audio?.destroy(); // stop the previous run's loops before the new mission's
+    this.audio = new AudioSystem(this);
+    this.radio = new RadioSystem(this, this.audio, (on) => {
+      this.music?.setDucked(on);
+      this.audio.setAmbienceLevel(on ? 0.5 : 1);
+    });
 
     const kb = this.input.keyboard!;
 
@@ -300,27 +298,48 @@ export class GameScene extends Phaser.Scene {
     const cfg = this.activeConfig;
     const startAtBoss = devParams().boss;
     if (this.currentNode !== 0) this.spawner = new DroneSpawner(this, cfg.waveCount, cfg.bossType, cfg.enemyMix, startAtBoss);
-    this.music?.start(0.34);
+    this.music?.start(0.5);
+    this.audio.startAmbience(cfg.musicTheme);
+    // Surface Ops voices its own opening (training); other missions open with a briefing
+    if (this.currentNode !== 0) this.time.delayedCall(1200, () => this.radio.say(cfg.introLine, { priority: 'critical' }));
 
-    // --- Wave audio ---
+    // --- Wave audio + radio traffic ---
     const onWaveStart = (wave: number) => {
-      this.audio.playWaveStinger();
       if (this.currentNode === 0) {
-        if (wave > 3) this.music?.setBossMode();
-        else this.music?.setIntensity(musicIntensityForWave(wave, 3));
+        // SurfaceMission voices its own encounters; the boss phase brings the alarm
+        if (wave > 3) { this.music?.setBossMode(); this.audio.play('boss-alarm'); }
+        else { this.audio.playWaveStinger(); this.music?.setIntensity(musicIntensityForWave(wave, 3)); }
         return;
       }
       if (wave > cfg.waveCount) {
         this.music?.setBossMode();
-        this.showRadioTransmission('PRIORITY', cfg.bossWarning, true);
+        this.audio.play('boss-alarm');
+        this.radio.say(cfg.bossWarning, { priority: 'critical' });
       } else {
+        this.audio.playWaveStinger();
         this.music?.setIntensity(musicIntensityForWave(wave, cfg.waveCount));
-        const line = cfg.radioLines[(wave - 1) % cfg.radioLines.length];
-        this.showRadioTransmission('LUNAR CONTROL', line);
+        this.radio.say(cfg.radioLines[(wave - 1) % cfg.radioLines.length]);
       }
     };
     this.events.on('waveStart', onWaveStart);
     this.gameEventUnsubs.push(() => this.events.off('waveStart', onWaveStart));
+
+    // Surface encounters cleared → back to the calm layer while the relay comes online
+    const onEncounterCleared = () => this.music?.setIntensity(0);
+    this.events.on('encounterCleared', onEncounterCleared);
+    this.gameEventUnsubs.push(() => this.events.off('encounterCleared', onEncounterCleared));
+
+    // HARROW's onboard voice: critical armor (re-arms once repaired above half) and nanite repairs
+    let armorWarned = false;
+    const onArmor = (hp: number, maxHp: number) => {
+      if (hp > 0 && hp <= maxHp * 0.25 && !armorWarned) { armorWarned = true; this.radio.say('sys-armor-low', { priority: 'critical' }); }
+      else if (hp > maxHp * 0.5) armorWarned = false;
+    };
+    this.events.on('healthChange', onArmor);
+    this.gameEventUnsubs.push(() => this.events.off('healthChange', onArmor));
+    const onPilotAction = (action: string) => { if (action === 'repair') this.radio.say('sys-nanites', { priority: 'chatter' }); };
+    this.events.on('pilotAction', onPilotAction);
+    this.gameEventUnsubs.push(() => this.events.off('pilotAction', onPilotAction));
 
     // --- Score tracking + kill streak + pickups ---
     const STREAK_MILESTONES = [3, 5, 10, 20];
@@ -339,6 +358,7 @@ export class GameScene extends Phaser.Scene {
         this.events.emit('scoreChange', this.score);
         this.events.emit('killStreak', this.killStreak, bonus);
         this.audio.playStreakChime(this.killStreak);
+        this.radio.say(STREAK_REACTIONS[Math.min(milestoneIdx, STREAK_REACTIONS.length - 1)], { priority: 'chatter' });
       }
 
       // Random supply drop — ammo most common, then health/fuel.
@@ -368,6 +388,8 @@ export class GameScene extends Phaser.Scene {
 
     const onGameOver = () => {
       this.isGameOver = true;
+      this.music?.playSting('defeat');
+      this.radio.say('react-death', { priority: 'critical' });
     };
     this.events.on('gameOver', onGameOver);
     this.gameEventUnsubs.push(() => this.events.off('gameOver', onGameOver));
@@ -382,6 +404,8 @@ export class GameScene extends Phaser.Scene {
     // levelComplete fires after final boss dies (emitted by DroneSpawner)
     const onLevelComplete = () => {
       this.isBossDead = true;
+      this.music?.playSting('victory');
+      this.radio.say(cfg.winLine, { priority: 'critical' });
     };
     this.events.on('levelComplete', onLevelComplete);
     this.gameEventUnsubs.push(() => this.events.off('levelComplete', onLevelComplete));
@@ -456,6 +480,7 @@ export class GameScene extends Phaser.Scene {
     this.surfaceMission = undefined;
     this.spawner?.destroy();
     this.spawner = undefined;
+    this.radio?.destroy();
     this.music?.destroy();
     this.music = null;
     this.audio?.destroy();
@@ -804,10 +829,6 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.backdrop = new SurfaceBackdrop(this);
     }
-  }
-
-  private showRadioTransmission(speaker: string, message: string, warning = false): void {
-    this.events.emit('radioTransmission', speaker, message, warning);
   }
 
   private makeBackgroundDomes(): void {

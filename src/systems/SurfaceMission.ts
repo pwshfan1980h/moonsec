@@ -13,9 +13,19 @@ import { pal } from '../render/palette';
 import { placeProp } from '../world/worldTextures';
 import { surfaceY } from '../level/levelMap';
 import { RELAY_SCREEN, WORLD_PROPS } from '../world/props';
+import { FIELD_CHATTER, type RadioLineId } from '../data/radioScript';
 
 export type SurfacePhase = 'training' | 'travel' | 'combat' | 'relay' | 'upgrade' | 'boss-travel' | 'boss' | 'complete';
 export interface MissionObjective { title: string; detail: string; x: number; progress: number; }
+
+type TrainingStep = 'jump' | 'dash' | 'target' | 'done';
+const STEP_LINES: Record<Exclude<TrainingStep, 'done'>, RadioLineId> = { jump: 'tut-jump', dash: 'tut-dash', target: 'tut-target' };
+const CONTACT_LINES: RadioLineId[] = ['surf-contact-1', 'surf-contact-2', 'surf-contact-3'];
+const RELAY_LINES: RadioLineId[] = ['surf-relay-1', 'surf-relay-2', 'surf-relay-3'];
+/** Repeat a training instruction if the player hasn't done it after this long (at most twice). */
+const NUDGE_MS = 25000;
+/** Field crews chime in once per leg of travel, after this much quiet walking. */
+const CHATTER_AFTER_MS = 9000;
 
 /** Owns the first mission's sequence; other campaign nodes retain their existing spawner. */
 export class SurfaceMission {
@@ -31,6 +41,13 @@ export class SurfaceMission {
   private markers: Phaser.GameObjects.Graphics;
   private relayLabels: { glyph: Phaser.GameObjects.Image; num: Phaser.GameObjects.BitmapText }[] = [];
   private readonly unsubs: (() => void)[] = [];
+  private step: TrainingStep = 'jump';
+  private stepMs = 0;
+  private nudges = 0;
+  private gateLine = 0;
+  private travelMs = 0;
+  private chattered = false;
+  private chatterIndex = 0;
   private readonly onAction = (action: string) => { this.actions.add(action); };
 
   constructor(private readonly scene: GameScene, startAtBoss = false, startAtEncounter?: number) {
@@ -41,7 +58,8 @@ export class SurfaceMission {
     const onUpgrade = () => {
       if (this.phase !== 'upgrade') return;
       this.encounter++;
-      this.phase = 'travel';
+      this.enterTravel();
+      scene.radio.say('sys-module');
       this.updateObjective();
     };
     scene.events.on('upgradeChosen', onUpgrade);
@@ -54,6 +72,9 @@ export class SurfaceMission {
     };
     scene.events.on('bossKilled', onBossKilled);
     this.unsubs.push(() => scene.events.off('bossKilled', onBossKilled));
+    const onExposed = () => { scene.radio.once('surf-core', { priority: 'critical' }); };
+    scene.events.on('bossExposed', onExposed);
+    this.unsubs.push(() => scene.events.off('bossExposed', onExposed));
     if (scene.ai) Object.assign(scene.ai.tokens.pools, { ranged: SURFACE_MAX_ATTACKERS, melee: 1, artillery: 1 });
     SURFACE_ENCOUNTERS.forEach((e, i) => {
       const lift = this.floorAt(e.relayX) - 960;
@@ -62,6 +83,8 @@ export class SurfaceMission {
       const num = uiLabel(scene, e.relayX + 4, 780 + lift, String(i + 1).padStart(2, '0'), 'small', 'inkDim').setOrigin(0, 0.5).setDepth(7);
       this.relayLabels.push({ glyph, num });
     });
+    scene.audio.play('mech-boot');
+    scene.radio.say('sys-online', { priority: 'critical' });
     if (startAtBoss) {
       scene.player.setPosition(5200, this.floorAt(5200) - 10);
       this.encounter = 3;
@@ -72,8 +95,12 @@ export class SurfaceMission {
       const x = SURFACE_ENCOUNTERS[this.encounter].x - 150;
       scene.player.setPosition(x, this.floorAt(x) - 10);
     } else {
-      this.openingGate = new OpeningGate(scene);
+      this.openingGate = new OpeningGate(scene, () => {
+        scene.radio.say(this.gateLine++ % 2 === 0 ? 'tut-gate-1' : 'tut-gate-2', { tag: 'gate' });
+      });
       this.spawnUnit('target', 1450, 800, () => { this.targetDown = true; });
+      scene.radio.say('tut-intro', { priority: 'critical' });
+      scene.radio.say(STEP_LINES.jump, { priority: 'critical', tag: 'tut' });
     }
     this.updateObjective();
   }
@@ -113,13 +140,10 @@ export class SurfaceMission {
     const player = this.scene.player;
     const current = SURFACE_ENCOUNTERS[this.encounter];
     if (this.phase === 'training') {
-      if (this.actions.has('jump') && this.actions.has('dash') && this.targetDown) {
-        this.phase = 'travel';
-        this.openingGate?.open();
-        this.scene.events.emit('radioTransmission', 'LUNAR CONTROL', 'Systems checked. Restore the survey relay ahead. Q repairs damaged armor; avoid fire while healing.', false);
-      }
+      this.updateTraining(delta);
     } else if (this.phase === 'travel' && player.x >= current.x - 260) {
       this.phase = 'combat';
+      this.scene.radio.say(CONTACT_LINES[this.encounter], { priority: 'critical', tag: 'objective' });
       this.schedule = new EncounterSchedule(current.roles.length);
       this.scene.events.emit('waveStart', this.encounter + 1, 3, current.roles.length);
       this.scene.events.emit('dronesRemaining', current.roles.length);
@@ -138,12 +162,15 @@ export class SurfaceMission {
       if (schedule.complete) {
         this.phase = 'relay';
         this.relayProgress = 0;
-        this.scene.events.emit('radioTransmission', 'LUNAR CONTROL', 'Perimeter clear. Hold F at the relay to bring it online.', false);
+        this.scene.events.emit('encounterCleared');
+        this.scene.radio.say('surf-clear', { priority: 'critical', tag: 'objective' });
       }
     } else if (this.phase === 'relay') {
       const near = Math.abs(player.x - current.relayX) < 130 && player.y > this.floorAt(current.relayX) - 180;
       this.relayProgress = near && this.interact.isDown ? Math.min(1, this.relayProgress + delta / 1800) : 0;
       this.scene.events.emit('relayProgress', this.relayProgress, near && this.interact.isDown);
+      if (this.relayProgress > 0 && this.relayProgress < 1) this.scene.audio.startLoop('uplink');
+      else this.scene.audio.stopLoop('uplink');
       if (this.relayProgress >= 1) {
         const relayTag = this.relayLabels[this.encounter];
         relayTag.glyph.setFrame('check').setTint(tc('repair'));
@@ -151,18 +178,21 @@ export class SurfaceMission {
         player.heal(HEAL.relay);
         player.refillRapidAmmo(50);
         player.restoreJetpackFuel(player.jetpackMaxFuel);
-        this.scene.audio.play('level-complete');
+        this.scene.audio.play('relay-online');
+        this.scene.radio.say('sys-uplink');
+        this.scene.radio.say(RELAY_LINES[this.encounter], { priority: 'critical', tag: 'objective' });
         if (this.encounter === 0) {
           this.phase = 'upgrade';
           this.scene.events.emit('fieldUpgrade', 1);
         } else {
           this.encounter++;
-          this.phase = this.encounter === SURFACE_ENCOUNTERS.length ? 'boss-travel' : 'travel';
+          if (this.encounter === SURFACE_ENCOUNTERS.length) this.phase = 'boss-travel'; else this.enterTravel();
         }
       }
     } else if (this.phase === 'boss-travel' && player.x >= 5150) {
       this.startBoss();
     }
+    if (this.phase === 'travel') this.updateChatter(delta);
     if (this.phase === 'training') {
       const remaining = [
         ...(!this.actions.has('jump') ? ['SPACE TO JUMP'] : []),
@@ -176,6 +206,48 @@ export class SurfaceMission {
     this.updateObjective();
   }
 
+  /** Training is talked through: each completed check cues the next instruction over the radio. */
+  private updateTraining(delta: number): void {
+    const step: TrainingStep = !this.actions.has('jump') ? 'jump' : !this.actions.has('dash') ? 'dash' : !this.targetDown ? 'target' : 'done';
+    const radio = this.scene.radio;
+    if (step !== this.step) {
+      this.step = step;
+      this.stepMs = 0;
+      this.nudges = 0;
+      // a stale instruction is cut off by the next one
+      radio.say(step === 'done' ? 'tut-complete' : STEP_LINES[step], { priority: 'critical', tag: 'tut', interrupt: true });
+      if (step === 'done') {
+        this.phase = 'travel';
+        this.openingGate?.open();
+        this.enterTravel();
+      }
+      return;
+    }
+    if (step === 'done') return;
+    this.stepMs += delta;
+    if (this.stepMs > NUDGE_MS && this.nudges < 2 && radio.isQuiet()) {
+      this.stepMs = 0;
+      this.nudges++;
+      radio.say(STEP_LINES[step], { tag: 'tut' });
+    }
+  }
+
+  private enterTravel(): void {
+    this.phase = 'travel';
+    this.travelMs = 0;
+    this.chattered = false;
+  }
+
+  /** One line of field chatter per leg, only once the channel has been quiet for a while. */
+  private updateChatter(delta: number): void {
+    this.travelMs += delta;
+    if (this.chattered || this.travelMs < CHATTER_AFTER_MS) return;
+    if (this.scene.radio.say(FIELD_CHATTER[this.chatterIndex % FIELD_CHATTER.length], { priority: 'chatter' })) {
+      this.chatterIndex++;
+      this.chattered = true;
+    }
+  }
+
   private startBoss(): void {
     this.phase = 'boss';
     this.scene.physics.world.setBounds(4900, 0, 1500, 1280);
@@ -185,7 +257,7 @@ export class SurfaceMission {
     this.scene.hostileCombat.register(boss);
     this.scene.events.emit('waveStart', 4, 3, 1);
     this.scene.events.emit('dronesRemaining', 1);
-    this.scene.events.emit('radioTransmission', 'LUNAR CONTROL', 'Warden inbound. Jump the ground sweep, dash out of marked columns, then fire at its exposed core.', true);
+    this.scene.radio.say('surf-boss', { priority: 'critical', tag: 'objective' });
   }
 
   /** Relay state on each cabinet's screen (dim, active cyan, online green) plus the uplink progress. */
@@ -252,6 +324,7 @@ export class SurfaceMission {
 
   destroy(): void {
     for (const off of this.unsubs) off();
+    this.scene.audio?.stopLoop('uplink');
     this.openingGate?.destroy();
     this.markers.destroy();
     this.relayLabels.forEach((l) => { l.glyph.destroy(); l.num.destroy(); });

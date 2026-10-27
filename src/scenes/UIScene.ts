@@ -207,7 +207,7 @@ export class UIScene extends Phaser.Scene {
       this.naniteState = state; this.naniteProgress = p;
       this.refreshRepair();
     });
-    on('radioTransmission', (speaker: string, message: string, warning: boolean) => this.radio.show(speaker, message, warning));
+    on('radioTransmission', (speaker: string, message: string, warning: boolean, voiceMs?: number) => this.radio.show(speaker, message, warning, voiceMs));
 
     on('scoreChange', (score: number) => { this.currentScore = score; this.hud.setScore(score); });
     on('waveStart', (wave: number, totalWaves?: number, totalDrones?: number) => {
@@ -358,7 +358,6 @@ export class UIScene extends Phaser.Scene {
     this.levelCompleteActive = true;
     this.clearTelegraph();
     const gameScene = this.game_;
-    gameScene?.audio?.play('level-complete');
     let leaving = false;
     const proceed = () => {
       if (leaving) return;
@@ -374,7 +373,8 @@ export class UIScene extends Phaser.Scene {
     this.result = new ResultScreen(this, 'won', { score: this.currentScore, wave: this.currentWave, kills: this.kills }, [
       { icon: 'map', text: 'CONTINUE', key: 'ENTER', onClick: proceed },
     ]);
-    this.time.delayedCall(4000, proceed);
+    // long enough for the victory sting and the closing radio call
+    this.time.delayedCall(7500, proceed);
   }
 
   private showGameOver(): void {

@@ -1,7 +1,7 @@
 {
   "name": "moonsec",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "test": "vitest run",
     "art:rig": "node --import ./tools/register-ts.mjs tools/rig/build.ts",
     "art:palette": "node --import ./tools/register-ts.mjs tools/palette/export.ts && node --import ./tools/register-ts.mjs tools/palette/remap.ts",
-    "shots": "node tools/shots/shots.mjs"
+    "shots": "node tools/shots/shots.mjs",
+    "audio": "node --import ./tools/register-ts.mjs tools/audio/generate.ts"
   },
   "dependencies": {
     "phaser": "^4.2.1"

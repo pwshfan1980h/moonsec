@@ -13,7 +13,8 @@ export class OpeningGate {
   private remindedThisVisit = false;
   private remindAfter = 0;
 
-  constructor(private readonly scene: GameScene) {
+  /** `onRemind` fires alongside the floating reminder (Lunar Control calls it out on the radio). */
+  constructor(private readonly scene: GameScene, private readonly onRemind?: () => void) {
     this.field = scene.add.zone(OPENING_GATE_X, WORLD_HEIGHT / 2, 32, WORLD_HEIGHT);
     scene.physics.add.existing(this.field, true);
     this.collider = scene.physics.add.collider(scene.player, this.field, () => {
@@ -32,6 +33,7 @@ export class OpeningGate {
     if (this.contactPending && !this.remindedThisVisit) {
       if (time >= this.remindAfter) {
         this.scene.spawnFloatingText(p.x - 120, p.y - 150, reminder, 'accent', { rise: 12, duration: 3200 });
+        this.onRemind?.();
         this.remindAfter = time + 10000;
       }
       this.remindedThisVisit = true;

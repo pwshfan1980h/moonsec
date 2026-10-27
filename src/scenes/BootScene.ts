@@ -8,6 +8,10 @@ import { buildUiTextures } from '../ui/kit/uiTextures';
 import { buildWorldTextures } from '../world/worldTextures';
 import { SegBar, icon } from '../ui/kit/widgets';
 import { loadMuted } from '../systems/audioPrefs';
+import { audioUrls, loadSfx, voKey } from '../systems/audioAssets';
+import type { RadioLineId } from '../data/radioScript';
+
+const BOOT_VOICE: RadioLineId[] = ['sys-online', 'tut-intro', 'tut-jump', 'tut-dash', 'tut-target', 'tut-complete'];
 
 // Dev-only: `?level=N` skips the title and jumps straight to level N (0-indexed, clamped).
 function bootLevel(): number {
@@ -30,21 +34,10 @@ export class BootScene extends Phaser.Scene {
     bar.set(0, 'accent');
     this.load.on('progress', (v: number) => bar.set(v, 'accent'));
 
-    // One-shot sound effects (loops handled procedurally in AudioSystem)
-    const sounds = [
-      'rapid','turret','hit','hurt','jump','death',
-      'drone-shoot','explosion','missile-impact',
-      'nanite-heal','nanite-tick','pickup',
-      'ui-nav','ui-confirm','level-complete',
-      'eject', // bullet-on-geometry ricochet
-      'surge', // mecha flyby — sped up + enveloped at runtime
-    ];
-    for (const s of sounds) {
-      this.load.audio(s, `audio/${s}.wav`);
-    }
-
-    // Title screen music loop
-    this.load.audio('music-title', 'audio/music-title.ogg');
+    // ElevenLabs renders: every effect, loop and ambience bed, plus the opening radio calls so
+    // training starts without a load hitch. Other voice lines and music stream in on demand.
+    loadSfx(this.load);
+    for (const id of BOOT_VOICE) this.load.audio(voKey(id), audioUrls('vo', id));
 
     // Rigged bodies: every part of every rig in one atlas (tools/rig/build.ts)
     this.load.atlas('rig', 'assets/rig.png', 'assets/rig.json');

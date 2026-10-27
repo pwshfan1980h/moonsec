@@ -31,6 +31,7 @@ npm run dev
 npm test
 npm run build
 npm run art:rig      # rebuild the rig part atlas from src/rig/parts
+npm run audio        # render missing ElevenLabs audio (see docs/AUDIO.md)
 ```
 
 Dev URL switches (`src/dev/devParams.ts`): `?level=N` skips the title, `?seed=`, `?freeze=ms`, `?gfx=crunchy|clean|low`, `?boss=1`, `?encounter=N`, `?armor=8` (see the limp), `?rigtest=all|foes` (rig galleries), `?ui=title|map|pause|upgrade|gameover|complete|guide`, `?noguide=1`.
@@ -51,9 +52,10 @@ Palette tools: `node --import ./tools/register-ts.mjs tools/palette/colorLiteral
 - `src/entities/` — `Player` (HARROW), `RiggedHostile` + `foes/` (roster), projectiles, platforms
 - `src/fx/` — dust field simulation, atmosphere (fog, shafts, haze)
 - `src/balance/` — armor scale, damage and heal tables
-- `src/systems/` — spawning (`waveMix`, `DroneSpawner`, `SurfaceMission`), audio, pickups
+- `src/systems/` — spawning (`waveMix`, `DroneSpawner`, `SurfaceMission`), audio (`AudioSystem`, `MusicSystem`, `RadioSystem`), pickups
+- `src/data/radioScript.ts` — every voiced radio line; `tools/audio/` renders it and all other sound with ElevenLabs
 - `src/ui/` — theme, MOON font, icons, kit widgets, HUD and screens
 - `src/scenes/` — Boot → Title → Overworld → Game + UI
 - `src/tests/` — pure-module and guardrail tests
 
-See `docs/superpowers/specs/2026-09-23-moonsec-overhaul-design.md` for the overhaul design, `docs/ENEMIES.md` for the roster, `docs/SURFACE_OPS.md` for mission design and `docs/ARCHITECTURE.md` for maintenance boundaries.
+See `docs/superpowers/specs/2026-09-23-moonsec-overhaul-design.md` for the overhaul design, `docs/ENEMIES.md` for the roster, `docs/SURFACE_OPS.md` for mission design, `docs/AUDIO.md` for sound, music and radio, and `docs/ARCHITECTURE.md` for maintenance boundaries.

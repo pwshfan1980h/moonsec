@@ -25,13 +25,15 @@ function sceneFixture() {
   const label = () => { const t: any = { body: { enable: true } }; for (const k of ['setVisible', 'setOrigin', 'setDepth', 'setText', 'setColor', 'setTint', 'setScale', 'setFrame', 'setLetterSpacing', 'setLineSpacing', 'destroy']) t[k] = () => t; return t; };
   const key = { isDown: false };
   const events = new EventEmitter();
-  const player = { body: { right: 1712 }, x: 300, y: 950, jetpackMaxFuel: 2200, heal: vi.fn(), refillRapidAmmo: vi.fn(), restoreJetpackFuel: vi.fn(), setPosition: vi.fn() };
+  const player = { body: { right: 1712 }, x: 300, y: 950, jetpackMaxFuel: 2200, heal: vi.fn(), refillRapidAmmo: vi.fn(), restoreJetpackFuel: vi.fn(), setPosition: vi.fn(), socketWorld: () => ({ x: 0, y: 0 }) };
   const scene: any = {
     player, events, input: { keyboard: { addKey: () => key } },
-    add: { zone: label, rectangle: label, graphics, text: label, image: label, bitmapText: label }, audio: { play: vi.fn() },
+    add: { zone: label, rectangle: label, graphics, text: label, image: label, bitmapText: label }, audio: { play: vi.fn(), startLoop: vi.fn(), stopLoop: vi.fn() },
+    radio: { say: vi.fn(() => true), once: vi.fn(() => true), isQuiet: vi.fn(() => true) },
     physics: { add: { existing: vi.fn(), collider: vi.fn(() => ({ destroy: vi.fn() })), overlap: () => ({ destroy: vi.fn() }) }, world: { setBounds: vi.fn() } },
     cameras: { main: { setBounds: vi.fn() } },
     hostileCombat: { register: vi.fn() },
+    time: { now: 0 },
     spawnFloatingText: vi.fn(),
     getApproxGroundY: () => 960,
     levelTemplate: {},
@@ -72,7 +74,10 @@ describe('Surface Ops mission sequence', () => {
     player.x = 6000;
     mission.update(0, 16);
     expect(mission.phase).toBe('training'); // Running ahead cannot skip it.
-    events.emit('pilotAction', 'jump'); events.emit('pilotAction', 'dash');
+    events.emit('pilotAction', 'jump');
+    mission.update(8, 16);
+    expect(scene.radio.say).toHaveBeenLastCalledWith('tut-dash', { priority: 'critical', tag: 'tut', interrupt: true });
+    events.emit('pilotAction', 'dash');
     state.units[0].kill();
     mission.update(16, 16);
     expect(mission.phase).toBe('travel');
@@ -91,7 +96,8 @@ describe('Surface Ops mission sequence', () => {
       mission.update(0, 2000);
       expect(mission.phase).toBe('relay'); // Proximity alone does not activate it.
       key.isDown = true;
-      mission.update(0, 2000);
+      mission.update(0, 1000);
+      mission.update(0, 1000);
       key.isDown = false;
       if (index === 0) {
         expect(mission.phase).toBe('upgrade');
@@ -106,6 +112,13 @@ describe('Surface Ops mission sequence', () => {
     events.emit('bossKilled'); events.emit('bossKilled');
     expect(completed).toBe(1);
     expect(mission.phase).toBe('complete');
+    // training and every objective change are voiced, in order
+    const said = scene.radio.say.mock.calls.map((c: unknown[]) => c[0]);
+    const order = ['sys-online', 'tut-intro', 'tut-jump', 'tut-complete', 'surf-contact-1', 'surf-clear', 'surf-relay-1', 'sys-module',
+      'surf-contact-2', 'surf-relay-2', 'surf-contact-3', 'surf-relay-3', 'surf-boss'];
+    let at = -1;
+    for (const id of order) { const next = said.indexOf(id, at + 1); expect(next, id).toBeGreaterThan(at); at = next; }
+    expect(scene.audio.startLoop).toHaveBeenCalledWith('uplink');
     mission.destroy();
     expect(events.listenerCount('pilotAction')).toBe(0);
     expect(events.listenerCount('upgradeChosen')).toBe(0);
@@ -129,6 +142,7 @@ describe('opening range gate', () => {
     contact();
     mission.update(1, 16);
     expect(scene.spawnFloatingText.mock.calls[0][2]).toContain('SPACE');
+    expect(scene.radio.say).toHaveBeenCalledWith('tut-gate-1', { tag: 'gate' });
     player.body.right = 1320; mission.update(1000, 16);
     player.body.right = 1712; contact(); mission.update(2000, 16);
     expect(scene.spawnFloatingText).toHaveBeenCalledTimes(1);

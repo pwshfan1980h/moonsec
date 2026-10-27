@@ -11,6 +11,7 @@ import { tc, type Role } from '../ui/theme';
 import { pad } from '../ui/kit/logic';
 import { Keycap, icon, label, panel, setLabel, setPanelLook, type Label } from '../ui/kit/widgets';
 import type { PanelLook } from '../ui/kit/uiTextures';
+import { sfxKey } from '../systems/audioAssets';
 
 interface NodeDef {
   x: number;
@@ -285,7 +286,7 @@ export class OverworldScene extends Phaser.Scene {
     if (this.selectableNodes.length <= 1) return;
     this.selectIdx = (this.selectIdx + dir + this.selectableNodes.length) % this.selectableNodes.length;
     this.placeReticle(true);
-    if (this.cache.audio.exists('ui-nav')) this.sound.play('ui-nav');
+    if (this.cache.audio.exists(sfxKey('ui-nav'))) this.sound.play(sfxKey('ui-nav'), { volume: 0.3 });
   }
 
   private launchLevel(): void {
@@ -293,7 +294,7 @@ export class OverworldScene extends Phaser.Scene {
     this.launching = true;
     const chosen = this.selectableNodes[this.selectIdx];
     this.registry.set('totalScore', this.totalScore);
-    if (this.cache.audio.exists('ui-confirm')) this.sound.play('ui-confirm');
+    if (this.cache.audio.exists(sfxKey('ui-confirm'))) this.sound.play(sfxKey('ui-confirm'), { volume: 0.45 });
     this.cameras.main.fadeOut(600, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('Game', { level: chosen, totalScore: this.totalScore, completedNodes: this.completedNodes });

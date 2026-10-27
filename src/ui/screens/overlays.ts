@@ -221,11 +221,13 @@ export class RadioPanel {
   private c?: Phaser.GameObjects.Container;
   constructor(private readonly scene: Phaser.Scene) {}
 
-  show(speaker: string, message: string, warning: boolean): void {
+  /** `voiceMs`: how long the spoken line runs; the text types out with it and holds until it ends. */
+  show(speaker: string, message: string, warning: boolean, voiceMs = 0): void {
     this.clear();
     const s = this.scene;
     const w = 760;
     const body = label(s, 60, 44, wrap(message, 46), 'small', 'ink').setLineSpacing(4);
+    const full = body.text;
     const h = Math.max(88, body.height + 64);
     const role: Role = warning ? 'warn' : 'accent';
     const bg = panel(s, 0, 0, w, h, warning ? 'warn' : 'panel');
@@ -233,7 +235,12 @@ export class RadioPanel {
     const tag = label(s, 60, 24, speaker, 'small', role);
     this.c = s.add.container(Math.round((GAME_W - w) / 2), 208, [bg, ic, tag, body]).setDepth(DEPTH.radio).setAlpha(0);
     const c = this.c;
-    s.tweens.add({ targets: c, alpha: 1, duration: 200, hold: 4600, yoyo: true, onComplete: () => { if (this.c === c) this.c = undefined; c.destroy(); } });
+    if (voiceMs > 0) {
+      // type out over the first ~85% of the line so the text never lags the voice
+      body.setText('');
+      s.tweens.addCounter({ from: 0, to: full.length, duration: voiceMs * 0.85, onUpdate: (t) => { if (body.scene) body.setText(full.slice(0, Math.round(t.getValue() ?? 0))); } });
+    }
+    s.tweens.add({ targets: c, alpha: 1, duration: 200, hold: Math.max(4600, voiceMs + 900), yoyo: true, onComplete: () => { if (this.c === c) this.c = undefined; c.destroy(); } });
   }
 
   clear(): void {

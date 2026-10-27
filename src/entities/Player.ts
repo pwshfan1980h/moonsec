@@ -631,8 +631,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setVelocity(0, 0);
     body.setAcceleration(0, 0);
     this.scene.audio.stopLoop('jetpack');
-    // Deep EMP crackle — very low-pitched hurt sound
-    this.scene.audio.playAt('hurt', { rate: 0.15, detune: -1200, volume: 1.0 });
+    this.scene.audio.play('emp');
     this.scene.cameras.main.flash(300, 0, 160, 255, false);
   }
 

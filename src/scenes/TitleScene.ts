@@ -12,6 +12,7 @@ import { rampPick } from '../render/ditherMath';
 import { installPipeline, graphics, setGraphics, type CameraPipeline } from '../render/RenderPipeline';
 import { nextPreset, saveGraphicsSettings } from '../render/GraphicsSettings';
 import { saveMuted } from '../systems/audioPrefs';
+import { MusicSystem } from '../systems/MusicSystem';
 import { icon, label } from '../ui/kit/widgets';
 import { buttonColumn, Layer } from '../ui/screens/overlays';
 import { PilotGuide } from '../ui/screens/Guide';
@@ -28,6 +29,7 @@ const CELL = 16;
  * cursor; START fires its jets and launches into the campaign.
  */
 export class TitleScene extends Phaser.Scene {
+  private music?: MusicSystem;
   private rig = new HarrowRig();
   private view!: RigView;
   private fx!: RigFx;
@@ -67,7 +69,7 @@ export class TitleScene extends Phaser.Scene {
     this.startMusic();
     this.cameras.main.fadeIn(600, 0, 0, 0);
     markDevReady(this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.menu?.destroy(); this.guide?.destroy(); });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { this.menu?.destroy(); this.guide?.destroy(); this.music?.destroy(); this.music = undefined; });
   }
 
   // ── backdrop ───────────────────────────────────────────────────────────────
@@ -238,12 +240,11 @@ export class TitleScene extends Phaser.Scene {
     });
   }
 
+  /** Streams the title theme; browsers that block autoplay start it on the first click or key. */
   private startMusic(): void {
-    const play = () => {
-      if (this.sound.get('music-title')?.isPlaying || !this.scene.isActive()) return;
-      this.sound.play('music-title', { loop: true, volume: 0.45 });
-    };
-    if (this.sound.locked) this.sound.once(Phaser.Sound.Events.UNLOCKED, play); else play();
+    this.music?.destroy();
+    this.music = MusicSystem.title(this.sound);
+    this.music.start(0.55);
   }
 
   /** Jets flare, HARROW lifts off, then the campaign starts. */
@@ -254,12 +255,11 @@ export class TitleScene extends Phaser.Scene {
     this.field.blast(MECH_X, GROUND_Y, 220, 4);
     this.field.deposit(MECH_X, GROUND_Y - 8, 140, 3, 0, -40);
     this.cameras.main.shake(500, 0.004);
-    const music = this.sound.get('music-title');
-    if (music) this.tweens.add({ targets: music, volume: 0, duration: 1100 });
+    this.music?.destroy(); // fades out over the lift-off
+    this.music = undefined;
     this.time.delayedCall(900, () => {
       this.cameras.main.fadeOut(500, 0, 0, 0);
       this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-        this.sound.stopByKey('music-title');
         const totalScore = (this.registry.get('totalScore') as number) ?? 0;
         if (target === 'Game') {
           this.scene.start('Game', { level: 0, totalScore: 0, completedNodes: [] });

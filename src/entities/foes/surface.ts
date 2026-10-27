@@ -172,7 +172,7 @@ export class Ram extends Walker {
       this.halt();
       this.rigExtra.pitch = 0.25; this.rigExtra.crouch = 0.5;
       if (Math.random() < dt * 12) this.fx.kickDust(this.x - this.dir * 20, this.y, 2, 1);
-      if (this.modeT > 0.9) { this.mode = 'charge'; this.modeT = 0; this.hitPlayer = false; this.scene.audio.play('surge'); }
+      if (this.modeT > 0.9) { this.mode = 'charge'; this.modeT = 0; this.hitPlayer = false; this.scene.audio.play('enemy-charge'); }
     } else if (this.mode === 'charge') {
       body.setVelocityX(this.dir * 520);
       this.rigExtra.pitch = 0.3; this.rigExtra.crouch = 0.3;

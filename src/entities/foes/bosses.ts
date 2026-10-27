@@ -135,9 +135,9 @@ export class Warden extends Walker {
       if (c.phase === 'warning') {
         this.strikeX = Phaser.Math.Clamp(p.x, 5070, 6300);
         this.announce(c.attack === 'sweep' ? 'GROUND SWEEP · JUMP / SPACE' : 'ORBITAL STRIKE · DASH / SHIFT');
-        this.scene.audio.playAt('ui-nav', { rate: 0.6, volume: 0.6 });
-      } else if (c.phase === 'exposed') this.announce('CORE EXPOSED · FIRE NOW');
-      else if (c.phase === 'shielded') this.announce('SHIELD ONLINE · REPOSITION');
+        this.scene.audio.play('warden-charge');
+      } else if (c.phase === 'exposed') { this.announce('CORE EXPOSED · FIRE NOW'); this.scene.events.emit('bossExposed'); }
+      else if (c.phase === 'shielded') { this.announce('SHIELD ONLINE · REPOSITION'); this.scene.audio.play('warden-shield'); }
     }
     if (c.phase === 'warning') {
       const k = 1 - Math.max(0, c.timer) / 1.7;
